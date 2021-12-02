@@ -7,7 +7,8 @@ namespace UnityEngine.Rendering.Universal.Internal
     /// <summary>
     /// Renders a color grading LUT texture.
     /// </summary>
-    public class ColorGradingLutPass : ScriptableRenderPass
+    public class ColorGradingLutPass //ColorGradingLutPass__RR
+        : ScriptableRenderPass
     {
         readonly Material m_LutBuilderLdr;
         readonly Material m_LutBuilderHdr;

@@ -3,19 +3,22 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.Rendering.LWRP
 {
+    /*    tpr
     [Obsolete("LWRP -> Universal (UnityUpgradable) -> UnityEngine.Rendering.Universal.UniversalRenderPipelineEditorResources", true)]
     public class LightweightRenderPipelineEditorResources
-    {
-    }
+    {}
+    */
 }
 
 
 namespace UnityEngine.Rendering.Universal
 {
-    [MovedFrom("UnityEngine.Rendering.LWRP")] public class UniversalRenderPipelineEditorResources : ScriptableObject
+    [MovedFrom("UnityEngine.Rendering.LWRP")] 
+    public class UniversalRenderPipelineEditorResources //UniversalRenderPipelineEditorResources__RR
+        : ScriptableObject
     {
         [Serializable, ReloadGroup]
-        public sealed class ShaderResources
+        public sealed class ShaderResources//ShaderResources__RR
         {
             [Reload("Shaders/Autodesk Interactive/Autodesk Interactive.shadergraph")]
             public Shader autodeskInteractivePS;
@@ -43,7 +46,7 @@ namespace UnityEngine.Rendering.Universal
         }
 
         [Serializable, ReloadGroup]
-        public sealed class MaterialResources
+        public sealed class MaterialResources//MaterialResources__RR
         {
             [Reload("Runtime/Materials/Lit.mat")]
             public Material lit;
@@ -61,7 +64,8 @@ namespace UnityEngine.Rendering.Universal
 
 #if UNITY_EDITOR
     [UnityEditor.CustomEditor(typeof(UniversalRenderPipelineEditorResources), true)]
-    class UniversalRenderPipelineEditorResourcesEditor : UnityEditor.Editor
+    class UniversalRenderPipelineEditorResourcesEditor //UniversalRenderPipelineEditorResourcesEditor__RR
+        : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {

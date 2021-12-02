@@ -54,10 +54,12 @@ Shader "Universal Render Pipeline/Particles/Lit"
         [HideInInspector] _QueueOffset("Queue offset", Float) = 0.0
 
         // ObsoleteProperties
+        /*    tpr
         [HideInInspector] _FlipbookMode("flipbook", Float) = 0
         [HideInInspector] _Glossiness("gloss", Float) = 0
         [HideInInspector] _Mode("mode", Float) = 0
         [HideInInspector] _Color("color", Color) = (1,1,1,1)
+        */
     }
 
     SubShader

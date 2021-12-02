@@ -6,7 +6,7 @@ using UnityEngine.TestTools;
 namespace UnityEngine.Rendering.Universal.Tests
 {
     [TestFixture]
-    class MultipleObjectLight2DTests
+    class MultipleObjectLight2DTests//MultipleObjectLight2DTests__RR
     {
         GameObject m_TestObject1;
         GameObject m_TestObject2;

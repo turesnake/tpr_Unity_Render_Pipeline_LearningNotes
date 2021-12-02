@@ -3,6 +3,8 @@ Shader "Hidden/Universal Render Pipeline/BokehDepthOfField"
     HLSLINCLUDE
         #pragma exclude_renderers gles
         #pragma multi_compile_local_fragment _ _USE_FAST_SRGB_LINEAR_CONVERSION
+
+        // xr 才启用
         #pragma multi_compile _ _USE_DRAW_PROCEDURAL
 
         #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"

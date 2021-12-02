@@ -3,7 +3,8 @@ using System;
 namespace UnityEngine.Rendering.Universal
 {
     [Serializable, VolumeComponentMenu("Post-processing/Color Adjustments")]
-    public sealed class ColorAdjustments : VolumeComponent, IPostProcessComponent
+    public sealed class ColorAdjustments //ColorAdjustments__RR
+        : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("Adjusts the overall exposure of the scene in EV100. This is applied after HDR effect and right before tonemapping so it won't affect previous effects in the chain.")]
         public FloatParameter postExposure = new FloatParameter(0f);

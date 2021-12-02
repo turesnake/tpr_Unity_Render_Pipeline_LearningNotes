@@ -3,9 +3,10 @@ using UnityEngine.Experimental.Rendering.Universal;
 
 namespace UnityEngine.Rendering.Universal.Tests
 {
-    internal class PixelPerfectCameraTests
+    internal class PixelPerfectCameraTests//PixelPerfectCameraTests__RR
     {
-        internal class PixelPerfectCameraTestComponent : IPixelPerfectCamera
+        internal class PixelPerfectCameraTestComponent //PixelPerfectCameraTestComponent__RR
+            : IPixelPerfectCamera
         {
             public int assetsPPU { get; set; }
             public int refResolutionX { get; set; }
@@ -17,7 +18,7 @@ namespace UnityEngine.Rendering.Universal.Tests
             public bool stretchFill { get; set; }
         }
 
-        internal class CalculateCameraPropertiesResult
+        internal class CalculateCameraPropertiesResult//CalculateCameraPropertiesResult__RR
         {
             public int zoom;
             public bool useOffscreenRT;

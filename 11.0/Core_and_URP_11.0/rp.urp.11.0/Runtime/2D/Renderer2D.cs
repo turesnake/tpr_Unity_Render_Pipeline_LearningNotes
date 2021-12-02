@@ -4,7 +4,8 @@ using UnityEngine.Rendering.Universal.Internal;
 
 namespace UnityEngine.Experimental.Rendering.Universal
 {
-    internal class Renderer2D : ScriptableRenderer
+    internal class Renderer2D //Renderer2D__RR
+        : ScriptableRenderer
     {
         Render2DLightingPass m_Render2DLightingPass;
         PixelPerfectBackgroundPass m_PixelPerfectBackgroundPass;

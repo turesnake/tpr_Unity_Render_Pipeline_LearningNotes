@@ -7,7 +7,8 @@ namespace UnityEngine.Rendering.Universal.Internal
     /// the camera target. The pass takes the screen viewport into
     /// consideration.
     /// </summary>
-    public class FinalBlitPass : ScriptableRenderPass
+    public class FinalBlitPass //FinalBlitPass__RR
+        : ScriptableRenderPass
     {
         RenderTargetHandle m_Source;
         Material m_BlitMaterial;
@@ -53,6 +54,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
                 cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, m_Source.Identifier());
 
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                 if (cameraData.xr.enabled)
                 {
@@ -81,6 +83,8 @@ namespace UnityEngine.Rendering.Universal.Internal
                 }
                 else
 #endif
+*/
+
                 if (isSceneViewCamera || cameraData.isDefaultViewport)
                 {
                     // This set render target is necessary so we change the LOAD state to DontCare.

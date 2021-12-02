@@ -5,7 +5,9 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.Experimental.Rendering.Universal
 {
-    [MovedFrom("UnityEngine.Experimental.Rendering.LWRP")] public class RenderObjectsPass : ScriptableRenderPass
+    [MovedFrom("UnityEngine.Experimental.Rendering.LWRP")] 
+    public class RenderObjectsPass //RenderObjectsPass__RR
+    : ScriptableRenderPass
     {
         RenderQueueType renderQueueType;
         FilteringSettings m_FilteringSettings;
@@ -104,7 +106,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 {
                     if (cameraData.xr.enabled)
                     {
-                        Debug.LogWarning("RenderObjects pass is configured to override camera matrices. While rendering in stereo camera matrices cannot be overridden.");
+                        Debug.LogWarning(@"RenderObjects pass is configured to override camera matrices. 
+                        While rendering in stereo camera matrices cannot be overridden.");
                     }
                     else
                     {
@@ -126,7 +129,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 context.DrawRenderers(renderingData.cullResults, ref drawingSettings, ref m_FilteringSettings,
                     ref m_RenderStateBlock);
 
-                if (m_CameraSettings.overrideCamera && m_CameraSettings.restoreCamera && !cameraData.xr.enabled)
+                if (m_CameraSettings.overrideCamera && m_CameraSettings.restoreCamera && !cameraData.xr.enabled)//非 xr
                 {
                     RenderingUtils.SetViewAndProjectionMatrices(cmd, cameraData.GetViewMatrix(), cameraData.GetGPUProjectionMatrix(), false);
                 }

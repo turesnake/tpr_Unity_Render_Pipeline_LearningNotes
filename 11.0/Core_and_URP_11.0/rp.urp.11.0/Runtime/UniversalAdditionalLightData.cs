@@ -3,10 +3,12 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.Rendering.LWRP
 {
+    /*    tpr
     [Obsolete("LWRP -> Universal (UnityUpgradable) -> UnityEngine.Rendering.Universal.UniversalAdditionalLightData", true)]
     public class LWRPAdditionalLightData
     {
     }
+    */
 }
 
 
@@ -14,7 +16,8 @@ namespace UnityEngine.Rendering.Universal
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Light))]
-    public class UniversalAdditionalLightData : MonoBehaviour
+    public class UniversalAdditionalLightData //UniversalAdditionalLightData__RR
+        : MonoBehaviour
     {
         [Tooltip("Controls if light Shadow Bias parameters use pipeline settings.")]
         [SerializeField] bool m_UsePipelineSettings = true;

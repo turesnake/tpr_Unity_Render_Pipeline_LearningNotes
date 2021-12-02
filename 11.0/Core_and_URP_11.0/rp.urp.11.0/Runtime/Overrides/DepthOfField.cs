@@ -10,7 +10,8 @@ namespace UnityEngine.Rendering.Universal
     }
 
     [Serializable, VolumeComponentMenu("Post-processing/Depth Of Field")]
-    public sealed class DepthOfField : VolumeComponent, IPostProcessComponent
+    public sealed class DepthOfField //DepthOfField__RR
+        : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("Use \"Gaussian\" for a faster but non physical depth of field; \"Bokeh\" for a more realistic but slower depth of field.")]
         public DepthOfFieldModeParameter mode = new DepthOfFieldModeParameter(DepthOfFieldMode.Off);
@@ -57,5 +58,7 @@ namespace UnityEngine.Rendering.Universal
     }
 
     [Serializable]
-    public sealed class DepthOfFieldModeParameter : VolumeParameter<DepthOfFieldMode> { public DepthOfFieldModeParameter(DepthOfFieldMode value, bool overrideState = false) : base(value, overrideState) {} }
+    public sealed class DepthOfFieldModeParameter //DepthOfFieldModeParameter__RR
+        : VolumeParameter<DepthOfFieldMode> 
+    { public DepthOfFieldModeParameter(DepthOfFieldMode value, bool overrideState = false) : base(value, overrideState) {} }
 }

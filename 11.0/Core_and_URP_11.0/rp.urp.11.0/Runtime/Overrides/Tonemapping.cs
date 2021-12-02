@@ -10,7 +10,8 @@ namespace UnityEngine.Rendering.Universal
     }
 
     [Serializable, VolumeComponentMenu("Post-processing/Tonemapping")]
-    public sealed class Tonemapping : VolumeComponent, IPostProcessComponent
+    public sealed class Tonemapping //Tonemapping__RR
+        : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("Select a tonemapping algorithm to use for the color grading process.")]
         public TonemappingModeParameter mode = new TonemappingModeParameter(TonemappingMode.None);
@@ -21,5 +22,7 @@ namespace UnityEngine.Rendering.Universal
     }
 
     [Serializable]
-    public sealed class TonemappingModeParameter : VolumeParameter<TonemappingMode> { public TonemappingModeParameter(TonemappingMode value, bool overrideState = false) : base(value, overrideState) {} }
+    public sealed class TonemappingModeParameter //TonemappingModeParameter__RR
+        : VolumeParameter<TonemappingMode> 
+    { public TonemappingModeParameter(TonemappingMode value, bool overrideState = false) : base(value, overrideState) {} }
 }

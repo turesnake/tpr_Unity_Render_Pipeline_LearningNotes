@@ -3,7 +3,8 @@ using System;
 namespace UnityEngine.Rendering.Universal
 {
     [Serializable, VolumeComponentMenu("Post-processing/Shadows, Midtones, Highlights")]
-    public sealed class ShadowsMidtonesHighlights : VolumeComponent, IPostProcessComponent
+    public sealed class ShadowsMidtonesHighlights //ShadowsMidtonesHighlights__RR
+        : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("Controls the darkest portions of the render.")]
         public Vector4Parameter shadows = new Vector4Parameter(new Vector4(1f, 1f, 1f, 0f));

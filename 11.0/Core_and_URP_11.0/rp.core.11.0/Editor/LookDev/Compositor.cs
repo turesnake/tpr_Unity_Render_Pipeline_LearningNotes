@@ -17,7 +17,8 @@ namespace UnityEditor.Rendering.LookDev
         Second
     }
 
-    class RenderTextureCache : IDisposable
+    class RenderTextureCache //RenderTextureCache__RR
+        : IDisposable
     {
         const int k_PassPerViewCount = 3;
         const int k_ViewCount = 2;
@@ -114,7 +115,8 @@ namespace UnityEditor.Rendering.LookDev
         }
     }
 
-    class Compositer : IDisposable
+    class Compositer //Compositer__RR
+        : IDisposable
     {
         public static readonly Color firstViewGizmoColor = new Color32(0, 154, 154, 255);
         public static readonly Color secondViewGizmoColor = new Color32(255, 37, 4, 255);

@@ -78,7 +78,8 @@ namespace UnityEditor.Rendering.LookDev
     /// Class containing all data used by the LookDev Window to render
     /// </summary>
     [System.Serializable]
-    public class Context : ScriptableObject, IDisposable
+    public class Context //Context__RR
+        : ScriptableObject, IDisposable
     {
         [SerializeField]
         string m_EnvironmentLibraryGUID = ""; //Empty GUID
@@ -282,7 +283,7 @@ namespace UnityEditor.Rendering.LookDev
     /// Data regarding the layout currently used in LookDev
     /// </summary>
     [System.Serializable]
-    public class LayoutContext
+    public class LayoutContext//LayoutContext__RR
     {
         /// <summary>The layout used</summary>
         public Layout viewLayout;
@@ -306,7 +307,7 @@ namespace UnityEditor.Rendering.LookDev
     /// Data container containing content of a view
     /// </summary>
     [System.Serializable]
-    public class ViewContext
+    public class ViewContext//ViewContext__RR
     {
         /// <summary>The position and rotation of the camera</summary>
         [field: SerializeField]
@@ -477,7 +478,7 @@ namespace UnityEditor.Rendering.LookDev
     /// <summary>
     /// Class that will contain debug value used.
     /// </summary>
-    public class DebugContext
+    public class DebugContext//DebugContext__RR
     {
         /// <summary>Display shadows in view.</summary>
         public bool shadow = true;

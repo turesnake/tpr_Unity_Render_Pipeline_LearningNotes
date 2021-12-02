@@ -74,10 +74,12 @@ namespace UnityEngine.Rendering.Universal
         */
         public Matrix4x4 GetViewMatrix(int viewIndex = 0)
         {
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (xr.enabled)
                 return xr.GetViewMatrix(viewIndex);
 #endif
+*/
             return m_ViewMatrix;
         }
 
@@ -87,10 +89,12 @@ namespace UnityEngine.Rendering.Universal
         */
         public Matrix4x4 GetProjectionMatrix(int viewIndex = 0)
         {
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (xr.enabled)
                 return xr.GetProjMatrix(viewIndex);
 #endif
+*/
             return m_ProjectionMatrix;
         }
 
@@ -151,20 +155,23 @@ namespace UnityEngine.Rendering.Universal
 
         public bool requiresOpaqueTexture;
 
-
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
         public bool xrRendering;
 #endif
+*/
 
 
         internal bool requireSrgbConversion
         {
             get
             {
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                 if (xr.enabled)
                     return !xr.renderTargetDesc.sRGB && (QualitySettings.activeColorSpace == ColorSpace.Linear);
 #endif
+*/
                 // 这个 Display 猜测是个未公开的 class;
                 return Display.main.requiresSrgbBlitToBackbuffer;
             }
@@ -172,6 +179,7 @@ namespace UnityEngine.Rendering.Universal
 
         
         // True if the camera rendering is for the scene window in the editor
+        // 仅在 editor 中存在
         public bool isSceneViewCamera => cameraType==CameraType.SceneView;
 
         
@@ -189,7 +197,7 @@ namespace UnityEngine.Rendering.Universal
             (比如 _CameraColorTexture, _CameraDepthAttachment )
             
             you need to check this flag to know if you should flip the matrix 
-            when rendering with for cmd.Draw* and reading from camera textures.
+            when rendering with for cmd.Draw* (如: "cmd.DrawMesh()") and reading from camera textures.
 
             tpr:
                 简而言之, 如果 平台是 d3d 类的, 同时当前渲染又正在写入 render texture,
@@ -203,11 +211,13 @@ namespace UnityEngine.Rendering.Universal
 
             if (renderer != null)
             {
-                bool renderingToBackBufferTarget = renderer.cameraColorTarget == BuiltinRenderTextureType.CameraTarget;
+                bool renderingToBackBufferTarget = renderer.cameraColorTarget==BuiltinRenderTextureType.CameraTarget;
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                 if (xr.enabled)
                     renderingToBackBufferTarget |= renderer.cameraColorTarget == xr.renderTarget && !xr.renderTargetIsRenderTexture;
 #endif
+*/
                 bool renderingToTexture = !renderingToBackBufferTarget || targetTexture!=null;
                 return SystemInfo.graphicsUVStartsAtTop && renderingToTexture;
             }
@@ -215,11 +225,15 @@ namespace UnityEngine.Rendering.Universal
         }
 
 
+
         /*
             enum: 几种物体排序方法, flags 可以组合;
         */
         public SortingCriteria defaultOpaqueSortFlags;
 
+        /*
+            只要不加载 xr,vr package, xr.enable 就为 false
+        */
         internal XRPass xr;
 
         /*
@@ -335,6 +349,9 @@ namespace UnityEngine.Rendering.Universal
         public static readonly int scaledScreenParams = Shader.PropertyToID("_ScaledScreenParams");
         public static readonly int worldSpaceCameraPos = Shader.PropertyToID("_WorldSpaceCameraPos");
         public static readonly int screenParams = Shader.PropertyToID("_ScreenParams");
+
+        // 按照 "ScriptableRenderer" 中的说法, 这个变量现在依靠 "context.SetupCameraProperties" 来配置,
+        // urp 暂不自行配置
         public static readonly int projectionParams = Shader.PropertyToID("_ProjectionParams");
         public static readonly int zBufferParams = Shader.PropertyToID("_ZBufferParams");
         public static readonly int orthoParams = Shader.PropertyToID("unity_OrthoParams");
@@ -370,7 +387,9 @@ namespace UnityEngine.Rendering.Universal
         public bool useFastSRGBLinearConversion;
     }
 
-    public static class ShaderKeywordStrings
+
+
+    public static class ShaderKeywordStrings//ShaderKeywordStrings__RR
     {
         public static readonly string MainLightShadows = "_MAIN_LIGHT_SHADOWS";
         public static readonly string MainLightShadowCascades = "_MAIN_LIGHT_SHADOWS_CASCADE";
@@ -384,10 +403,12 @@ namespace UnityEngine.Rendering.Universal
         public static readonly string LightmapShadowMixing = "LIGHTMAP_SHADOW_MIXING";
         public static readonly string ShadowsShadowMask = "SHADOWS_SHADOWMASK";
 
+        // 1,2,4,8 4种中只能启用一种
         public static readonly string DepthNoMsaa = "_DEPTH_NO_MSAA";
         public static readonly string DepthMsaa2 = "_DEPTH_MSAA_2";
         public static readonly string DepthMsaa4 = "_DEPTH_MSAA_4";
         public static readonly string DepthMsaa8 = "_DEPTH_MSAA_8";
+
 
         public static readonly string LinearToSRGBConversion = "_LINEAR_TO_SRGB_CONVERSION";
         internal static readonly string UseFastSRGBLinearConversion = "_USE_FAST_SRGB_LINEAR_CONVERSION";
@@ -432,11 +453,14 @@ namespace UnityEngine.Rendering.Universal
         public static readonly string _CLEARCOAT = "_CLEARCOAT";
         public static readonly string _CLEARCOATMAP = "_CLEARCOATMAP";
 
-        // XR
+        // XR;  目前看来确实只有 加载了 xr/vr package 的程序, 才能启用此 keyword
         public static readonly string UseDrawProcedural = "_USE_DRAW_PROCEDURAL";
     }
 
-    public sealed partial class UniversalRenderPipeline
+
+
+    //==========================================================================================================:
+    public sealed partial class UniversalRenderPipeline//UniversalRenderPipeline__RR_2
     {
         // Holds light direction for directional lights or position for punctual lights.
         // When w is set to 1.0, it means it's a punctual light.
@@ -514,7 +538,7 @@ namespace UnityEngine.Rendering.Universal
         }
         */
 
-
+/*   tpr
 #if ENABLE_VR && ENABLE_VR_MODULE
         static List<XR.XRDisplaySubsystem> displaySubsystemList = new List<XR.XRDisplaySubsystem>();
         static XR.XRDisplaySubsystem GetFirstXRDisplaySubsystem()
@@ -534,7 +558,7 @@ namespace UnityEngine.Rendering.Universal
         // when a render pass requires camera color as input.
         internal static bool IsRunningHololens(CameraData cameraData)
         {
-#if PLATFORM_WINRT
+    #if PLATFORM_WINRT
             if (cameraData.xr.enabled)
             {
                 var platform = Application.platform;
@@ -546,11 +570,12 @@ namespace UnityEngine.Rendering.Universal
                         return true;
                 }
             }
-#endif
+    #endif
             return false;
         }
 
 #endif
+*/
 
         Comparison<Camera> cameraComparison = (camera1, camera2) => { return (int)camera1.depth - (int)camera2.depth; };
 #if UNITY_2021_1_OR_NEWER
@@ -798,7 +823,10 @@ namespace UnityEngine.Rendering.Universal
         }
     }
 
-    internal enum URPProfileId
+
+
+
+    internal enum URPProfileId//URPProfileId__
     {
         // CPU
         UniversalRenderTotal,

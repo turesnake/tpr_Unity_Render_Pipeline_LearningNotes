@@ -4,7 +4,8 @@ using UnityEngine.Rendering.Universal;
 namespace UnityEditor.Rendering.Universal
 {
     [CustomEditor(typeof(ScreenSpaceAmbientOcclusion))]
-    internal class ScreenSpaceAmbientOcclusionEditor : Editor
+    internal class ScreenSpaceAmbientOcclusionEditor //ScreenSpaceAmbientOcclusionEditor__RR
+        : Editor
     {
         #region Serialized Properties
         private SerializedProperty m_Downsample;

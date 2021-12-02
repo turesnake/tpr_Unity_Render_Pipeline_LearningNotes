@@ -2,6 +2,7 @@
 // - XRDisplaySubsystem from the XR SDK
 // - the test automated test framework
 
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
 
 using System;
@@ -547,3 +548,4 @@ namespace UnityEngine.Rendering.Universal
 }
 
 #endif
+*/

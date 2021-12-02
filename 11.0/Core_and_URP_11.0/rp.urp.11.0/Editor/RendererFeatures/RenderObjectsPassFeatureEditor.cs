@@ -9,7 +9,8 @@ using System.Reflection;
 namespace UnityEditor.Experimental.Rendering.Universal
 {
     [CustomPropertyDrawer(typeof(RenderObjects.RenderObjectsSettings), true)]
-    internal class RenderObjectsPassFeatureEditor : PropertyDrawer
+    internal class RenderObjectsPassFeatureEditor //RenderObjectsPassFeatureEditor__RR
+        : PropertyDrawer
     {
         internal class Styles
         {

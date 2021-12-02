@@ -5,7 +5,8 @@ namespace UnityEngine.Rendering.Universal.Internal
     /// <summary>
     /// Renders a shadow map for the main Light.
     /// </summary>
-    public class MainLightShadowCasterPass : ScriptableRenderPass
+    public class MainLightShadowCasterPass //MainLightShadowCasterPass__RR
+        : ScriptableRenderPass
     {
         private static class MainLightShadowConstantBuffer
         {

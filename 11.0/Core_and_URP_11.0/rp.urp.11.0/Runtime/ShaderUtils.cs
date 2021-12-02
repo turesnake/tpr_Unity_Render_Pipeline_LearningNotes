@@ -19,7 +19,8 @@ namespace UnityEngine.Rendering.Universal
         SpeedTree8,
     }
 
-    [MovedFrom("UnityEngine.Rendering.LWRP")] public static class ShaderUtils
+    [MovedFrom("UnityEngine.Rendering.LWRP")] 
+    public static class ShaderUtils//ShaderUtils__RR
     {
         static readonly string[] s_ShaderPaths  =
         {

@@ -244,6 +244,8 @@ namespace UnityEngine.Rendering.Universal
 
             用本函数来取代: "CommandBuffer.SetRenderTarget()"
             本函数应该在 "ScriptableRenderPass.Configure()" 体内调用; (见本文件下方)
+            tpr:
+                源码中也看到在 "ScriptableRenderPass.OnCameraSetup()" 体内被调用;
         */
         public void ConfigureTarget(RenderTargetIdentifier colorAttachment, RenderTargetIdentifier depthAttachment)
         {
@@ -286,7 +288,11 @@ namespace UnityEngine.Rendering.Universal
 
         /*
             Configures clearing for the render targets for this render pass.
+            --
+            配置本 render targets 的 clear 设置;
             本函数应该在 "ScriptableRenderPass.Configure()" 体内调用; (见本文件下方)
+            tpr:
+                源码中也看到在 "ScriptableRenderPass.OnCameraSetup()" 体内被调用;
         */
         public void ConfigureClear(ClearFlag clearFlag, Color clearColor)
         {
@@ -314,16 +320,11 @@ namespace UnityEngine.Rendering.Universal
             永远不要调用 "CommandBuffer.SetRenderTarget()", 
             而要改用 本文件内的 "ConfigureTarget()", "ConfigureClear()" 函数;
             管线能保证高效地 "setup target" 和 "clear target";
-
-            参数:
-            cmd:
-                CommandBuffer to enqueue rendering commands. This will be executed by the pipeline;
-                将需要的 渲染指令 安排进 render queue; 
-
-            renderingData:
-                Current rendering state information
-
         */
+        /// <param name="cmd">CommandBuffer to enqueue rendering commands. This will be executed by the pipeline;
+        ///                     将需要的 渲染指令 安排进 render queue; 
+        /// </param>
+        /// <param name="renderingData">Current rendering state information</param>
         public virtual void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {}
 
@@ -343,14 +344,11 @@ namespace UnityEngine.Rendering.Universal
             永远不要调用 "CommandBuffer.SetRenderTarget()", 
             而要改用 本文件内的 "ConfigureTarget()", "ConfigureClear()" 函数;
             管线能保证高效地 "setup target" 和 "clear target";
-
-            参数:
-            cmd:
-                    CommandBuffer to enqueue rendering commands. This will be executed by the pipeline;
-                    将需要的 渲染指令 安排进 render queue; 
-            cameraTextureDescriptor
-                    描述了 camera render target 的细节;
         */
+        /// <param name="cmd">CommandBuffer to enqueue rendering commands. This will be executed by the pipeline;
+        ///                     将需要的 渲染指令 安排进 render queue; 
+        /// </param>
+        /// <param name="cameraTextureDescriptor">描述了 camera render target 的细节;</param>
         public virtual void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
         {}
 
@@ -363,11 +361,8 @@ namespace UnityEngine.Rendering.Universal
             可在此函数体内释放本 render pass 新建的所有资源;
 
             本函数会清理 camera stack 中的所有 cameras;
-
-            参数:
-            cmd:
-                Use this CommandBuffer to cleanup any generated data
         */
+        /// <param name="cmd">Use this CommandBuffer to cleanup any generated data</param>
         public virtual void OnCameraCleanup(CommandBuffer cmd)
         {}
 
@@ -399,25 +394,18 @@ namespace UnityEngine.Rendering.Universal
             使用参数 context 来发送 绘制指令, 执行 commandbuffers;
 
             不需要在本函数实现体内 调用 "ScriptableRenderContext.submit()", 渲染管线会在何时的时间点自动调用它;
-
-            参数:
-            context:
-                Use this render context to issue(发射) any draw commands during execution
-
-            renderingData:
-                Current rendering state information
         */
+        /// <param name="context">Use this render context to issue(发射) any draw commands during execution</param>
+        /// <param name="renderingData">Current rendering state information</param>
         public abstract void Execute(ScriptableRenderContext context, ref RenderingData renderingData);
 
 
-        // 已看 ---
-        /// <summary>
-        /// Add a blit command to the context for execution. 
-        /// This changes the active render target in the ScriptableRenderer to destination.
-        /// 
-        /// 本函数会将 "ScriptableRenderer" 的 active render target 改写为 参数 destination 设置的值;
-        /// 
-        /// </summary>
+        /*
+            Add a blit command to the context for execution. 
+            This changes the active render target in the ScriptableRenderer to destination.
+            --
+            本函数会将 "ScriptableRenderer" 的 active render target 改写为 参数 destination 设置的值;
+        */
         /// <param name="cmd">Command buffer to record command for execution.</param>
         /// <param name="source">Source texture or target identifier to blit from.</param>
         /// <param name="destination">Destination texture or target identifier to blit into. 

@@ -39,7 +39,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
 {
     namespace LibTessDotNet
     {
-        internal class PriorityQueue<TValue> where TValue : class
+        internal class PriorityQueue<TValue> //PriorityQueue__RR
+            where TValue : class
         {
             private PriorityHeap<TValue>.LessOrEqual _leq;
             private PriorityHeap<TValue> _heap;

@@ -1,6 +1,6 @@
 namespace UnityEngine.Rendering.Universal
 {
-    public static class ComponentUtility
+    public static class ComponentUtility//ComponentUtility__RR
     {
         /// <summary> Check if the provided camera is compatible with Universal Render Pipeline </summary>
         /// <param name="camera">The Camera to check</param>

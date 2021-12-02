@@ -12,10 +12,11 @@ namespace UnityEngine.Experimental.Rendering.Universal
     }
 
     [ExcludeFromPreset]
-    [MovedFrom("UnityEngine.Experimental.Rendering.LWRP")] public class RenderObjects : ScriptableRendererFeature
+    [MovedFrom("UnityEngine.Experimental.Rendering.LWRP")] public class RenderObjects //RenderObjects__RR
+        : ScriptableRendererFeature
     {
         [System.Serializable]
-        public class RenderObjectsSettings
+        public class RenderObjectsSettings//RenderObjectsSettings__RR
         {
             public string passTag = "RenderObjectsFeature";
             public RenderPassEvent Event = RenderPassEvent.AfterRenderingOpaques;
@@ -35,7 +36,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
         }
 
         [System.Serializable]
-        public class FilterSettings
+        public class FilterSettings//FilterSettings__RR
         {
             // TODO: expose opaque, transparent, all ranges as drop down
             public RenderQueueType RenderQueueType;
@@ -50,7 +51,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
         }
 
         [System.Serializable]
-        public class CustomCameraSettings
+        public class CustomCameraSettings//CustomCameraSettings__RR
         {
             public bool overrideCamera = false;
             public bool restoreCamera = true;

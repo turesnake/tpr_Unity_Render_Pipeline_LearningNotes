@@ -76,6 +76,7 @@ namespace UnityEngine.Rendering.Universal
         PerPixel = 1,
     }
 
+    // Shader Variant Log Level
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
     public enum ShaderVariantLogLevel//ShaderVariantLogLevel__
     {
@@ -83,6 +84,7 @@ namespace UnityEngine.Rendering.Universal
         OnlyUniversalRPShaders,
         AllShaders,
     }
+
 
     /*
     [Obsolete("PipelineDebugLevel is unused and has no effect.", false)]
@@ -111,44 +113,63 @@ namespace UnityEngine.Rendering.Universal
     }
     
 
+
+
+    /*
+        =================================================================================================================:
+        全 urp 唯一一个 RenderPipelineAsset 派生类;
+    */
     [ExcludeFromPreset]
-    public partial class UniversalRenderPipelineAsset /*UniversalRenderPipelineAsset__RR*/
+    public partial class UniversalRenderPipelineAsset //UniversalRenderPipelineAsset__RR
         : RenderPipelineAsset, ISerializationCallbackReceiver
     {
         Shader m_DefaultShader;
+
+
+        // 就是 inspector 中的 "Renderer List", 通常放入一个 "Forward Renderer" 实例;
         ScriptableRenderer[] m_Renderers = new ScriptableRenderer[1];
 
         // Default values set when a new UniversalRenderPipeline asset is created
+        // 版本管理用, 
         [SerializeField] int k_AssetVersion = 9;
         [SerializeField] int k_AssetPreviousVersion = 9;
 
-        // Deprecated settings for upgrading sakes
+        // Deprecated settings for upgrading sakes 已弃用的升级设置
         [SerializeField] RendererType m_RendererType = RendererType.ForwardRenderer;
         [EditorBrowsable(EditorBrowsableState.Never)]
         [SerializeField] internal ScriptableRendererData m_RendererData = null;
 
-        // Renderer settings
+
+        // ----- Renderer settings -----:
         [SerializeField] internal ScriptableRendererData[] m_RendererDataList = new ScriptableRendererData[1];
         [SerializeField] internal int m_DefaultRendererIndex = 0;
 
-        // General settings
-        [SerializeField] bool m_RequireDepthTexture = false;
-        [SerializeField] bool m_RequireOpaqueTexture = false;
-        [SerializeField] Downsampling m_OpaqueDownsampling = Downsampling._2xBilinear;
-        [SerializeField] bool m_SupportsTerrainHoles = true;
 
-        // Quality settings
+        // ----- General settings -----:
+        [SerializeField] bool m_RequireDepthTexture = false; // 需要 copy depth texture
+        [SerializeField] bool m_RequireOpaqueTexture = false;// 需要 copy opaque color texture
+
+        // 若上面 启用了 "Opaque color Texture", 本变量可被使用;
+        // 可用本变量来设置 Opaque Texture 的采样模式:
+        [SerializeField] Downsampling m_OpaqueDownsampling = Downsampling._2xBilinear;
+
+        //若禁用此项, urp 将移除所有 "Terrain hole Shader variants", 以节省 build 时间;
+        [SerializeField] bool m_SupportsTerrainHoles = true; 
+
+
+        // ----- Quality settings -----:
         [SerializeField] bool m_SupportsHDR = true;
         [SerializeField] MsaaQuality m_MSAA = MsaaQuality.Disabled;
         [SerializeField] float m_RenderScale = 1.0f;
         // TODO: Shader Quality Tiers
 
-        // Main directional light Settings
+
+        // ----- Main directional light Settings -----:
         [SerializeField] LightRenderingMode m_MainLightRenderingMode = LightRenderingMode.PerPixel;
         [SerializeField] bool m_MainLightShadowsSupported = true;
         [SerializeField] ShadowResolution m_MainLightShadowmapResolution = ShadowResolution._2048;
 
-        // Additional lights settings
+        // ----- Additional lights settings -----:
         [SerializeField] LightRenderingMode m_AdditionalLightsRenderingMode = LightRenderingMode.PerPixel;
         [SerializeField] int m_AdditionalLightsPerObjectLimit = 4;
         [SerializeField] bool m_AdditionalLightShadowsSupported = false;
@@ -158,7 +179,7 @@ namespace UnityEngine.Rendering.Universal
         [SerializeField] int m_AdditionalLightsShadowResolutionTierMedium = AdditionalLightsDefaultShadowResolutionTierMedium;
         [SerializeField] int m_AdditionalLightsShadowResolutionTierHigh = AdditionalLightsDefaultShadowResolutionTierHigh;
 
-        // Shadows Settings
+        // ----- Shadows Settings -----:
         [SerializeField] float m_ShadowDistance = 50.0f;
         [SerializeField] int m_ShadowCascadeCount = 1;
         [SerializeField] float m_Cascade2Split = 0.25f;
@@ -168,7 +189,7 @@ namespace UnityEngine.Rendering.Universal
         [SerializeField] float m_ShadowNormalBias = 1.0f;
         [SerializeField] bool m_SoftShadowsSupported = false;
 
-        // Advanced settings
+        // ----- Advanced settings -----:
         [SerializeField] bool m_UseSRPBatcher = true;
         [SerializeField] bool m_SupportsDynamicBatching = false;
         [SerializeField] bool m_MixedLightingSupported = true;
@@ -178,22 +199,26 @@ namespace UnityEngine.Rendering.Universal
         */
 
 
-        // Adaptive performance settings
+        // ----- Adaptive(自适应) performance settings -----:
         [SerializeField] bool m_UseAdaptivePerformance = true;
 
-        // Post-processing settings
+        // ----- Post-processing settings -----:
         [SerializeField] ColorGradingMode m_ColorGradingMode = ColorGradingMode.LowDynamicRange;
         [SerializeField] int m_ColorGradingLutSize = 32;
         [SerializeField] bool m_UseFastSRGBLinearConversion = false;
 
-        // Deprecated settings
+
+        // ===== Deprecated settings =====:
+        /*    tpr
         [SerializeField] ShadowQuality m_ShadowType = ShadowQuality.HardShadows;
         [SerializeField] bool m_LocalShadowsSupported = false;
         [SerializeField] ShadowResolution m_LocalShadowsAtlasResolution = ShadowResolution._256;
         [SerializeField] int m_MaxPixelLights = 0;
         [SerializeField] ShadowResolution m_ShadowAtlasResolution = ShadowResolution._256;
+        */
 
         [SerializeField] ShaderVariantLogLevel m_ShaderVariantLogLevel = ShaderVariantLogLevel.Disabled;
+        
 
         // Note: A lut size of 16^3 is barely usable with the HDR grading mode. 32 should be the
         // minimum, the lut being encoded in log. Lower sizes would work better with an additional
@@ -201,9 +226,12 @@ namespace UnityEngine.Rendering.Universal
         public const int k_MinLutSize = 16;
         public const int k_MaxLutSize = 65;
 
+        // shadow cascade 级数
         internal const int k_ShadowCascadeMinCount = 1;
         internal const int k_ShadowCascadeMaxCount = 4;
 
+
+        // add light 的 default shadow tier 分辨率
         public static readonly int AdditionalLightsDefaultShadowResolutionTierLow = 256;
         public static readonly int AdditionalLightsDefaultShadowResolutionTierMedium = 512;
         public static readonly int AdditionalLightsDefaultShadowResolutionTierHigh = 1024;
@@ -231,7 +259,8 @@ namespace UnityEngine.Rendering.Universal
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812")]
-        internal class CreateUniversalPipelineAsset : EndNameEditAction
+        internal class CreateUniversalPipelineAsset //CreateUniversalPipelineAsset__RR
+            : EndNameEditAction
         {
             public override void Action(int instanceId, string pathName, string resourceFile)
             {
@@ -296,7 +325,7 @@ namespace UnityEngine.Rendering.Universal
                 return m_EditorResourcesAsset;
             }
         }
-#endif
+#endif //UNITY_EDITOR 
 
         public ScriptableRendererData LoadBuiltinRendererData(RendererType type = RendererType.ForwardRenderer)
         {
@@ -310,15 +339,26 @@ namespace UnityEngine.Rendering.Universal
 #endif
         }
 
+
+        /*
+            -------------------------------------------------------------------------------------------------------:
+            由我们来实现此 abstract 函数
+            在程序渲染第一帧之前,unity 会主动调用此函数
+            如果运行中途, RenderPipelineAsset 的一个设置发生了改变, unity 会销毁当前的 Render Pipe Instance
+            然后在下一帧之前,重新调用本函数
+        */
         protected override RenderPipeline CreatePipeline()
         {
+            // -----------------------------------:
+            // 一些资源 和 version 检测;
             if (m_RendererDataList == null)
                 m_RendererDataList = new ScriptableRendererData[1];
 
             // If no default data we can't create pipeline instance
             if (m_RendererDataList[m_DefaultRendererIndex] == null)
             {
-                // If previous version and current version are miss-matched then we are waiting for the upgrader to kick in
+                // If previous version and current version are miss-matched, then we are waiting for the upgrader to kick in
+                // 如果 上一个版本 和 当前版本不匹配, 那我们就等待 upgrader 的介入;
                 if (k_AssetPreviousVersion != k_AssetVersion)
                     return null;
 
@@ -328,9 +368,15 @@ namespace UnityEngine.Rendering.Universal
                 return null;
             }
 
+            // ------------------------------------:
+            // 正式创建;
             CreateRenderers();
             return new UniversalRenderPipeline(this);
         }
+
+
+
+
 
         void DestroyRenderers()
         {
@@ -368,6 +414,8 @@ namespace UnityEngine.Rendering.Universal
             base.OnDisable();
         }
 
+
+
         void CreateRenderers()
         {
             DestroyRenderers();
@@ -381,6 +429,8 @@ namespace UnityEngine.Rendering.Universal
                     m_Renderers[i] = m_RendererDataList[i].InternalCreateRenderer();
             }
         }
+
+
 
         Material GetMaterial(DefaultMaterialType materialType)
         {
@@ -887,9 +937,9 @@ namespace UnityEngine.Rendering.Universal
 #endif
 
         public void OnBeforeSerialize()
-        {
-        }
+        {}
 
+        //   版本管理 
         public void OnAfterDeserialize()
         {
             if (k_AssetVersion < 3)

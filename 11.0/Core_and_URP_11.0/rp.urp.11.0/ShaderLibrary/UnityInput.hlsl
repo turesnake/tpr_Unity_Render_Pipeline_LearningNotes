@@ -102,12 +102,26 @@ float4 _ZBufferParams;
 // w = 1.0 if camera is ortho, 0.0 if perspective
 float4 unity_OrthoParams;
 
-// scaleBias.x = flipSign
-// scaleBias.y = scale
-// scaleBias.z = bias
-// scaleBias.w = unused
+
+/*
+    scaleBias.x = flipSign; 
+    scaleBias.y = scale
+    scaleBias.z = bias
+    scaleBias.w = unused
+    -----
+    其实这几个分量都被用到了...
+*/
 uniform float4 _ScaleBias;
+
+/*
+    这个值有时可能和 _ScaleBias 是相同得;
+    ---
+    x:  如果: 非opengl平台 且要写入 render texture, 此值为 -1, 
+        表示需要 用户手动执行 uv 值 y方向的翻转;
+*/
 uniform float4 _ScaleBiasRt;
+
+
 
 float4 unity_CameraWorldClipPlanes[6];
 

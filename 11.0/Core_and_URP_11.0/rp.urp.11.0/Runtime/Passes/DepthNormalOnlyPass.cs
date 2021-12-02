@@ -2,7 +2,8 @@ using System;
 
 namespace UnityEngine.Rendering.Universal.Internal
 {
-    public class DepthNormalOnlyPass : ScriptableRenderPass
+    public class DepthNormalOnlyPass //DepthNormalOnlyPass__RR
+        : ScriptableRenderPass
     {
         internal RenderTextureDescriptor normalDescriptor { get; private set; }
         internal RenderTextureDescriptor depthDescriptor { get; private set; }

@@ -3,7 +3,8 @@ using System;
 namespace UnityEngine.Rendering.Universal
 {
     [Serializable, VolumeComponentMenu("Post-processing/Bloom")]
-    public sealed class Bloom : VolumeComponent, IPostProcessComponent
+    public sealed class Bloom //Bloom__RR
+        : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("Filters out pixels under this level of brightness. Value is in gamma-space.")]
         public MinFloatParameter threshold = new MinFloatParameter(0.9f, 0f);

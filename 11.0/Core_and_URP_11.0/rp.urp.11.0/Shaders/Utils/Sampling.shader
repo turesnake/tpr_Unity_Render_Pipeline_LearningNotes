@@ -17,6 +17,7 @@ Shader "Hidden/Universal Render Pipeline/Sampling"
             #pragma vertex FullscreenVert
             #pragma fragment FragBoxDownsample
 
+            // xr 才启用
             #pragma multi_compile _ _USE_DRAW_PROCEDURAL
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/Utils/Fullscreen.hlsl"

@@ -18,7 +18,8 @@ namespace UnityEngine.Rendering.Universal
     }
 
     [Serializable, VolumeComponentMenu("Post-processing/FilmGrain")]
-    public sealed class FilmGrain : VolumeComponent, IPostProcessComponent
+    public sealed class FilmGrain //FilmGrain__RR
+        : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("The type of grain to use. You can select a preset or provide your own texture by selecting Custom.")]
         public FilmGrainLookupParameter type = new FilmGrainLookupParameter(FilmGrainLookup.Thin1);
@@ -38,5 +39,7 @@ namespace UnityEngine.Rendering.Universal
     }
 
     [Serializable]
-    public sealed class FilmGrainLookupParameter : VolumeParameter<FilmGrainLookup> { public FilmGrainLookupParameter(FilmGrainLookup value, bool overrideState = false) : base(value, overrideState) {} }
+    public sealed class FilmGrainLookupParameter //FilmGrainLookupParameter__RR
+        : VolumeParameter<FilmGrainLookup> 
+    { public FilmGrainLookupParameter(FilmGrainLookup value, bool overrideState = false) : base(value, overrideState) {} }
 }

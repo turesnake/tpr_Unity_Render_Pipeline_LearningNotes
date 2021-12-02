@@ -192,20 +192,21 @@ namespace UnityEngine.Experimental.Rendering.Universal
         /// </summary>
         public float intensity { get => m_Intensity; set => m_Intensity = value; }
 
-        /// <summary>
+        /*    tpr
         /// The lights current intensity
-        /// </summary>
-        ///
-        [Obsolete]
-        public float volumeOpacity => m_LightVolumeIntensity;
+        [Obsolete]public float volumeOpacity => m_LightVolumeIntensity;
+        */
+
         public float volumeIntensity => m_LightVolumeIntensity;
 
         public bool volumeIntensityEnabled { get => m_LightVolumeIntensityEnabled; set => m_LightVolumeIntensityEnabled = value; }
         public Sprite lightCookieSprite { get { return m_LightType != LightType.Point ? m_LightCookieSprite : m_DeprecatedPointLightCookieSprite; } }
         public float falloffIntensity => m_FalloffIntensity;
 
-        [Obsolete]
-        public bool alphaBlendOnOverlap { get { return m_OverlapOperation == OverlapOperation.AlphaBlend; }}
+        /*    tpr
+        [Obsolete]public bool alphaBlendOnOverlap { get { return m_OverlapOperation == OverlapOperation.AlphaBlend; }}
+        */
+
         public OverlapOperation overlapOperation => m_OverlapOperation;
 
         public int lightOrder { get => m_LightOrder; set => m_LightOrder = value; }

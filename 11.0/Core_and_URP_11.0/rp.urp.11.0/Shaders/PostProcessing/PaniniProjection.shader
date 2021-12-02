@@ -5,6 +5,8 @@ Shader "Hidden/Universal Render Pipeline/PaniniProjection"
         #pragma exclude_renderers gles
 
         #pragma multi_compile_local _GENERIC _UNIT_DISTANCE
+
+        // xr 才启用
         #pragma multi_compile _ _USE_DRAW_PROCEDURAL
 
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"

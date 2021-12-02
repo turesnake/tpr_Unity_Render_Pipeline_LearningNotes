@@ -5,7 +5,8 @@ namespace UnityEngine.Rendering.Universal.Internal
     /// <summary>
     /// Calculate min and max depth per screen tile for tiled-based deferred shading.
     /// </summary>
-    internal class TileDepthRangePass : ScriptableRenderPass
+    internal class TileDepthRangePass //TileDepthRangePass__RR
+        : ScriptableRenderPass
     {
         DeferredLights m_DeferredLights;
         int m_PassIndex = 0;

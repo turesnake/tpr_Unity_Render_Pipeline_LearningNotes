@@ -9,7 +9,7 @@ namespace UnityEditor.Rendering
     /// <summary>
     /// A custom curve editor made to be embedded in the inspector instead of a separate window.
     /// </summary>
-    public sealed class InspectorCurveEditor
+    public sealed class InspectorCurveEditor//InspectorCurveEditor__RR
     {
         enum EditMode
         {

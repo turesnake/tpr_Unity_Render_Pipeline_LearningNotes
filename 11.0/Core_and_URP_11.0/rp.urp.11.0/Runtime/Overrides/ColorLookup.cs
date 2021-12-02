@@ -4,7 +4,8 @@ using UnityEngine.Experimental.Rendering;
 namespace UnityEngine.Rendering.Universal
 {
     [Serializable, VolumeComponentMenu("Post-processing/Color Lookup")]
-    public sealed class ColorLookup : VolumeComponent, IPostProcessComponent
+    public sealed class ColorLookup //ColorLookup__RR
+        : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("A custom 2D texture lookup table to apply.")]
         public TextureParameter texture = new TextureParameter(null);

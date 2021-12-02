@@ -3,7 +3,8 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.Rendering.Universal
 {
-    class ShaderData : IDisposable
+    class ShaderData //ShaderData__RR
+        : IDisposable
     {
         static ShaderData m_Instance = null;
         ComputeBuffer m_LightDataBuffer = null;

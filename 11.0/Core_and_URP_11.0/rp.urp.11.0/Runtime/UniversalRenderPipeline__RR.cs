@@ -1,10 +1,12 @@
 using System;
 using Unity.Collections;
 using System.Collections.Generic;
+
 #if UNITY_EDITOR
-using UnityEditor;
-using UnityEditor.Rendering.Universal;
+    using UnityEditor;
+    using UnityEditor.Rendering.Universal;
 #endif
+
 using UnityEngine.Scripting.APIUpdating;
 using Lightmapping = UnityEngine.Experimental.GlobalIllumination.Lightmapping;
 using UnityEngine.Experimental.Rendering;
@@ -25,7 +27,11 @@ namespace UnityEngine.Rendering.LWRP
 
 namespace UnityEngine.Rendering.Universal
 {
-    public sealed partial class UniversalRenderPipeline : RenderPipeline
+    /*
+        全 urp 中唯一一个 "RenderPipeline" 派生类;
+    */
+    public sealed partial class UniversalRenderPipeline //UniversalRenderPipeline__RR_1
+        : RenderPipeline
     {
         public const string k_ShaderTagName = "UniversalPipeline";
 
@@ -96,11 +102,11 @@ namespace UnityEngine.Rendering.Universal
                 };
             };
         }
-
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
         internal static XRSystem m_XRSystem = new XRSystem();
 #endif
-
+*/
         public static float maxShadowBias
         {
             get => 10.0f;
@@ -142,6 +148,9 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
+        /*
+            构造函数 -----------------------------------------------------------------------:
+        */
         public UniversalRenderPipeline(UniversalRenderPipelineAsset asset)
         {
             SetSupportedRenderingFeatures();
@@ -154,14 +163,18 @@ namespace UnityEngine.Rendering.Universal
             if (msaaSampleCountNeedsUpdate)
             {
                 QualitySettings.antiAliasing = asset.msaaSampleCount;
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                 XRSystem.UpdateMSAALevel(asset.msaaSampleCount);
 #endif
+*/
             }
 
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             XRSystem.UpdateRenderScale(asset.renderScale);
 #endif
+*/
             // For compatibility reasons we also match old LightweightPipeline tag.
             Shader.globalRenderPipeline = "UniversalPipeline,LightweightPipeline";
 
@@ -172,6 +185,11 @@ namespace UnityEngine.Rendering.Universal
             RenderingUtils.ClearSystemInfoCache();
         }
 
+
+
+
+
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
@@ -180,10 +198,11 @@ namespace UnityEngine.Rendering.Universal
             SupportedRenderingFeatures.active = new SupportedRenderingFeatures();
             ShaderData.instance.Dispose();
             DeferredShaderData.instance.Dispose();
-
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             m_XRSystem?.Dispose();
 #endif
+*/
 
 #if UNITY_EDITOR
             SceneViewDrawMode.ResetDrawMode();
@@ -192,13 +211,16 @@ namespace UnityEngine.Rendering.Universal
             CameraCaptureBridge.enabled = false;
         }
 
+    // ===================================================================================================:
+    // 区别仅仅是 参数 cameras 的类型是 array 还是 List<>;
+
 #if UNITY_2021_1_OR_NEWER
         protected override void Render(ScriptableRenderContext renderContext,  Camera[] cameras)
         {
             Render(renderContext, new List<Camera>(cameras));
         }
-
 #endif
+
 
 #if UNITY_2021_1_OR_NEWER
         protected override void Render(ScriptableRenderContext renderContext, List<Camera> cameras)
@@ -225,12 +247,12 @@ namespace UnityEngine.Rendering.Universal
             GraphicsSettings.lightsUseLinearIntensity = (QualitySettings.activeColorSpace == ColorSpace.Linear);
             GraphicsSettings.useScriptableRenderPipelineBatching = asset.useSRPBatcher;
             SetupPerFrameShaderConstants();
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             // Update XR MSAA level per frame.
             XRSystem.UpdateMSAALevel(asset.msaaSampleCount);
 #endif
-
-
+*/
             SortCameras(cameras);
 #if UNITY_2021_1_OR_NEWER
             for (int i = 0; i < cameras.Count; ++i)
@@ -274,7 +296,11 @@ namespace UnityEngine.Rendering.Universal
                 EndFrameRendering(renderContext, cameras);
             }
 #endif
-        }
+        }//Render end
+
+
+
+
 
         /// <summary>
         /// Standalone camera rendering. Use this to render procedural cameras.
@@ -305,6 +331,7 @@ namespace UnityEngine.Rendering.Universal
 
         static bool TryGetCullingParameters(CameraData cameraData, out ScriptableCullingParameters cullingParams)
         {
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.enabled)
             {
@@ -317,6 +344,7 @@ namespace UnityEngine.Rendering.Universal
                 return true;
             }
 #endif
+*/
 
             return cameraData.camera.TryGetCullingParameters(false, out cullingParams);
         }
@@ -341,6 +369,8 @@ namespace UnityEngine.Rendering.Universal
                 return;
 
             ScriptableRenderer.current = renderer;
+
+            // 是否为 editro: scene 窗口 使用的 camera;
             bool isSceneViewCamera = cameraData.isSceneViewCamera;
 
             // NOTE: Do NOT mix ProfilingScope with named CommandBuffers i.e. CommandBufferPool.Get("name").
@@ -353,7 +383,10 @@ namespace UnityEngine.Rendering.Universal
 
             // TODO: move skybox code from C++ to URP in order to remove the call to context.Submit() inside DrawSkyboxPass
             // Until then, we can't use nested profiling scopes with XR multipass
-            CommandBuffer cmdScope = cameraData.xr.enabled ? null : cmd;
+            // --
+            // 非 xr 程序, 得到 cmd
+            CommandBuffer cmdScope = cameraData.xr.enabled ? null : cmd; 
+
 
             ProfilingSampler sampler = Profiling.TryGetOrAddCameraSampler(camera);
             using (new ProfilingScope(cmdScope, sampler)) // Enqueues a "BeginSample" command into the CommandBuffer cmd
@@ -370,7 +403,7 @@ namespace UnityEngine.Rendering.Universal
 
 #if UNITY_EDITOR
                 // Emit scene view UI
-                if (isSceneViewCamera)
+                if (isSceneViewCamera)// 是否为 editro: scene 窗口 使用的 camera;
                 {
                     ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
                 }
@@ -489,7 +522,7 @@ namespace UnityEngine.Rendering.Universal
             // Update volumeframework before initializing additional camera data
             UpdateVolumeFramework(baseCamera, baseCameraAdditionalData);
             InitializeCameraData(baseCamera, baseCameraAdditionalData, !isStackedRendering, out var baseCameraData);
-
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             var originalTargetDesc = baseCameraData.cameraTargetDescriptor;
             var xrActive = false;
@@ -516,6 +549,8 @@ namespace UnityEngine.Rendering.Universal
                     }
                 }
 #endif
+*/
+
 
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
             //It should be called before culling to prepare material. When there isn't any VisualEffect component, this method has no effect.
@@ -557,10 +592,12 @@ namespace UnityEngine.Rendering.Universal
 #endif
                         UpdateVolumeFramework(currCamera, currCameraData);
                         InitializeAdditionalCameraData(currCamera, currCameraData, lastCamera, ref overlayCameraData);
+/*   tpr                      
 #if ENABLE_VR && ENABLE_XR_MODULE
                         if (baseCameraData.xr.enabled)
                             m_XRSystem.UpdateFromCamera(ref overlayCameraData.xr, overlayCameraData);
 #endif
+*/
                         RenderSingleCamera(context, overlayCameraData, anyPostProcessingEnabled);
 
                         using (new ProfilingScope(null, Profiling.Pipeline.endCameraRendering))
@@ -570,7 +607,7 @@ namespace UnityEngine.Rendering.Universal
                     }
                 }
             }
-
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (baseCameraData.xr.enabled)
                 baseCameraData.cameraTargetDescriptor = originalTargetDesc;
@@ -591,6 +628,7 @@ namespace UnityEngine.Rendering.Universal
 
         m_XRSystem.ReleaseFrame();
 #endif
+*/
         }
 
         static void UpdateVolumeFramework(Camera camera, UniversalAdditionalCameraData additionalCameraData)
@@ -680,12 +718,14 @@ namespace UnityEngine.Rendering.Universal
             int msaaSamples = 1;
             if (camera.allowMSAA && asset.msaaSampleCount > 1 && rendererSupportsMSAA)
                 msaaSamples = (camera.targetTexture != null) ? camera.targetTexture.antiAliasing : asset.msaaSampleCount;
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             // Use XR's MSAA if camera is XR camera. XR MSAA needs special handle here because it is not per Camera.
             // Multiple cameras could render into the same XR display and they should share the same MSAA level.
             if (cameraData.xrRendering && rendererSupportsMSAA)
                 msaaSamples = XRSystem.GetMSAALevel();
 #endif
+*/
 
             bool needsAlphaChannel = Graphics.preserveFramebufferAlpha;
             cameraData.cameraTargetDescriptor = CreateRenderTextureDescriptor(camera, cameraData.renderScale,
@@ -709,12 +749,12 @@ namespace UnityEngine.Rendering.Universal
             var settings = asset;
             cameraData.targetTexture = baseCamera.targetTexture;
             cameraData.cameraType = baseCamera.cameraType;
-            bool isSceneViewCamera = cameraData.isSceneViewCamera;
+            bool isSceneViewCamera = cameraData.isSceneViewCamera;// 是否为 editro: scene 窗口 使用的 camera;
 
             ///////////////////////////////////////////////////////////////////
             // Environment and Post-processing settings                       /
             ///////////////////////////////////////////////////////////////////
-            if (isSceneViewCamera)
+            if (isSceneViewCamera)// 是否为 editro: scene 窗口 使用的 camera;
             {
                 cameraData.volumeLayerMask = 1; // "Default"
                 cameraData.volumeTrigger = null;
@@ -722,9 +762,11 @@ namespace UnityEngine.Rendering.Universal
                 cameraData.isDitheringEnabled = false;
                 cameraData.antialiasing = AntialiasingMode.None;
                 cameraData.antialiasingQuality = AntialiasingQuality.High;
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                 cameraData.xrRendering = false;
 #endif
+*/
             }
             else if (baseAdditionalCameraData != null)
             {
@@ -734,9 +776,11 @@ namespace UnityEngine.Rendering.Universal
                 cameraData.isDitheringEnabled = baseAdditionalCameraData.dithering;
                 cameraData.antialiasing = baseAdditionalCameraData.antialiasing;
                 cameraData.antialiasingQuality = baseAdditionalCameraData.antialiasingQuality;
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                 cameraData.xrRendering = baseAdditionalCameraData.allowXRRendering && m_XRSystem.RefreshXrSdk();
 #endif
+*/
             }
             else
             {
@@ -746,9 +790,11 @@ namespace UnityEngine.Rendering.Universal
                 cameraData.isDitheringEnabled = false;
                 cameraData.antialiasing = AntialiasingMode.None;
                 cameraData.antialiasingQuality = AntialiasingQuality.High;
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                 cameraData.xrRendering = m_XRSystem.RefreshXrSdk();
 #endif
+*/
             }
 
             ///////////////////////////////////////////////////////////////////
@@ -776,8 +822,10 @@ namespace UnityEngine.Rendering.Universal
             cameraData.renderScale = (Mathf.Abs(1.0f - settings.renderScale) < kRenderScaleThreshold) ? 1.0f : settings.renderScale;
 
 #if ENABLE_VR && ENABLE_XR_MODULE
+            /*   tpr
             cameraData.xr = m_XRSystem.emptyPass;
             XRSystem.UpdateRenderScale(cameraData.renderScale);
+            */
 #else
             cameraData.xr = XRPass.emptyPass;
 #endif
@@ -817,6 +865,7 @@ namespace UnityEngine.Rendering.Universal
             }
 #endif
 
+            // 是否为 editro: scene 窗口 使用的 camera;
             bool isSceneViewCamera = cameraData.isSceneViewCamera;
             if (isSceneViewCamera)
             {
@@ -1134,7 +1183,7 @@ namespace UnityEngine.Rendering.Universal
             cameraData.renderScale *= RenderScaleMultiplier;
 
             // TODO
-            if (!cameraData.xr.enabled)
+            if (!cameraData.xr.enabled)// 非 xr
             {
                 cameraData.cameraTargetDescriptor.width = (int)(cameraData.camera.pixelWidth * cameraData.renderScale);
                 cameraData.cameraTargetDescriptor.height = (int)(cameraData.camera.pixelHeight * cameraData.renderScale);

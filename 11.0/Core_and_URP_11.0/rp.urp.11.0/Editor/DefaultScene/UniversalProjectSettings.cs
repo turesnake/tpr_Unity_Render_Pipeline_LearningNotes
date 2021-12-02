@@ -4,7 +4,8 @@ using UnityEditorInternal;
 
 namespace UnityEditor.Rendering.Universal
 {
-    internal class UniversalProjectSettings : ScriptableObject
+    internal class UniversalProjectSettings //UniversalProjectSettings__RR
+        : ScriptableObject
     {
         public static string filePath => "ProjectSettings/URPProjectSettings.asset";
 

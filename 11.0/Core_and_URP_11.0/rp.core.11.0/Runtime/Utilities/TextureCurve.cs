@@ -82,11 +82,13 @@ namespace UnityEngine.Rendering
         /// </summary>
         ~TextureCurve() {}
 
-        /// <summary>
+
+        /*    tpr
         /// Cleans up the internal texture resource.
-        /// </summary>
         [Obsolete("Please use Release() instead.")]
         public void Dispose() {}
+        */
+
 
         /// <summary>
         /// Releases the internal texture resource.

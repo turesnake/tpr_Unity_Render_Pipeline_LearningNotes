@@ -6,7 +6,7 @@ namespace UnityEditor.Rendering
     /// <summary>
     /// Utility functions for cameras in the editor.
     /// </summary>
-    public static class CameraEditorUtils
+    public static class CameraEditorUtils//CameraEditorUtils__RR
     {
         /// <summary>Delegate that must give an initialized preview camera</summary>
         /// <param name="sourceCamera">The initial Camera we want a preview from</param>

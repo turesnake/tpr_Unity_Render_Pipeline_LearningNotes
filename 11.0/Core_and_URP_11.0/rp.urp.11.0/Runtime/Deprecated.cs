@@ -17,13 +17,16 @@ namespace UnityEngine.Rendering.Universal
     {
         public partial class AdditionalLightsShadowCasterPass
         {
+            /*    tpr
             [Obsolete("AdditionalLightsShadowCasterPass.m_AdditionalShadowsBufferId was deprecated. Shadow slice matrix is now passed to the GPU using an entry in buffer m_AdditionalLightsWorldToShadow_SSBO", false)]
             public static int m_AdditionalShadowsBufferId;
             [Obsolete("AdditionalLightsShadowCasterPass.m_AdditionalShadowsIndicesId was deprecated. Shadow slice index is now passed to the GPU using last member of an entry in buffer m_AdditionalShadowParams_SSBO", false)]
             public static int m_AdditionalShadowsIndicesId;
+            */
         }
     }
 
+    /*    tpr
     [Obsolete("This is obsolete, please use shadowCascadeCount instead.", false)]
     [MovedFrom("UnityEngine.Rendering.LWRP")] public enum ShadowCascadesOption
     {
@@ -31,12 +34,19 @@ namespace UnityEngine.Rendering.Universal
         TwoCascades,
         FourCascades,
     }
+    */
+
+
     public partial class UniversalRenderPipelineAsset
     {
 #pragma warning disable 618 // Obsolete warning
+
+        /*    tpr
         [Obsolete("This is obsolete, please use shadowCascadeCount instead.", false)]
         [SerializeField] ShadowCascadesOption m_ShadowCascades = ShadowCascadesOption.NoCascades;
+        */
 
+        /*    tpr
         [Obsolete("This is obsolete, please use shadowCascadeCount instead.", false)]
         public ShadowCascadesOption shadowCascadeOption
         {
@@ -69,6 +79,9 @@ namespace UnityEngine.Rendering.Universal
                 }
             }
         }
+        */
+
+
 #pragma warning restore 618 // Obsolete warning
     }
 

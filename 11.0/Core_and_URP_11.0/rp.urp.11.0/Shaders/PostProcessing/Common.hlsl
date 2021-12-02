@@ -22,7 +22,9 @@ Varyings VertFullscreenMesh(Attributes input)
     /*UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);   tpr */
 
 #if _USE_DRAW_PROCEDURAL
+    /*   tpr
     GetProceduralQuad(input.vertexID, output.positionCS, output.uv);
+    */
 #else
     output.positionCS = TransformFullscreenMesh(input.positionOS.xyz);
     output.uv = input.uv;

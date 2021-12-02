@@ -6,7 +6,8 @@ namespace UnityEngine.Rendering.Universal.Internal
     /// <summary>
     /// Resolves shadows in a screen space texture.
     /// </summary>
-    public class ScreenSpaceShadowResolvePass : ScriptableRenderPass
+    public class ScreenSpaceShadowResolvePass //ScreenSpaceShadowResolvePass__RR
+        : ScriptableRenderPass
     {
         Material m_ScreenSpaceShadowsMaterial;
         RenderTargetHandle m_ScreenSpaceShadowmap;
@@ -57,17 +58,17 @@ namespace UnityEngine.Rendering.Universal.Internal
             CommandBuffer cmd = CommandBufferPool.Get();
             using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.ResolveShadows)))
             {
-                if (!renderingData.cameraData.xr.enabled)
+                if (!renderingData.cameraData.xr.enabled)// 非 xr
                 {
                     cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
                     cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, m_ScreenSpaceShadowsMaterial);
                     cmd.SetViewProjectionMatrices(camera.worldToCameraMatrix, camera.projectionMatrix);
-                }
-                else
-                {
+                }else{
+                    /*     tpr
                     // Avoid setting and restoring camera view and projection matrices when in stereo.
                     RenderTargetIdentifier screenSpaceOcclusionTexture = m_ScreenSpaceShadowmap.Identifier();
                     Blit(cmd, screenSpaceOcclusionTexture, screenSpaceOcclusionTexture, m_ScreenSpaceShadowsMaterial);
+                    */
                 }
             }
 

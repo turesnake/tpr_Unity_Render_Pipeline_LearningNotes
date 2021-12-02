@@ -3,7 +3,8 @@ using System;
 namespace UnityEngine.Rendering.Universal
 {
     [Serializable, VolumeComponentMenu("Post-processing/Panini Projection")]
-    public sealed class PaniniProjection : VolumeComponent, IPostProcessComponent
+    public sealed class PaniniProjection //PaniniProjection__RR
+        : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("Panini projection distance.")]
         public ClampedFloatParameter distance = new ClampedFloatParameter(0f, 0f, 1f);

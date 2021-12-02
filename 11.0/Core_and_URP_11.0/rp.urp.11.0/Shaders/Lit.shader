@@ -59,6 +59,7 @@ Shader "Universal Render Pipeline/Lit"
         [HideInInspector] _QueueOffset("Queue offset", Float) = 0.0
 
         // ObsoleteProperties
+        /*   tpr
         [HideInInspector] _MainTex("BaseMap", 2D) = "white" {}
         [HideInInspector] _Color("Base Color", Color) = (1, 1, 1, 1)
         [HideInInspector] _GlossMapScale("Smoothness", Float) = 0.0
@@ -68,6 +69,7 @@ Shader "Universal Render Pipeline/Lit"
         [HideInInspector][NoScaleOffset]unity_Lightmaps("unity_Lightmaps", 2DArray) = "" {}
         [HideInInspector][NoScaleOffset]unity_LightmapsInd("unity_LightmapsInd", 2DArray) = "" {}
         [HideInInspector][NoScaleOffset]unity_ShadowMasks("unity_ShadowMasks", 2DArray) = "" {}
+        */
     }
 
     SubShader
@@ -75,15 +77,22 @@ Shader "Universal Render Pipeline/Lit"
         // Universal Pipeline tag is required. If Universal render pipeline is not set in the graphics settings
         // this Subshader will fail. One can add a subshader below or fallback to Standard built-in to make this
         // material work with both Universal Render Pipeline and Builtin Unity Pipeline
-        Tags{"RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "UniversalMaterialType" = "Lit" "IgnoreProjector" = "True" "ShaderModel"="4.5"}
+        Tags
+        {
+            "RenderType"            = "Opaque" 
+            "RenderPipeline"        = "UniversalPipeline" 
+            "UniversalMaterialType" = "Lit" 
+            "IgnoreProjector"       = "True" 
+            "ShaderModel"           ="4.5"
+        }
         LOD 300
 
         // ------------------------------------------------------------------
         //  Forward pass. Shades all light in a single pass. GI + emission + Fog
         Pass
         {
-            // Lightmode matches the ShaderPassName set in UniversalRenderPipeline.cs. SRPDefaultUnlit and passes with
-            // no LightMode tag are also rendered by Universal Render Pipeline
+            // Lightmode matches the ShaderPassName set in UniversalRenderPipeline.cs. 
+            // SRPDefaultUnlit and passes with no LightMode tag are also rendered by Universal Render Pipeline
             Name "ForwardLit"
             Tags{"LightMode" = "UniversalForward"}
 
@@ -132,13 +141,14 @@ Shader "Universal Render Pipeline/Lit"
             #pragma multi_compile_instancing
             #pragma multi_compile _ DOTS_INSTANCING_ON
 
-            #pragma vertex LitPassVertex
-            #pragma fragment LitPassFragment
+            #pragma vertex      LitPassVertex
+            #pragma fragment    LitPassFragment
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitForwardPass.hlsl"
             ENDHLSL
         }
+
 
         Pass
         {

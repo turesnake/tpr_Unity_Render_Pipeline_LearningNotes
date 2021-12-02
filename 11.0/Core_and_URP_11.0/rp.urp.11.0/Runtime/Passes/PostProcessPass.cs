@@ -18,7 +18,8 @@ namespace UnityEngine.Rendering.Universal.Internal
     /// <summary>
     /// Renders the post-processing effect stack.
     /// </summary>
-    public class PostProcessPass : ScriptableRenderPass
+    public class PostProcessPass //PostProcessPass__RR
+        : ScriptableRenderPass
     {
         RenderTextureDescriptor m_Descriptor;
         RenderTargetHandle m_Source;
@@ -72,7 +73,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         bool m_EnableSRGBConversionIfNeeded;
 
         // Option to use procedural draw instead of cmd.blit
-        bool m_UseDrawProcedural;
+        bool m_UseDrawProcedural; // xr
 
         // Use Fast conversions between SRGB and Linear
         bool m_UseFastSRGBLinearConversion;
@@ -210,7 +211,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_ColorAdjustments    = stack.GetComponent<ColorAdjustments>();
             m_Tonemapping         = stack.GetComponent<Tonemapping>();
             m_FilmGrain           = stack.GetComponent<FilmGrain>();
-            m_UseDrawProcedural   = renderingData.cameraData.xr.enabled;
+            m_UseDrawProcedural   = renderingData.cameraData.xr.enabled;// xr
             m_UseFastSRGBLinearConversion = renderingData.postProcessingData.useFastSRGBLinearConversion;
 
             if (m_IsFinalPass)
@@ -270,12 +271,14 @@ namespace UnityEngine.Rendering.Universal.Internal
             cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, source);
             if (m_UseDrawProcedural)
             {
+                /*     tpr
                 Vector4 scaleBias = new Vector4(1, 1, 0, 0);
                 cmd.SetGlobalVector(ShaderPropertyId.scaleBias, scaleBias);
 
                 cmd.SetRenderTarget(new RenderTargetIdentifier(destination, 0, CubemapFace.Unknown, -1),
                     RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
                 cmd.DrawProcedural(Matrix4x4.identity, material, passIndex, MeshTopology.Quads, 4, 1, null);
+                */
             }
             else
             {
@@ -287,9 +290,11 @@ namespace UnityEngine.Rendering.Universal.Internal
         {
             if (m_UseDrawProcedural)
             {
+                /*    tpr
                 Vector4 scaleBias = new Vector4(1, 1, 0, 0);
                 cmd.SetGlobalVector(ShaderPropertyId.scaleBias, scaleBias);
                 cmd.DrawProcedural(Matrix4x4.identity, material, passIndex, MeshTopology.Quads, 4, 1, null);
+                */
             }
             else
             {
@@ -343,9 +348,16 @@ namespace UnityEngine.Rendering.Universal.Internal
                 using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.StopNaNs)))
                 {
                     RenderingUtils.Blit(
-                        cmd, GetSource(), GetDestination(), m_Materials.stopNaN, 0, m_UseDrawProcedural,
-                        RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
-                        RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
+                        cmd, 
+                        GetSource(), 
+                        GetDestination(), 
+                        m_Materials.stopNaN, 
+                        0, 
+                        m_UseDrawProcedural, // xr
+                        RenderBufferLoadAction.DontCare, 
+                        RenderBufferStoreAction.Store,
+                        RenderBufferLoadAction.DontCare, 
+                        RenderBufferStoreAction.DontCare);
 
                     Swap();
                 }
@@ -444,6 +456,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 // With camera stacking we not always resolve post to final screen as we might run post-processing in the middle of the stack.
                 bool finishPostProcessOnScreen = cameraData.resolveFinalTarget || (m_Destination == cameraTargetHandle || m_HasFinalPass == true);
 
+/*      tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                 if (cameraData.xr.enabled)
                 {
@@ -478,6 +491,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 }
                 else
 #endif
+*/
                 {
                     cmd.SetRenderTarget(cameraTarget, colorLoadAction, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
                     cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
@@ -790,14 +804,19 @@ namespace UnityEngine.Rendering.Universal.Internal
         #endregion
 
         #region Motion Blur
+
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
         // Hold the stereo matrices to avoid allocating arrays every frame
         internal static readonly Matrix4x4[] viewProjMatrixStereo = new Matrix4x4[2];
 #endif
+*/
+
         void DoMotionBlur(CameraData cameraData, CommandBuffer cmd, int source, int destination)
         {
             var material = m_Materials.cameraMotionBlur;
 
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.enabled && cameraData.xr.singlePassEnabled)
             {
@@ -817,12 +836,16 @@ namespace UnityEngine.Rendering.Universal.Internal
             }
             else
 #endif
+*/
             {
                 int prevViewProjMIdx = 0;
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                 if (cameraData.xr.enabled)
                     prevViewProjMIdx = cameraData.xr.multipassId;
 #endif
+*/
+
                 // This is needed because Blit will reset viewproj matrices to identity and UniversalRP currently
                 // relies on SetupCameraProperties instead of handling its own matrices.
                 // TODO: We need get rid of SetupCameraProperties and setup camera matrices in Universal
@@ -1210,6 +1233,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             RenderTargetHandle cameraTargetHandle = RenderTargetHandle.GetCameraTarget(cameraData.xr);
 
+/*    tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.enabled)
             {
@@ -1232,6 +1256,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             }
             else
 #endif
+*/
             {
                 // Note: We need to get the cameraData.targetTexture as this will get the targetTexture of the camera stack.
                 // Overlay cameras need to output to the target described in the base camera while doing camera stack.

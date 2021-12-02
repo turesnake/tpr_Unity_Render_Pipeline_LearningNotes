@@ -37,7 +37,7 @@ namespace UnityEngine.Rendering.Universal
         UsePipelineSettings,
     }
 
-
+    /*    tpr
     //  没看到此 enum 被使用 
     //[Obsolete("Renderer override is no longer used, renderers are referenced by index on the pipeline asset.")]
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
@@ -46,6 +46,7 @@ namespace UnityEngine.Rendering.Universal
         Custom,
         UsePipelineSettings,
     }
+    */
 
 
     /*

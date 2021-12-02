@@ -4,7 +4,8 @@ namespace UnityEngine.Rendering.Universal
     /// Invokes OnRenderObject callback
     /// </summary>
 
-    internal class InvokeOnRenderObjectCallbackPass : ScriptableRenderPass
+    internal class InvokeOnRenderObjectCallbackPass //InvokeOnRenderObjectCallbackPass__RR
+        : ScriptableRenderPass
     {
         public InvokeOnRenderObjectCallbackPass(RenderPassEvent evt)
         {

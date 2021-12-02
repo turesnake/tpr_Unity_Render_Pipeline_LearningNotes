@@ -36,6 +36,7 @@ Shader "Universal Render Pipeline/Simple Lit"
         [HideInInspector] _Smoothness("Smoothness", Float) = 0.5
 
         // ObsoleteProperties
+        /*    tpr
         [HideInInspector] _MainTex("BaseMap", 2D) = "white" {}
         [HideInInspector] _Color("Base Color", Color) = (1, 1, 1, 1)
         [HideInInspector] _Shininess("Smoothness", Float) = 0.0
@@ -45,6 +46,7 @@ Shader "Universal Render Pipeline/Simple Lit"
         [HideInInspector][NoScaleOffset]unity_Lightmaps("unity_Lightmaps", 2DArray) = "" {}
         [HideInInspector][NoScaleOffset]unity_LightmapsInd("unity_LightmapsInd", 2DArray) = "" {}
         [HideInInspector][NoScaleOffset]unity_ShadowMasks("unity_ShadowMasks", 2DArray) = "" {}
+        */
     }
 
     SubShader

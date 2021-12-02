@@ -25,9 +25,13 @@ namespace UnityEngine.Rendering.Universal
 
         static Mesh s_FullscreenMesh = null;
 
-        /// <summary>
-        /// Returns a mesh that you can use with <see cref="CommandBuffer.DrawMesh(Mesh, Matrix4x4, Material)"/> to render full-screen effects.
-        /// </summary>
+        /*
+            Returns a mesh that you can use with: ""CommandBuffer.DrawMesh(Mesh, Matrix4x4, Material);""
+            to render full-screen effects.
+
+            posWS.xy: [-1,1]
+            uv.xy:    [0,1] 左下角起步
+        */
         public static Mesh fullscreenMesh
         {
             get
@@ -36,7 +40,7 @@ namespace UnityEngine.Rendering.Universal
                     return s_FullscreenMesh;
 
                 float topV = 1.0f;
-                float bottomV = 0.0f;
+                float bottomV = 0.0f; // 从下向上, opengl 规范
 
                 s_FullscreenMesh = new Mesh { name = "Fullscreen Quad" };
                 s_FullscreenMesh.SetVertices(new List<Vector3>
@@ -60,6 +64,8 @@ namespace UnityEngine.Rendering.Universal
                 return s_FullscreenMesh;
             }
         }
+
+
 
         internal static bool useStructuredBuffer
         {
@@ -127,6 +133,7 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
         internal static readonly int UNITY_STEREO_MATRIX_V = Shader.PropertyToID("unity_StereoMatrixV");
         internal static readonly int UNITY_STEREO_MATRIX_IV = Shader.PropertyToID("unity_StereoMatrixInvV");
@@ -192,6 +199,7 @@ namespace UnityEngine.Rendering.Universal
         }
 
 #endif
+*/
 
         internal static void Blit(CommandBuffer cmd,
             RenderTargetIdentifier source,
@@ -207,10 +215,13 @@ namespace UnityEngine.Rendering.Universal
             cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, source);
             if (useDrawProcedural)
             {
-                Vector4 scaleBias = new Vector4(1, 1, 0, 0);
-                Vector4 scaleBiasRt = new Vector4(1, 1, 0, 0);
+                // x=1: 不执行texture uv 值得 "y-flip", 
+                Vector4 scaleBias =   new Vector4( 1, 1, 0, 0 );
+                Vector4 scaleBiasRt = new Vector4( 1, 1, 0, 0 );
                 cmd.SetGlobalVector(ShaderPropertyId.scaleBias, scaleBias);
                 cmd.SetGlobalVector(ShaderPropertyId.scaleBiasRt, scaleBiasRt);
+
+
                 cmd.SetRenderTarget(new RenderTargetIdentifier(destination, 0, CubemapFace.Unknown, -1),
                     colorLoadAction, colorStoreAction, depthLoadAction, depthStoreAction);
                 cmd.DrawProcedural(Matrix4x4.identity, material, passIndex, MeshTopology.Quads, 4, 1, null);

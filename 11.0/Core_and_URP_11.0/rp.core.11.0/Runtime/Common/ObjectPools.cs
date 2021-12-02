@@ -8,7 +8,8 @@ namespace UnityEngine.Rendering
     /// Generic object pool.
     /// </summary>
     /// <typeparam name="T">Type of the object pool.</typeparam>
-    public class ObjectPool<T> where T : new()
+    public class ObjectPool<T> //ObjectPool__RR
+        where T : new()
     {
         readonly Stack<T> m_Stack = new Stack<T>();
         readonly UnityAction<T> m_ActionOnGet;

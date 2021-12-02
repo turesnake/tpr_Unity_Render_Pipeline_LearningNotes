@@ -6,7 +6,8 @@ namespace UnityEngine.Rendering.Universal
     /// You can use this pass to inject capture commands into a command buffer
     /// with the goal of having camera capture happening in external code.
     /// </summary>
-    internal class CapturePass : ScriptableRenderPass
+    internal class CapturePass //CapturePass__RR
+        : ScriptableRenderPass
     {
         RenderTargetHandle m_CameraColorHandle;
         const string m_ProfilerTag = "Capture Pass";

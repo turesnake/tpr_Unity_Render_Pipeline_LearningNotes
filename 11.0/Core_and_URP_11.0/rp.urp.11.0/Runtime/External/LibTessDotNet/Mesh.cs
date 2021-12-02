@@ -38,7 +38,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
 {
     namespace LibTessDotNet
     {
-        internal class Mesh : MeshUtils.Pooled<Mesh>
+        internal class Mesh 
+            : MeshUtils.Pooled<Mesh>
         {
             internal MeshUtils.Vertex _vHead;
             internal MeshUtils.Face _fHead;

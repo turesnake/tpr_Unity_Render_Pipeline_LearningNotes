@@ -1,9 +1,11 @@
 using System;
 using UnityEditor;
 
+/*   tpr
 #if ENABLE_VR && ENABLE_VR_MODULE
-using UnityEngine.XR;
+    using UnityEngine.XR;
 #endif
+*/
 
 namespace UnityEngine.Rendering
 {
@@ -35,18 +37,22 @@ namespace UnityEngine.Rendering
         {
             get
             {
+/*   tpr
 #if ENABLE_VR && ENABLE_VR_MODULE
                 if (enabled)
                     return XRSettings.eyeTextureResolutionScale;
 #endif
+*/
                 return 1.0f;
             }
 
             set
             {
+/*   tpr
 #if ENABLE_VR && ENABLE_VR_MODULE
                 XRSettings.eyeTextureResolutionScale = value;
 #endif
+*/
             }
         }
 
@@ -57,10 +63,12 @@ namespace UnityEngine.Rendering
         {
             get
             {
+/*   tpr
 #if ENABLE_VR && ENABLE_VR_MODULE
                 if (enabled)
                     return XRSettings.renderViewportScale;
 #endif
+*/
                 return 1.0f;
             }
         }
@@ -91,7 +99,9 @@ namespace UnityEngine.Rendering
             get
             {
 #if ENABLE_VR && ENABLE_VR_MODULE
+            /*   tpr
                 return XRSettings.enabled;
+            */
 #else
                 return false;
 #endif
@@ -105,10 +115,12 @@ namespace UnityEngine.Rendering
         {
             get
             {
+/*   tpr
 #if ENABLE_VR && ENABLE_VR_MODULE
                 if (enabled)
                     return XRSettings.isDeviceActive;
 #endif
+*/
                 return false;
             }
         }
@@ -120,10 +132,12 @@ namespace UnityEngine.Rendering
         {
             get
             {
+/*   tpr
 #if ENABLE_VR && ENABLE_VR_MODULE
                 if (enabled)
                     return XRSettings.loadedDeviceName;
 #endif
+*/
                 return "No XR device loaded";
             }
         }
@@ -135,10 +149,12 @@ namespace UnityEngine.Rendering
         {
             get
             {
+/*   tpr
 #if ENABLE_VR && ENABLE_VR_MODULE
                 if (enabled)
                     return XRSettings.supportedDevices;
 #endif
+*/
                 return new string[1];
             }
         }
@@ -150,10 +166,12 @@ namespace UnityEngine.Rendering
         {
             get
             {
+/*   tpr
 #if ENABLE_VR && ENABLE_VR_MODULE
                 if (enabled)
                     return (StereoRenderingMode)XRSettings.stereoRenderingMode;
 #endif
+*/
 
                 return StereoRenderingMode.SinglePass;
             }
@@ -166,10 +184,12 @@ namespace UnityEngine.Rendering
         {
             get
             {
+/*   tpr
 #if ENABLE_VR && ENABLE_VR_MODULE
                 if (enabled)
                     return XRSettings.eyeTextureDesc;
 #endif
+*/
                 return new RenderTextureDescriptor(0, 0);
             }
         }
@@ -181,10 +201,12 @@ namespace UnityEngine.Rendering
         {
             get
             {
+/*   tpr
 #if ENABLE_VR && ENABLE_VR_MODULE
                 if (enabled)
                     return XRSettings.eyeTextureWidth;
 #endif
+*/
                 return 0;
             }
         }
@@ -196,10 +218,12 @@ namespace UnityEngine.Rendering
         {
             get
             {
+/*   tpr
 #if ENABLE_VR && ENABLE_VR_MODULE
                 if (enabled)
                     return XRSettings.eyeTextureHeight;
 #endif
+*/
                 return 0;
             }
         }

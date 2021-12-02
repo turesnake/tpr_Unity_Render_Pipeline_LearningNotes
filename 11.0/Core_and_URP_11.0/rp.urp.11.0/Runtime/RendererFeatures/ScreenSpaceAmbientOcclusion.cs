@@ -3,7 +3,7 @@ using System;
 namespace UnityEngine.Rendering.Universal
 {
     [Serializable]
-    internal class ScreenSpaceAmbientOcclusionSettings
+    internal class ScreenSpaceAmbientOcclusionSettings//ScreenSpaceAmbientOcclusionSettings__RR
     {
         // Parameters
         [SerializeField] internal bool Downsample = false;
@@ -31,7 +31,8 @@ namespace UnityEngine.Rendering.Universal
     }
 
     [DisallowMultipleRendererFeature]
-    internal class ScreenSpaceAmbientOcclusion : ScriptableRendererFeature
+    internal class ScreenSpaceAmbientOcclusion //ScreenSpaceAmbientOcclusion__RR
+        : ScriptableRendererFeature
     {
         // Serialized Fields
         [SerializeField, HideInInspector] private Shader m_Shader = null;
@@ -111,7 +112,8 @@ namespace UnityEngine.Rendering.Universal
         }
 
         // The SSAO Pass
-        private class ScreenSpaceAmbientOcclusionPass : ScriptableRenderPass
+        private class ScreenSpaceAmbientOcclusionPass //ScreenSpaceAmbientOcclusionPass__RR
+            : ScriptableRenderPass
         {
             // Public Variables
             internal string profilerTag;

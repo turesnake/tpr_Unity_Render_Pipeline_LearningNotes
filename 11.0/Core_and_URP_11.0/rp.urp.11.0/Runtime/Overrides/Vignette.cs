@@ -3,7 +3,8 @@ using System;
 namespace UnityEngine.Rendering.Universal
 {
     [Serializable, VolumeComponentMenu("Post-processing/Vignette")]
-    public sealed class Vignette : VolumeComponent, IPostProcessComponent
+    public sealed class Vignette //Vignette__RR
+        : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("Vignette color.")]
         public ColorParameter color = new ColorParameter(Color.black, false, false, true);

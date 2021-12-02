@@ -6,7 +6,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
 
 [TestFixture]
-class RuntimeTests
+class RuntimeTests//RuntimeTests__RR
 {
     GameObject go;
     Camera camera;

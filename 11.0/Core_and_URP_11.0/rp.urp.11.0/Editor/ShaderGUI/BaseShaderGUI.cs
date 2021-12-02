@@ -5,7 +5,8 @@ using UnityEditor.Rendering.Universal;
 
 namespace UnityEditor
 {
-    public abstract class BaseShaderGUI : ShaderGUI
+    public abstract class BaseShaderGUI //BaseShaderGUI__RR
+        : ShaderGUI
     {
         #region EnumsAndClasses
 

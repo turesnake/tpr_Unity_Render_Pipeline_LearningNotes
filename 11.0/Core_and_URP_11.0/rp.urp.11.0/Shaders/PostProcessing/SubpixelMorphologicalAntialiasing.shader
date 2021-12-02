@@ -9,6 +9,8 @@ Shader "Hidden/Universal Render Pipeline/SubpixelMorphologicalAntialiasing"
     HLSLINCLUDE
 
         #pragma multi_compile_local _SMAA_PRESET_LOW _SMAA_PRESET_MEDIUM _SMAA_PRESET_HIGH
+
+        // xr 才启用
         #pragma multi_compile _ _USE_DRAW_PROCEDURAL
         #pragma exclude_renderers gles
 

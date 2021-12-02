@@ -75,7 +75,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
 
         internal delegate object CombineCallback(Vec3 position, object[] data, Real[] weights);
 
-        internal partial class Tess
+        internal partial class Tess//Tess__RR
         {
             private Mesh _mesh;
             private Vec3 _normal;

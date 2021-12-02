@@ -44,7 +44,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
             internal int _handle;
         }
 
-        internal class PriorityHeap<TValue> where TValue : class
+        internal class PriorityHeap<TValue> //PriorityHeap__RR
+            where TValue : class
         {
             public delegate bool LessOrEqual(TValue lhs, TValue rhs);
 

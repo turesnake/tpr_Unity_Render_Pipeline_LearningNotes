@@ -1,6 +1,7 @@
 namespace UnityEngine.Rendering.Universal
 {
-    internal class SceneViewDepthCopyPass : ScriptableRenderPass
+    internal class SceneViewDepthCopyPass //SceneViewDepthCopyPass__RR
+        : ScriptableRenderPass
     {
         private RenderTargetHandle source { get; set; }
 
@@ -36,6 +37,7 @@ namespace UnityEngine.Rendering.Universal
             {
                 CoreUtils.SetRenderTarget(cmd, BuiltinRenderTextureType.CameraTarget);
                 cmd.SetGlobalTexture("_CameraDepthAttachment", source.Identifier());
+                
                 cmd.EnableShaderKeyword(ShaderKeywordStrings.DepthNoMsaa);
                 cmd.DisableShaderKeyword(ShaderKeywordStrings.DepthMsaa2);
                 cmd.DisableShaderKeyword(ShaderKeywordStrings.DepthMsaa4);

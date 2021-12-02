@@ -3,6 +3,7 @@ Shader "Hidden/Universal Render Pipeline/CameraMotionBlur"
     HLSLINCLUDE
         #pragma exclude_renderers gles
 
+        // xr 才启用
         #pragma multi_compile _ _USE_DRAW_PROCEDURAL
 
         #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
@@ -38,7 +39,9 @@ Shader "Hidden/Universal Render Pipeline/CameraMotionBlur"
             /*UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);   tpr */
 
 #if _USE_DRAW_PROCEDURAL
+            /*    tpr
             GetProceduralQuad(input.vertexID, output.positionCS, output.uv.xy);
+            */
 #else
             output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
             output.uv.xy = input.uv;

@@ -3,7 +3,8 @@ using System;
 namespace UnityEngine.Rendering.Universal
 {
     [Serializable, VolumeComponentMenu("Post-processing/Channel Mixer")]
-    public sealed class ChannelMixer : VolumeComponent, IPostProcessComponent
+    public sealed class ChannelMixer //ChannelMixer__RR
+        : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("Modify influence of the red channel in the overall mix.")]
         public ClampedFloatParameter redOutRedIn = new ClampedFloatParameter(100f, -200f, 200f);

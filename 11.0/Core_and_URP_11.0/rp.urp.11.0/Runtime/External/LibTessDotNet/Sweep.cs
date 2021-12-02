@@ -39,9 +39,9 @@ namespace UnityEngine.Experimental.Rendering.Universal
     using Real = System.Single;
     namespace LibTessDotNet
     {
-        internal partial class Tess
+        internal partial class Tess//Tess__RR
         {
-            internal class ActiveRegion
+            internal class ActiveRegion//ActiveRegion__RR
             {
                 internal MeshUtils.Edge _eUp;
                 internal Dict<ActiveRegion>.Node _nodeUp;

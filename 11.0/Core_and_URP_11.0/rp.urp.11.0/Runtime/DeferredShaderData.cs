@@ -5,7 +5,8 @@ using UnityEngine.Rendering.Universal.Internal;
 
 namespace UnityEngine.Rendering.Universal
 {
-    class DeferredShaderData : IDisposable
+    class DeferredShaderData //DeferredShaderData__RR
+        : IDisposable
     {
         static DeferredShaderData m_Instance = null;
 

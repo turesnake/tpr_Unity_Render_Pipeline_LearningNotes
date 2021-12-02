@@ -16,7 +16,7 @@ using static Unity.Mathematics.math;
 namespace UnityEngine.Rendering.Universal.Internal
 {
     // Customization per platform.
-    static class DeferredConfig
+    static class DeferredConfig//DeferredConfig__RR
     {
         // Keep in sync with shader define USE_CBUFFER_FOR_DEPTHRANGE
         // Keep in sync with shader define USE_CBUFFER_FOR_TILELIST
@@ -785,7 +785,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             for (int i = 0; i < this.GbufferAttachments.Length; ++i)
                 this.GbufferAttachmentIdentifiers[i] = this.GbufferAttachments[i].Identifier();
             this.DepthAttachmentIdentifier = depthAttachment.Identifier();
-
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             // In XR SinglePassInstance mode, the RTs are texture-array and all slices must be bound.
             if (renderingData.cameraData.xr.enabled)
@@ -799,6 +799,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 this.DepthAttachmentIdentifier = new RenderTargetIdentifier(this.DepthAttachmentIdentifier, 0, CubemapFace.Unknown, -1);
             }
 #endif
+*/
 
             m_HasTileVisLights = this.TiledDeferredShading && CheckHasTileLights(ref renderingData.lightData.visibleLights);
         }
@@ -1133,7 +1134,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             ref CameraData cameraData = ref renderingData.cameraData;
 
 #if ENABLE_VR && ENABLE_XR_MODULE
+            /*   tpr
             int eyeCount = cameraData.xr.enabled && cameraData.xr.singlePassEnabled ? 2 : 1;
+            */
 #else
             int eyeCount = 1;
 #endif
@@ -1915,7 +1918,8 @@ namespace UnityEngine.Rendering.Universal.Internal
         }
     }
 
-    class SortPrePunctualLight : System.Collections.Generic.IComparer<DeferredTiler.PrePunctualLight>
+    class SortPrePunctualLight //SortPrePunctualLight__RR
+        : System.Collections.Generic.IComparer<DeferredTiler.PrePunctualLight>
     {
         public int Compare(DeferredTiler.PrePunctualLight a, DeferredTiler.PrePunctualLight b)
         {

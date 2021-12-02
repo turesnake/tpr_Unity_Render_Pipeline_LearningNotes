@@ -16,6 +16,8 @@ Shader "Hidden/Universal Render Pipeline/Blit"
             #pragma vertex FullscreenVert
             #pragma fragment Fragment
             #pragma multi_compile_fragment _ _LINEAR_TO_SRGB_CONVERSION
+
+            // xr 才启用
             #pragma multi_compile _ _USE_DRAW_PROCEDURAL
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/Utils/Fullscreen.hlsl"

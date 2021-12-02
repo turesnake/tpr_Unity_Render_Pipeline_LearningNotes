@@ -39,7 +39,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
     using Real = System.Single;
     namespace LibTessDotNet
     {
-        internal static class Geom
+        internal static class Geom//Geom__RR
         {
             public static bool IsWindingInside(WindingRule rule, int n)
             {

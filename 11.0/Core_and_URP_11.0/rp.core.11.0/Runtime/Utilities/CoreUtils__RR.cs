@@ -870,12 +870,12 @@ namespace UnityEngine.Rendering
             return (QualitySettings.activeColorSpace == ColorSpace.Linear) ? color : color.gamma;
         }
 
-        /// <summary>
-        /// Creates a Material with the provided shader path.
-        /// hideFlags will be set to HideFlags.HideAndDontSave.
-        /// </summary>
+        /*
+            Creates a Material with the provided "shader path" / "shader";
+            hideFlags will be set to HideFlags.HideAndDontSave.
+        */
         /// <param name="shaderPath">Path of the shader used for the material.</param>
-        /// <returns>A new Material instance using the shader found at the provided path.</returns>
+        /// <returns>A new Material instance using "the shader found at the provided path."</returns>
         public static Material CreateEngineMaterial(string shaderPath)
         {
             Shader shader = Shader.Find(shaderPath);
@@ -892,12 +892,8 @@ namespace UnityEngine.Rendering
             return mat;
         }
 
-        /// <summary>
-        /// Creates a Material with the provided shader.
-        /// hideFlags will be set to HideFlags.HideAndDontSave.
-        /// </summary>
         /// <param name="shader">Shader used for the material.</param>
-        /// <returns>A new Material instance using the provided shader.</returns>
+        /// <returns>A new Material instance using "the provided shader."</returns>
         public static Material CreateEngineMaterial(Shader shader)
         {
             if (shader == null)
@@ -912,6 +908,9 @@ namespace UnityEngine.Rendering
             };
             return mat;
         }
+
+
+
 
         /// <summary>
         /// Bitfield flag test.

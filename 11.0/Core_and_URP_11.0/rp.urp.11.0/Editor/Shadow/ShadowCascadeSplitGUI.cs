@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UnityEditor.Rendering.Universal
 {
-    static partial class ShadowCascadeSplitGUI
+    static partial class ShadowCascadeSplitGUI//ShadowCascadeSplitGUI__RR
     {
         private const int kSliderbarTopMargin = 2;
         private const int kSliderbarHeight = 29;

@@ -7,7 +7,7 @@ using UnityEditor.Rendering.Universal.Internal;
 using UnityEngine.Experimental.Rendering.Universal;
 using UnityEngine.TestTools;
 
-class EditorTests
+class EditorTests//EditorTests__RR
 {
     // When creating a new render pipeline asset it should not log any errors or throw exceptions.
     [Test]

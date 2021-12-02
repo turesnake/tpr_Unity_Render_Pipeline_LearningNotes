@@ -15,6 +15,7 @@ namespace UnityEditor.Rendering.Universal
 {
     static partial class EditorUtils
     {
+        /*    tpr
         [Obsolete("This is obsolete, please use DrawCascadeSplitGUI<T>(ref SerializedProperty shadowCascadeSplit, float distance, int cascadeCount, Unit unit) instead.", false)]
         public static void DrawCascadeSplitGUI<T>(ref SerializedProperty shadowCascadeSplit)
         {
@@ -53,9 +54,12 @@ namespace UnityEditor.Rendering.Universal
                 }
             }
         }
+        */
+
     }
     static partial class ShadowCascadeSplitGUI
     {
+        /*    tpr
         [Obsolete("This is obsolete, please use HandleCascadeSliderGUI(ref float[] normalizedCascadePartitions, float distance, EditorUtils.Unit unit) instead.", false)]
         public static void HandleCascadeSliderGUI(ref float[] normalizedCascadePartitions)
         {
@@ -217,5 +221,6 @@ namespace UnityEditor.Rendering.Universal
                     break;
             }
         }
+        */
     }
 }

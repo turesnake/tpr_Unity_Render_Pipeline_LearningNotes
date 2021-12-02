@@ -10,7 +10,8 @@ using UnityEditor.ShaderGraph.Legacy;
 
 namespace UnityEditor.Rendering.Universal.ShaderGraph
 {
-    sealed class UniversalUnlitSubTarget : SubTarget<UniversalTarget>, ILegacyTarget
+    sealed class UniversalUnlitSubTarget //UniversalUnlitSubTarget__RR
+        : SubTarget<UniversalTarget>, ILegacyTarget
     {
         static readonly GUID kSourceCodeGuid = new GUID("97c3f7dcb477ec842aa878573640313a"); // UniversalUnlitSubTarget.cs
 

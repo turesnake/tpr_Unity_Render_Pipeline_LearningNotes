@@ -66,7 +66,7 @@ namespace UnityEngine.Rendering.Universal
             public static readonly ProfilingSampler internalStartRendering      = new ProfilingSampler($"{k_Name}.{nameof(InternalStartRendering)}");
             public static readonly ProfilingSampler internalFinishRendering     = new ProfilingSampler($"{k_Name}.{nameof(InternalFinishRendering)}");
 
-            public static class RenderBlock
+            public static class RenderBlock//RenderBlock__RR
             {
                 private const string k_Name = nameof(RenderPassBlock);
                 public static readonly ProfilingSampler beforeRendering          = new ProfilingSampler($"{k_Name}.{nameof(RenderPassBlock.BeforeRendering)}");
@@ -75,7 +75,7 @@ namespace UnityEngine.Rendering.Universal
                 public static readonly ProfilingSampler afterRendering           = new ProfilingSampler($"{k_Name}.{nameof(RenderPassBlock.AfterRendering)}");
             }
 
-            public static class RenderPass
+            public static class RenderPass//RenderPass__RR
             {
                 private const string k_Name = nameof(ScriptableRenderPass);
                 public static readonly ProfilingSampler configure = new ProfilingSampler($"{k_Name}.{nameof(ScriptableRenderPass.Configure)}");
@@ -154,6 +154,7 @@ namespace UnityEngine.Rendering.Universal
         */
         public static void SetCameraMatrices(CommandBuffer cmd, ref CameraData cameraData, bool setInverseMatrices)
         {
+/* tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.enabled)
             {
@@ -161,6 +162,7 @@ namespace UnityEngine.Rendering.Universal
                 return;
             }
 #endif
+*/
 
             Matrix4x4 viewMatrix = cameraData.GetViewMatrix();
             Matrix4x4 projectionMatrix = cameraData.GetProjectionMatrix();
@@ -224,6 +226,7 @@ namespace UnityEngine.Rendering.Universal
             float cameraHeight = (float)pixelRect.height;
 
             // Use eye texture's width and height as screen params when XR is enabled
+            /*     tpr
             if (cameraData.xr.enabled)
             {
                 scaledCameraWidth = (float)cameraData.cameraTargetDescriptor.width;
@@ -231,6 +234,7 @@ namespace UnityEngine.Rendering.Universal
                 cameraWidth = (float)cameraData.cameraTargetDescriptor.width;
                 cameraHeight = (float)cameraData.cameraTargetDescriptor.height;
             }
+            */
 
             if (camera.allowDynamicResolution)
             {
@@ -265,11 +269,15 @@ namespace UnityEngine.Rendering.Universal
             }
 
             // Projection flip sign logic is very deep in GfxDevice::SetInvertProjectionMatrix
-            // For now we don't deal with _ProjectionParams.x and let SetupCameraProperties handle it.
-            // We need to enable this when we remove SetupCameraProperties
+            // For now we don't deal with _ProjectionParams.x and let "context.SetupCameraProperties" handle it.
+            // We need to enable this when we remove "context.SetupCameraProperties"
+            // ---
+            // 此处的代码, 被 unity 自己注释起来了;
+            //
             // float projectionFlipSign = ???
             // Vector4 projectionParams = new Vector4(projectionFlipSign, near, far, 1.0f * invFar);
             // cmd.SetGlobalVector(ShaderPropertyId.projectionParams, projectionParams);
+
 
             Vector4 orthoParams = new Vector4(camera.orthographicSize * cameraData.aspectRatio, camera.orthographicSize, 0.0f, isOrthographic);
 
@@ -576,44 +584,47 @@ namespace UnityEngine.Rendering.Universal
             m_CameraColorTarget = colorTarget;
         }
 
-        /// <summary>
-        /// Configures the render passes that will execute for this renderer.
-        /// This method is called per-camera every frame.
-        /// </summary>
+        /*
+            派生类必须实现之 ------------------------------------------------
+            Configures the render passes that will execute for this renderer.
+            This method is called per-camera every frame.
+        */
         /// <param name="context">Use this render context to issue any draw commands during execution.</param>
         /// <param name="renderingData">Current render state information.</param>
         /// <seealso cref="ScriptableRenderPass"/>
         /// <seealso cref="ScriptableRendererFeature"/>
         public abstract void Setup(ScriptableRenderContext context, ref RenderingData renderingData);
 
-        /// <summary>
-        /// Override this method to implement the lighting setup for the renderer. You can use this to
-        /// compute and upload light CBUFFER for example.
-        /// </summary>
+
+        /*
+            Override this method to implement "the lighting setup for the renderer". 
+            You can use this to compute and upload light CBUFFER for example.
+        */
         /// <param name="context">Use this render context to issue any draw commands during execution.</param>
         /// <param name="renderingData">Current render state information.</param>
         public virtual void SetupLights(ScriptableRenderContext context, ref RenderingData renderingData)
-        {
-        }
+        {}
 
-        /// <summary>
-        /// Override this method to configure the culling parameters for the renderer. You can use this to configure if
-        /// lights should be culled per-object or the maximum shadow distance for example.
-        /// </summary>
+
+        /*
+            Override this method to "configure the culling parameters for the renderer".
+            You can use this to configure: "if lights should be culled per-object" or "the maximum shadow distance" for example.
+        */
         /// <param name="cullingParameters">Use this to change culling parameters used by the render pipeline.</param>
         /// <param name="cameraData">Current render state information.</param>
         public virtual void SetupCullingParameters(ref ScriptableCullingParameters cullingParameters,
             ref CameraData cameraData)
-        {
-        }
+        {}
+
 
         /// <summary>
         /// Called upon finishing rendering the camera stack. You can release any resources created by the renderer here.
         /// </summary>
         /// <param name="cmd"></param>
         public virtual void FinishRendering(CommandBuffer cmd)
-        {
-        }
+        {}
+
+
 
         /// <summary>
         /// Execute the enqueued render passes. This automatically handles editor and stereo rendering.
@@ -630,7 +641,10 @@ namespace UnityEngine.Rendering.Universal
 
             // TODO: move skybox code from C++ to URP in order to remove the call to context.Submit() inside DrawSkyboxPass
             // Until then, we can't use nested profiling scopes with XR multipass
+            // --
+            //  非 xr 程序,  始终为 cmd
             CommandBuffer cmdScope = renderingData.cameraData.xr.enabled ? null : cmd;
+
 
             using (new ProfilingScope(cmdScope, profilingExecute))
             {
@@ -700,7 +714,7 @@ namespace UnityEngine.Rendering.Universal
                 context.ExecuteCommandBuffer(cmd);
                 cmd.Clear();
 
-                BeginXRRendering(cmd, context, ref renderingData.cameraData);
+                BeginXRRendering(cmd, context, ref renderingData.cameraData);// xr
 
                 // In the opaque and transparent blocks the main rendering executes.
 
@@ -728,7 +742,7 @@ namespace UnityEngine.Rendering.Universal
                     ExecuteBlock(RenderPassBlock.AfterRendering, in renderBlocks, context, ref renderingData);
                 }
 
-                EndXRRendering(cmd, context, ref renderingData.cameraData);
+                EndXRRendering(cmd, context, ref renderingData.cameraData);// xr
 
                 DrawWireOverlay(context, camera);
                 DrawGizmos(context, camera, GizmoSubset.PostImageEffects);
@@ -1000,7 +1014,8 @@ namespace UnityEngine.Rendering.Universal
                             trimmedAttachments[i] = renderPass.colorAttachments[i];
                         SetRenderTarget(cmd, trimmedAttachments, renderPass.depthAttachment, finalClearFlag, renderPass.clearColor);
 
-                    #if ENABLE_VR && ENABLE_XR_MODULE
+/*  tpr
+#if ENABLE_VR && ENABLE_XR_MODULE
                         if (cameraData.xr.enabled)
                         {
                             // SetRenderTarget might alter the internal device state(winding order).
@@ -1009,7 +1024,8 @@ namespace UnityEngine.Rendering.Universal
                             bool isRenderToBackBufferTarget = (xrTargetIndex != -1) && !cameraData.xr.renderTargetIsRenderTexture;
                             cameraData.xr.UpdateGPUViewAndProjectionMatrices(cmd, ref cameraData, !isRenderToBackBufferTarget);
                         }
-                    #endif
+#endif
+*/
                     }
                 }
             }
@@ -1075,6 +1091,7 @@ namespace UnityEngine.Rendering.Universal
                 {
                     SetRenderTarget(cmd, passColorAttachment, passDepthAttachment, finalClearFlag, finalClearColor);
 
+/*  tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                     if (cameraData.xr.enabled)
                     {
@@ -1084,12 +1101,14 @@ namespace UnityEngine.Rendering.Universal
                         cameraData.xr.UpdateGPUViewAndProjectionMatrices(cmd, ref cameraData, !isRenderToBackBufferTarget);
                     }
 #endif
+*/
                 }
             }
         }
 
         void BeginXRRendering(CommandBuffer cmd, ScriptableRenderContext context, ref CameraData cameraData)
         {
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.enabled)
             {
@@ -1099,10 +1118,12 @@ namespace UnityEngine.Rendering.Universal
                 cmd.Clear();
             }
 #endif
+*/
         }
 
         void EndXRRendering(CommandBuffer cmd, ScriptableRenderContext context, ref CameraData cameraData)
         {
+/*  tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.enabled)
             {
@@ -1112,6 +1133,7 @@ namespace UnityEngine.Rendering.Universal
                 cmd.Clear();
             }
 #endif
+*/
         }
 
         internal static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier colorAttachment, RenderTargetIdentifier depthAttachment, ClearFlag clearFlag, Color clearColor)

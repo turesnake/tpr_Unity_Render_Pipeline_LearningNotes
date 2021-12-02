@@ -23,7 +23,8 @@ namespace UnityEngine.Rendering.Universal
         }
     }
 
-    [MovedFrom("UnityEngine.Rendering.LWRP")] public static class ShadowUtils
+    [MovedFrom("UnityEngine.Rendering.LWRP")] 
+    public static class ShadowUtils//ShadowUtils__RR
     {
         private static readonly RenderTextureFormat m_ShadowmapFormat;
         private static readonly bool m_ForceShadowPointSampling;

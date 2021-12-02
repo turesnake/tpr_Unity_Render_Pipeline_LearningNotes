@@ -4,7 +4,9 @@
 // When a pass has 2+ views, single-pass will be active.
 // To avoid allocating every frame, XRView is a struct and XRPass is pooled.
 
+
 #if ENABLE_VR && ENABLE_XR_MODULE
+/*   tpr
 
 using System;
 using System.Collections.Generic;
@@ -233,7 +235,7 @@ namespace UnityEngine.Rendering.Universal
         internal void AddViewInternal(XRView xrView)
         {
             // XRTODO: Fix hard coded max views
-            int maxSupportedViews = Math.Min(TextureXR.slices, 2 /*ShaderConfig.s_XrMaxViews*/);
+            int maxSupportedViews = Math.Min(TextureXR.slices, 2 ); //ShaderConfig.s_XrMaxViews
 
             if (views.Count < maxSupportedViews)
             {
@@ -454,11 +456,13 @@ namespace UnityEngine.Rendering.Universal
         }
     }
 }
+*/
 
 #else
+
 namespace UnityEngine.Rendering.Universal
 {
-    internal class XRPass
+    internal class XRPass//XRPass__
     {
         internal static readonly XRPass emptyPass = new XRPass();
 
@@ -469,4 +473,5 @@ namespace UnityEngine.Rendering.Universal
         internal void RenderOcclusionMesh(CommandBuffer cmd) {}
     }
 }
+
 #endif

@@ -2,7 +2,8 @@ using UnityEngine;
 
 namespace UnityEditor.Rendering.Universal
 {
-    class AssetVersion : ScriptableObject
+    class AssetVersion //AssetVersion__
+        : ScriptableObject
     {
         public int version;
     }

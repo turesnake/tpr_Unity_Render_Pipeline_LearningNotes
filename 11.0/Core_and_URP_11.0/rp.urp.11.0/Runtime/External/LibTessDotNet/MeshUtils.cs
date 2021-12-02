@@ -108,11 +108,12 @@ namespace UnityEngine.Experimental.Rendering.Universal
             }
         }
 
-        internal static class MeshUtils
+        internal static class MeshUtils//MeshUtils__RR
         {
             public const int Undef = ~0;
 
-            public abstract class Pooled<T> where T : Pooled<T>, new()
+            public abstract class Pooled<T> //Pooled__RR
+                where T : Pooled<T>, new()
             {
                 private static Stack<T> _stack;
                 public abstract void Reset();
@@ -139,7 +140,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 }
             }
 
-            public class Vertex : Pooled<Vertex>
+            public class Vertex //Vertex__RR
+                : Pooled<Vertex>
             {
                 internal Vertex _prev, _next;
                 internal Edge _anEdge;
@@ -163,7 +165,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 }
             }
 
-            public class Face : Pooled<Face>
+            public class Face //Face__RR
+                : Pooled<Face>
             {
                 internal Face _prev, _next;
                 internal Edge _anEdge;
@@ -219,7 +222,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 }
             }
 
-            public class Edge : Pooled<Edge>
+            public class Edge //Edge__RR
+                : Pooled<Edge>
             {
                 internal EdgePair _pair;
                 internal Edge _next, _Sym, _Onext, _Lnext;

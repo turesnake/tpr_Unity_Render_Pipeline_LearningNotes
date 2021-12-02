@@ -4,12 +4,13 @@ using UnityEngine.Experimental.Rendering;
 namespace UnityEngine.Rendering.Universal
 {
     [Serializable]
-    internal class ScreenSpaceShadowsSettings
+    internal class ScreenSpaceShadowsSettings//ScreenSpaceShadowsSettings__RR
     {
     }
 
     [DisallowMultipleRendererFeature]
-    internal class ScreenSpaceShadows : ScriptableRendererFeature
+    internal class ScreenSpaceShadows //ScreenSpaceShadows__RR
+        : ScriptableRendererFeature
     {
         // Serialized Fields
         [SerializeField, HideInInspector] private Shader m_Shader = null;
@@ -87,7 +88,8 @@ namespace UnityEngine.Rendering.Universal
             return m_Material != null;
         }
 
-        private class ScreenSpaceShadowsPass : ScriptableRenderPass
+        private class ScreenSpaceShadowsPass //ScreenSpaceShadowsPass__RR
+            : ScriptableRenderPass
         {
             // Public Variables
             internal string profilerTag;
@@ -146,17 +148,18 @@ namespace UnityEngine.Rendering.Universal
                 CommandBuffer cmd = CommandBufferPool.Get();
                 using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.ResolveShadows)))
                 {
-                    if (!renderingData.cameraData.xr.enabled)
+                    if (!renderingData.cameraData.xr.enabled)// 非 xr
                     {
                         cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
                         cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, material);
                         cmd.SetViewProjectionMatrices(camera.worldToCameraMatrix, camera.projectionMatrix);
-                    }
-                    else
-                    {
+
+                    }else{
+                        /*   tpr
                         // Avoid setting and restoring camera view and projection matrices when in stereo.
                         RenderTargetIdentifier screenSpaceShadowTexture = m_RenderTarget.Identifier();
                         cmd.Blit(null, screenSpaceShadowTexture, material);
+                        */
                     }
 
                     CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadows, false);
@@ -180,7 +183,8 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
-        private class RestoreShadowKeywordsPass : ScriptableRenderPass
+        private class RestoreShadowKeywordsPass //RestoreShadowKeywordsPass__RR
+            : ScriptableRenderPass
         {
             const string m_ProfilerTag = "Restore Shadow Keywords Pass";
             private ProfilingSampler m_ProfilingSampler = new ProfilingSampler(m_ProfilerTag);

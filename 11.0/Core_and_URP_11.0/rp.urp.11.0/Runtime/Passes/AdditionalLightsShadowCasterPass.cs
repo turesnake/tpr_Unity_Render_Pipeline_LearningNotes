@@ -7,7 +7,8 @@ namespace UnityEngine.Rendering.Universal.Internal
     /// <summary>
     /// Renders a shadow map atlas for additional shadow-casting Lights.
     /// </summary>
-    public partial class AdditionalLightsShadowCasterPass : ScriptableRenderPass
+    public partial class AdditionalLightsShadowCasterPass //AdditionalLightsShadowCasterPass__RR
+        : ScriptableRenderPass
     {
         private static class AdditionalShadowsConstantBuffer
         {

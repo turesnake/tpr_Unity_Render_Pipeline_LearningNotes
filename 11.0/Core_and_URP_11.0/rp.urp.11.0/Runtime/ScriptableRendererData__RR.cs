@@ -23,7 +23,8 @@ namespace UnityEngine.Rendering.Universal
 
 
         /*
-            创建一个 "ScriptableRenderer" 类实例
+            创建一个 "ScriptableRenderer" 类实例;
+            派生类 必须实现之;
         */
         protected abstract ScriptableRenderer Create();
         

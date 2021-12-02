@@ -34,7 +34,7 @@ namespace UnityEditor.Rendering
     /// Utility class to draw inspectors
     /// </summary>
     /// <typeparam name="TData">Type of class containing data needed to draw inspector</typeparam>
-    public static class CoreEditorDrawer<TData>
+    public static class CoreEditorDrawer<TData>//CoreEditorDrawer__RR
     {
         /// <summary> Abstraction that have the Draw hability </summary>
         public interface IDrawer
@@ -98,7 +98,8 @@ namespace UnityEditor.Rendering
             return new ConditionalDrawerInternal(enabler, contentDrawers);
         }
 
-        class ConditionalDrawerInternal : IDrawer
+        class ConditionalDrawerInternal //ConditionalDrawerInternal__RR
+            : IDrawer
         {
             ActionDrawer[] actionDrawers { get; set; }
             Enabler m_Enabler;
@@ -139,7 +140,8 @@ namespace UnityEditor.Rendering
         public static IDrawer TernaryConditional(Enabler @switch, ActionDrawer drawIfTrue, ActionDrawer drawIfFalse)
             => new TernaryConditionalDrawerInternal(@switch, drawIfTrue, drawIfFalse);
 
-        class TernaryConditionalDrawerInternal : IDrawer
+        class TernaryConditionalDrawerInternal //TernaryConditionalDrawerInternal__RR
+            : IDrawer
         {
             ActionDrawer drawIfTrue;
             ActionDrawer drawIfFalse;
@@ -245,7 +247,8 @@ namespace UnityEditor.Rendering
             return new GroupDrawerInternal(labelWidth, options, contentDrawers);
         }
 
-        class GroupDrawerInternal : IDrawer
+        class GroupDrawerInternal //GroupDrawerInternal__RR
+            : IDrawer
         {
             ActionDrawer[] actionDrawers { get; set; }
             float m_LabelWidth;
@@ -302,7 +305,8 @@ namespace UnityEditor.Rendering
             return new SelectDrawerInternal<T2Data>(dataSelect, otherDrawers);
         }
 
-        class SelectDrawerInternal<T2Data> : IDrawer
+        class SelectDrawerInternal<T2Data> //SelectDrawerInternal__RR
+            : IDrawer
         {
             DataSelect<T2Data> m_DataSelect;
             CoreEditorDrawer<T2Data>.ActionDrawer[] m_SourceDrawers;
@@ -568,7 +572,7 @@ namespace UnityEditor.Rendering
     }
 
     /// <summary>CoreEditorDrawer extensions</summary>
-    public static class CoreEditorDrawersExtensions
+    public static class CoreEditorDrawersExtensions//CoreEditorDrawersExtensions__RR
     {
         /// <summary> Concatenate a collection of IDrawer as a unique IDrawer </summary>
         /// <typeparam name="TData">Type of class containing data needed to draw inspector</typeparam>

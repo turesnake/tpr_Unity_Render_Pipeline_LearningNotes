@@ -44,9 +44,10 @@ namespace UnityEditor.Rendering.LookDev
         event Action OnUpdateRequested;
     }
 
-    partial class DisplayWindow : EditorWindow, IViewDisplayer
+    partial class DisplayWindow //DisplayWindow__RR
+        : EditorWindow, IViewDisplayer
     {
-        static partial class Style
+        static partial class Style//Style__RR
         {
             internal const string k_IconFolder = @"Packages/com.unity.render-pipelines.core/Editor/LookDev/Icons/";
             internal const string k_uss = @"Packages/com.unity.render-pipelines.core/Editor/LookDev/DisplayWindow.uss";

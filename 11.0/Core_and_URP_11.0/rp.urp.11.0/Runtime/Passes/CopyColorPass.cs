@@ -9,7 +9,8 @@ namespace UnityEngine.Rendering.Universal.Internal
     /// so you can use it later in rendering. For example, you can copy
     /// the opaque texture to use it for distortion effects.
     /// </summary>
-    public class CopyColorPass : ScriptableRenderPass
+    public class CopyColorPass //CopyColorPass__RR
+        : ScriptableRenderPass
     {
         int m_SampleOffsetShaderHandle;
         Material m_SamplingMaterial;
@@ -81,7 +82,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 ScriptableRenderer.SetRenderTarget(cmd, opaqueColorRT, BuiltinRenderTextureType.CameraTarget, clearFlag,
                     clearColor);
 
-                bool useDrawProceduleBlit = renderingData.cameraData.xr.enabled;
+                bool useDrawProceduleBlit = renderingData.cameraData.xr.enabled;// xr
                 switch (m_DownsamplingMethod)
                 {
                     case Downsampling.None:

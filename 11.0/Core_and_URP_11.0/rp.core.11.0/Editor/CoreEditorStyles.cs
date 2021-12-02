@@ -3,7 +3,7 @@ using UnityEngine;
 namespace UnityEditor.Rendering
 {
     /// <summary>Class containing style definition</summary>
-    public static class CoreEditorStyles
+    public static class CoreEditorStyles//CoreEditorStyles__RR
     {
         /// <summary>Style for a small checkbox</summary>
         public static readonly GUIStyle smallTickbox;

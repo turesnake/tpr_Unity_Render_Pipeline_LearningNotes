@@ -120,9 +120,9 @@
 
 /*
     contains vertex position in difference spaces (world, view, hclip).
-    调用 "GetVertexPositionInputs()" 来生成本类实例;
+    在 vs 中调用 "GetVertexPositionInputs()" 来生成本类实例;
 */
-struct VertexPositionInputs
+struct VertexPositionInputs//VertexPositionInputs__
 {
     float3 positionWS; // World space position
     float3 positionVS; // View space position

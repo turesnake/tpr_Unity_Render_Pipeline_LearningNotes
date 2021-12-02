@@ -3,7 +3,8 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine.Rendering.Universal
 {
     [System.Serializable]
-    [MovedFrom("UnityEngine.Rendering.LWRP")] public class StencilStateData
+    [MovedFrom("UnityEngine.Rendering.LWRP")] 
+    public class StencilStateData//StencilStateData__RR
     {
         public bool overrideStencilState = false;
         public int stencilReference = 0;

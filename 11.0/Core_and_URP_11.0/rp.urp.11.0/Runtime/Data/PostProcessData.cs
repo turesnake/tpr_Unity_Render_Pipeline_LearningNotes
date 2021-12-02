@@ -7,7 +7,8 @@ using System;
 namespace UnityEngine.Rendering.Universal
 {
     [Serializable]
-    public class PostProcessData : ScriptableObject
+    public class PostProcessData //PostProcessData__RR
+        : ScriptableObject
     {
 #if UNITY_EDITOR
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812")]
@@ -37,7 +38,7 @@ namespace UnityEngine.Rendering.Universal
 #endif
 
         [Serializable, ReloadGroup]
-        public sealed class ShaderResources
+        public sealed class ShaderResources//ShaderResources__RR
         {
             [Reload("Shaders/PostProcessing/StopNaN.shader")]
             public Shader stopNanPS;
@@ -74,7 +75,7 @@ namespace UnityEngine.Rendering.Universal
         }
 
         [Serializable, ReloadGroup]
-        public sealed class TextureResources
+        public sealed class TextureResources//TextureResources__RR
         {
             // Pre-baked noise
             [Reload("Textures/BlueNoise16/L/LDR_LLL1_{0}.png", 0, 32)]

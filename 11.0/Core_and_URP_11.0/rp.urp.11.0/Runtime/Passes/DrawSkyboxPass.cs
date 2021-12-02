@@ -5,7 +5,8 @@ namespace UnityEngine.Rendering.Universal
     ///
     /// This pass renders the standard Unity skybox.
     /// </summary>
-    public class DrawSkyboxPass : ScriptableRenderPass
+    public class DrawSkyboxPass //DrawSkyboxPass__RR
+        : ScriptableRenderPass
     {
         public DrawSkyboxPass(RenderPassEvent evt)
         {
@@ -17,6 +18,8 @@ namespace UnityEngine.Rendering.Universal
         /// <inheritdoc/>
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
+
+/*    tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             // XRTODO: Remove this code once Skybox pass is moved to SRP land.
             if (renderingData.cameraData.xr.enabled)
@@ -67,6 +70,8 @@ namespace UnityEngine.Rendering.Universal
             }
             else
 #endif
+*/
+
             {
                 context.DrawSkybox(renderingData.cameraData.camera);
             }

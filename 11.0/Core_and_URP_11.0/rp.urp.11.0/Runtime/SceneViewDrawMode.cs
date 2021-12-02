@@ -4,7 +4,7 @@ using System.Collections;
 
 namespace UnityEditor.Rendering.Universal
 {
-    internal static class SceneViewDrawMode
+    internal static class SceneViewDrawMode//SceneViewDrawMode__RR
     {
         static HashSet<SceneView> sceneViewHaveValidateFunction = new HashSet<SceneView>();
 

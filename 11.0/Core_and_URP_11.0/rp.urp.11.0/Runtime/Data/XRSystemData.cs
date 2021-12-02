@@ -7,7 +7,8 @@ using System;
 namespace UnityEngine.Rendering.Universal
 {
     [Serializable]
-    public class XRSystemData : ScriptableObject
+    public class XRSystemData //XRSystemData__RR
+        : ScriptableObject
     {
 #if UNITY_EDITOR
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812")]

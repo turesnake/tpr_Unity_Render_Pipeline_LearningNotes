@@ -29,6 +29,7 @@ namespace UnityEditor.Rendering.Universal
         UseFastSRGBLinearConversion = (1 << 13)
     }
 
+
     internal class ShaderPreprocessor : IPreprocessShaders
     {
         public static readonly string kPassNameGBuffer = "GBuffer";

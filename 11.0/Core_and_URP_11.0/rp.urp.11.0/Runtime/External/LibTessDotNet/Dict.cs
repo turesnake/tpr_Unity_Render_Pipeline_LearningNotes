@@ -37,7 +37,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
 {
     namespace LibTessDotNet
     {
-        internal class Dict<TValue> where TValue : class
+        internal class Dict<TValue> //Dict__RR
+            where TValue : class
         {
             public class Node
             {

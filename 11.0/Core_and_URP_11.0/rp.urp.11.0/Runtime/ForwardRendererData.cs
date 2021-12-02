@@ -9,11 +9,13 @@ namespace UnityEngine.Rendering.Universal
 {
     [Serializable, ReloadGroup, ExcludeFromPreset]
     [MovedFrom("UnityEngine.Rendering.LWRP")]
-    public class ForwardRendererData : ScriptableRendererData
+    public class ForwardRendererData //ForwardRendererData__RR
+        : ScriptableRendererData
     {
 #if UNITY_EDITOR
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812")]
-        internal class CreateForwardRendererAsset : EndNameEditAction
+        internal class CreateForwardRendererAsset//CreateForwardRendererAsset__RR
+            : EndNameEditAction
         {
             public override void Action(int instanceId, string pathName, string resourceFile)
             {
@@ -34,7 +36,7 @@ namespace UnityEngine.Rendering.Universal
 #endif
 
         [Serializable, ReloadGroup]
-        public sealed class ShaderResources
+        public sealed class ShaderResources//ShaderResources__RR
         {
             [Reload("Shaders/Utils/Blit.shader")]
             public Shader blitPS;
@@ -42,8 +44,10 @@ namespace UnityEngine.Rendering.Universal
             [Reload("Shaders/Utils/CopyDepth.shader")]
             public Shader copyDepthPS;
 
+            /*    tpr
             [Obsolete("Obsolete, this feature will be supported by new 'ScreenSpaceShadows' renderer feature")]
             public Shader screenSpaceShadowPS;
+            */
 
             [Reload("Shaders/Utils/Sampling.shader")]
             public Shader samplingPS;
@@ -58,12 +62,15 @@ namespace UnityEngine.Rendering.Universal
             public Shader materialErrorPS;
         }
 
+
         public PostProcessData postProcessData = null;
 
+/*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
         [Reload("Runtime/Data/XRSystemData.asset")]
         public XRSystemData xrSystemData = null;
 #endif
+*/
 
         public ShaderResources shaders = null;
 
@@ -75,6 +82,8 @@ namespace UnityEngine.Rendering.Universal
         [SerializeField] bool m_AccurateGbufferNormals = false;
         //[SerializeField] bool m_TiledDeferredShading = false;
 
+
+
         protected override ScriptableRenderer Create()
         {
             if (!Application.isPlaying)
@@ -83,6 +92,7 @@ namespace UnityEngine.Rendering.Universal
             }
             return new ForwardRenderer(this);
         }
+
 
         /// <summary>
         /// Use this to configure how to filter opaque objects.
@@ -190,9 +200,12 @@ namespace UnityEngine.Rendering.Universal
         {
 #if UNITY_EDITOR
             ResourceReloader.TryReloadAllNullIn(this, UniversalRenderPipelineAsset.packagePath);
-#if ENABLE_VR && ENABLE_XR_MODULE
+    /*   tpr
+    #if ENABLE_VR && ENABLE_XR_MODULE
             ResourceReloader.TryReloadAllNullIn(xrSystemData, UniversalRenderPipelineAsset.packagePath);
-#endif
+    #endif
+    */
+
 #endif
         }
     }

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace UnityEditor.Rendering
 {
-    static class ContextualMenuDispatcher
+    static class ContextualMenuDispatcher//ContextualMenuDispatcher__RR
     {
         [MenuItem("CONTEXT/Camera/Remove Component")]
         static void RemoveCameraComponent(MenuCommand command)

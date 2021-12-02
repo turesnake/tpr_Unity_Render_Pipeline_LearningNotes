@@ -11,7 +11,8 @@ namespace UnityEditor.Rendering
     /// clicking on the "Add Component" button.
     /// </summary>
     [InitializeOnLoad]
-    public class FilterWindow : EditorWindow
+    public class FilterWindow //FilterWindow__RR
+        : EditorWindow
     {
         /// <summary>
         /// The interface to implement to populate the list or tree and traverse its elements.
@@ -54,7 +55,8 @@ namespace UnityEditor.Rendering
         /// An element from the filtered list or tree.
         /// </summary>
         /// <seealso cref="GroupElement"/>
-        public class Element : IComparable
+        public class Element //Element__RR
+            : IComparable
         {
             /// <summary>
             /// The current hierarchical level in the tree.
@@ -90,7 +92,8 @@ namespace UnityEditor.Rendering
         /// </summary>
         /// <seealso cref="Element"/>
         [Serializable]
-        public class GroupElement : Element
+        public class GroupElement //GroupElement__RR
+            : Element
         {
             /// <summary>
             /// The current scroll position in the UI.
@@ -154,7 +157,7 @@ namespace UnityEditor.Rendering
 
         // Styles
 
-        class Styles
+        class Styles//Styles__RR
         {
             public GUIStyle header = (GUIStyle)typeof(EditorStyles).GetProperty("inspectorBig", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null, null);
             public GUIStyle componentButton = new GUIStyle("PR Label");

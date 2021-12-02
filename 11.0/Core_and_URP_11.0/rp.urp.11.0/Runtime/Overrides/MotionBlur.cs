@@ -16,7 +16,8 @@ namespace UnityEngine.Rendering.Universal
     }
 
     [Serializable, VolumeComponentMenu("Post-processing/Motion Blur")]
-    public sealed class MotionBlur : VolumeComponent, IPostProcessComponent
+    public sealed class MotionBlur //MotionBlur__RR
+        : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("The motion blur technique to use. If you don't need object motion blur, CameraOnly will result in better performance.")]
         public MotionBlurModeParameter mode = new MotionBlurModeParameter(MotionBlurMode.CameraOnly);
@@ -36,8 +37,12 @@ namespace UnityEngine.Rendering.Universal
     }
 
     [Serializable]
-    public sealed class MotionBlurModeParameter : VolumeParameter<MotionBlurMode> { public MotionBlurModeParameter(MotionBlurMode value, bool overrideState = false) : base(value, overrideState) {} }
+    public sealed class MotionBlurModeParameter //MotionBlurModeParameter__RR
+        : VolumeParameter<MotionBlurMode> 
+    { public MotionBlurModeParameter(MotionBlurMode value, bool overrideState = false) : base(value, overrideState) {} }
 
     [Serializable]
-    public sealed class MotionBlurQualityParameter : VolumeParameter<MotionBlurQuality> { public MotionBlurQualityParameter(MotionBlurQuality value, bool overrideState = false) : base(value, overrideState) {} }
+    public sealed class MotionBlurQualityParameter //MotionBlurQualityParameter__RR
+        : VolumeParameter<MotionBlurQuality> 
+    { public MotionBlurQualityParameter(MotionBlurQuality value, bool overrideState = false) : base(value, overrideState) {} }
 }

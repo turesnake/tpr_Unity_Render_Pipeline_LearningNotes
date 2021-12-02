@@ -6,7 +6,7 @@ namespace UnityEngine.Rendering.Universal.Internal
     /// <summary>
     /// Computes and submits lighting data to the GPU.
     /// </summary>
-    public class ForwardLights
+    public class ForwardLights//ForwardLights__RR
     {
         static class LightConstantBuffer
         {

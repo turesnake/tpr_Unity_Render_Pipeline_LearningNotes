@@ -3,7 +3,8 @@ using System;
 namespace UnityEngine.Rendering.Universal
 {
     [Serializable, VolumeComponentMenu("Post-processing/Lens Distortion")]
-    public sealed class LensDistortion : VolumeComponent, IPostProcessComponent
+    public sealed class LensDistortion //LensDistortion__RR
+        : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("Total distortion amount.")]
         public ClampedFloatParameter intensity = new ClampedFloatParameter(0f, -1f, 1f);

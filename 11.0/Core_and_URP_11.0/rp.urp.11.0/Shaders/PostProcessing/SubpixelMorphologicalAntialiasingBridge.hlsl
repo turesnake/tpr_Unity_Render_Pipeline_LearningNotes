@@ -52,14 +52,19 @@ VaryingsEdge VertEdge(Attributes input)
     VaryingsEdge output;
     UNITY_SETUP_INSTANCE_ID(input);
     /*UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);   tpr */
+
 #if _USE_DRAW_PROCEDURAL
+    /*    tpr
     GetProceduralQuad(input.vertexID, output.positionCS, output.uv);
+    */
 #else
     output.positionCS = TransformFullscreenMesh(input.positionOS.xyz);
 
     /*output.uv = UnityStereoTransformScreenSpaceTex(input.uv);   tpr */
     output.uv = input.uv;
 #endif
+
+
     SMAAEdgeDetectionVS(output.uv, output.offsets);
     return output;
 }
@@ -87,13 +92,18 @@ VaryingsBlend VertBlend(Attributes input)
     VaryingsBlend output;
     UNITY_SETUP_INSTANCE_ID(input);
     /*UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);   tpr */
+
 #if _USE_DRAW_PROCEDURAL
+    /*   tpr
     GetProceduralQuad(input.vertexID, output.positionCS, output.uv);
+    */
 #else
     output.positionCS = TransformFullscreenMesh(input.positionOS.xyz);
     /*output.uv = UnityStereoTransformScreenSpaceTex(input.uv);   tpr */
     output.uv = input.uv;
 #endif
+
+
     SMAABlendingWeightCalculationVS(output.uv, output.pixcoord, output.offsets);
     return output;
 }
@@ -120,8 +130,11 @@ VaryingsNeighbor VertNeighbor(Attributes input)
     VaryingsNeighbor output;
     UNITY_SETUP_INSTANCE_ID(input);
     /*UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);   tpr */
+
 #if _USE_DRAW_PROCEDURAL
+    /*   tpr
     GetProceduralQuad(input.vertexID, output.positionCS, output.uv);
+    */
 #else
     output.positionCS = TransformFullscreenMesh(input.positionOS.xyz);
     /*output.uv = UnityStereoTransformScreenSpaceTex(input.uv);     tpr */

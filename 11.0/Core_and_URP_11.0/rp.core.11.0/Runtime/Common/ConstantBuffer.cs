@@ -173,7 +173,9 @@ namespace UnityEngine.Rendering
 #if UNITY_2021_1_OR_NEWER
             cmd.SetBufferData(m_GPUConstantBuffer, m_Data);
 #else
+            /*   tpr
             cmd.SetComputeBufferData(m_GPUConstantBuffer, m_Data);
+            */
 #endif
         }
 

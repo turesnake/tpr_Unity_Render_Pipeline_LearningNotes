@@ -30,7 +30,7 @@ namespace UnityEngine.Rendering.Universal
         private static class Profiling
         {
             private const string k_Name = nameof(ForwardRenderer);
-            public static readonly ProfilingSampler createCameraRenderTarget = new ProfilingSampler($"{k_Name}.{nameof(CreateCameraRenderTarget)}");
+            public static readonly ProfilingSampler createCameraRenderTarget = new ProfilingSampler($"{k_Name}.{nameof(CreateCameraRenderTarget)}");// "ForwardRenderer.CreateCameraRenderTarget"
         }
 
         // Rendering mode setup from UI.

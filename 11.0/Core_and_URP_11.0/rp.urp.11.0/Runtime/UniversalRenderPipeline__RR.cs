@@ -33,29 +33,33 @@ namespace UnityEngine.Rendering.Universal
     public sealed partial class UniversalRenderPipeline //UniversalRenderPipeline__RR_1
         : RenderPipeline
     {
+
+        // 暂没见被使用
         public const string k_ShaderTagName = "UniversalPipeline";
+
 
         private static class Profiling
         {
             private static Dictionary<int, ProfilingSampler> s_HashSamplerCache = new Dictionary<int, ProfilingSampler>();
             public static readonly ProfilingSampler unknownSampler = new ProfilingSampler("Unknown");
 
+
             // Specialization for camera loop to avoid allocations.
             public static ProfilingSampler TryGetOrAddCameraSampler(Camera camera)
             {
                 #if UNIVERSAL_PROFILING_NO_ALLOC
-                return unknownSampler;
+                    return unknownSampler;
                 #else
-                ProfilingSampler ps = null;
-                int cameraId = camera.GetHashCode();
-                bool exists = s_HashSamplerCache.TryGetValue(cameraId, out ps);
-                if (!exists)
-                {
-                    // NOTE: camera.name allocates!
-                    ps = new ProfilingSampler($"{nameof(UniversalRenderPipeline)}.{nameof(RenderSingleCamera)}: {camera.name}");
-                    s_HashSamplerCache.Add(cameraId, ps);
-                }
-                return ps;
+                    ProfilingSampler ps = null;
+                    int cameraId = camera.GetHashCode();
+                    bool exists = s_HashSamplerCache.TryGetValue(cameraId, out ps);
+                    if (!exists)
+                    {
+                        // NOTE: camera.name allocates!
+                        ps = new ProfilingSampler($"{nameof(UniversalRenderPipeline)}.{nameof(RenderSingleCamera)}: {camera.name}");// "UniversalRenderPipeline.RenderSingleCamera: "
+                        s_HashSamplerCache.Add(cameraId, ps);
+                    }
+                    return ps;
                 #endif
             }
 
@@ -63,31 +67,33 @@ namespace UnityEngine.Rendering.Universal
             {
                 // TODO: Would be better to add Profiling name hooks into RenderPipeline.cs, requires changes outside of Universal.
 #if UNITY_2021_1_OR_NEWER
-                public static readonly ProfilingSampler beginContextRendering  = new ProfilingSampler($"{nameof(RenderPipeline)}.{nameof(BeginContextRendering)}");
-                public static readonly ProfilingSampler endContextRendering    = new ProfilingSampler($"{nameof(RenderPipeline)}.{nameof(EndContextRendering)}");
+                public static readonly ProfilingSampler beginContextRendering  = new ProfilingSampler($"{nameof(RenderPipeline)}.{nameof(BeginContextRendering)}");// "RenderPipeline.BeginContextRendering"
+                public static readonly ProfilingSampler endContextRendering    = new ProfilingSampler($"{nameof(RenderPipeline)}.{nameof(EndContextRendering)}");// "RenderPipeline.EndContextRendering"
 #else
+                /*   tpr
                 public static readonly ProfilingSampler beginFrameRendering  = new ProfilingSampler($"{nameof(RenderPipeline)}.{nameof(BeginFrameRendering)}");
                 public static readonly ProfilingSampler endFrameRendering    = new ProfilingSampler($"{nameof(RenderPipeline)}.{nameof(EndFrameRendering)}");
+                */
 #endif
-                public static readonly ProfilingSampler beginCameraRendering = new ProfilingSampler($"{nameof(RenderPipeline)}.{nameof(BeginCameraRendering)}");
-                public static readonly ProfilingSampler endCameraRendering   = new ProfilingSampler($"{nameof(RenderPipeline)}.{nameof(EndCameraRendering)}");
+                public static readonly ProfilingSampler beginCameraRendering = new ProfilingSampler($"{nameof(RenderPipeline)}.{nameof(BeginCameraRendering)}");// "RenderPipeline.BeginCameraRendering"
+                public static readonly ProfilingSampler endCameraRendering   = new ProfilingSampler($"{nameof(RenderPipeline)}.{nameof(EndCameraRendering)}");// "RenderPipeline.EndCameraRendering"
 
                 const string k_Name = nameof(UniversalRenderPipeline);
-                public static readonly ProfilingSampler initializeCameraData           = new ProfilingSampler($"{k_Name}.{nameof(InitializeCameraData)}");
-                public static readonly ProfilingSampler initializeStackedCameraData    = new ProfilingSampler($"{k_Name}.{nameof(InitializeStackedCameraData)}");
-                public static readonly ProfilingSampler initializeAdditionalCameraData = new ProfilingSampler($"{k_Name}.{nameof(InitializeAdditionalCameraData)}");
-                public static readonly ProfilingSampler initializeRenderingData        = new ProfilingSampler($"{k_Name}.{nameof(InitializeRenderingData)}");
-                public static readonly ProfilingSampler initializeShadowData           = new ProfilingSampler($"{k_Name}.{nameof(InitializeShadowData)}");
-                public static readonly ProfilingSampler initializeLightData            = new ProfilingSampler($"{k_Name}.{nameof(InitializeLightData)}");
-                public static readonly ProfilingSampler getPerObjectLightFlags         = new ProfilingSampler($"{k_Name}.{nameof(GetPerObjectLightFlags)}");
-                public static readonly ProfilingSampler getMainLightIndex              = new ProfilingSampler($"{k_Name}.{nameof(GetMainLightIndex)}");
-                public static readonly ProfilingSampler setupPerFrameShaderConstants   = new ProfilingSampler($"{k_Name}.{nameof(SetupPerFrameShaderConstants)}");
+                public static readonly ProfilingSampler initializeCameraData           = new ProfilingSampler($"{k_Name}.{nameof(InitializeCameraData)}");// "UniversalRenderPipeline.InitializeCameraData"
+                public static readonly ProfilingSampler initializeStackedCameraData    = new ProfilingSampler($"{k_Name}.{nameof(InitializeStackedCameraData)}");// "UniversalRenderPipeline.InitializeStackedCameraData"
+                public static readonly ProfilingSampler initializeAdditionalCameraData = new ProfilingSampler($"{k_Name}.{nameof(InitializeAdditionalCameraData)}");// "UniversalRenderPipeline.InitializeAdditionalCameraData"
+                public static readonly ProfilingSampler initializeRenderingData        = new ProfilingSampler($"{k_Name}.{nameof(InitializeRenderingData)}");// "UniversalRenderPipeline.InitializeRenderingData"
+                public static readonly ProfilingSampler initializeShadowData           = new ProfilingSampler($"{k_Name}.{nameof(InitializeShadowData)}");// "UniversalRenderPipeline.InitializeShadowData"
+                public static readonly ProfilingSampler initializeLightData            = new ProfilingSampler($"{k_Name}.{nameof(InitializeLightData)}");// "UniversalRenderPipeline.InitializeLightData"
+                public static readonly ProfilingSampler getPerObjectLightFlags         = new ProfilingSampler($"{k_Name}.{nameof(GetPerObjectLightFlags)}");// "UniversalRenderPipeline.GetPerObjectLightFlags"
+                public static readonly ProfilingSampler getMainLightIndex              = new ProfilingSampler($"{k_Name}.{nameof(GetMainLightIndex)}");// "UniversalRenderPipeline.GetMainLightIndex"
+                public static readonly ProfilingSampler setupPerFrameShaderConstants   = new ProfilingSampler($"{k_Name}.{nameof(SetupPerFrameShaderConstants)}");// "UniversalRenderPipeline.SetupPerFrameShaderConstants"
 
                 public static class Renderer
                 {
                     const string k_Name = nameof(ScriptableRenderer);
-                    public static readonly ProfilingSampler setupCullingParameters = new ProfilingSampler($"{k_Name}.{nameof(ScriptableRenderer.SetupCullingParameters)}");
-                    public static readonly ProfilingSampler setup                  = new ProfilingSampler($"{k_Name}.{nameof(ScriptableRenderer.Setup)}");
+                    public static readonly ProfilingSampler setupCullingParameters = new ProfilingSampler($"{k_Name}.{nameof(ScriptableRenderer.SetupCullingParameters)}");// "ScriptableRenderer.SetupCullingParameters"
+                    public static readonly ProfilingSampler setup                  = new ProfilingSampler($"{k_Name}.{nameof(ScriptableRenderer.Setup)}");// "ScriptableRenderer.Setup"
                 };
 
                 public static class Context
@@ -100,8 +106,11 @@ namespace UnityEngine.Rendering.Universal
                 {
                     public static readonly ProfilingSampler mirrorView = new ProfilingSampler("XR Mirror View");
                 };
-            };
-        }
+            };//Pipeline end
+        }//Profiling end
+
+
+
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
         internal static XRSystem m_XRSystem = new XRSystem();
@@ -211,6 +220,8 @@ namespace UnityEngine.Rendering.Universal
             CameraCaptureBridge.enabled = false;
         }
 
+
+
     // ===================================================================================================:
     // 区别仅仅是 参数 cameras 的类型是 array 还是 List<>;
 
@@ -221,27 +232,36 @@ namespace UnityEngine.Rendering.Universal
         }
 #endif
 
-
 #if UNITY_2021_1_OR_NEWER
         protected override void Render(ScriptableRenderContext renderContext, List<Camera> cameras)
 #else
         protected override void Render(ScriptableRenderContext renderContext, Camera[] cameras)
+        
 #endif
         {
-            // TODO: Would be better to add Profiling name hooks into RenderPipelineManager.
-            // C#8 feature, only in >= 2020.2
+            /*
+                TODO: Would be better to add Profiling name hooks into RenderPipelineManager.
+                C#8 feature, only in >= 2020.2
+                --
+                (笔记查找 "using var")
+                此 "未托管资源" 会一直存在, 直到函数体结束 才被释放; (它不是没有用)
+            */
             using var profScope = new ProfilingScope(null, ProfilingSampler.Get(URPProfileId.UniversalRenderTotal));
 
 #if UNITY_2021_1_OR_NEWER
             using (new ProfilingScope(null, Profiling.Pipeline.beginContextRendering))
             {
+                // --- 回调函数 触发点 ---: 
+                // 触发并执行: 所有绑定到委托 "RenderPipelineManager.beginContextRendering 和 beginFrameRendering" 上的 callbacks;
                 BeginContextRendering(renderContext, cameras);
             }
 #else
+            /*   tpr
             using (new ProfilingScope(null, Profiling.Pipeline.beginFrameRendering))
             {
                 BeginFrameRendering(renderContext, cameras);
             }
+            */
 #endif
 
             GraphicsSettings.lightsUseLinearIntensity = (QualitySettings.activeColorSpace == ColorSpace.Linear);
@@ -257,7 +277,9 @@ namespace UnityEngine.Rendering.Universal
 #if UNITY_2021_1_OR_NEWER
             for (int i = 0; i < cameras.Count; ++i)
 #else
+            /*   tpr
             for (int i = 0; i < cameras.Length; ++i)
+            */
 #endif
             {
                 var camera = cameras[i];
@@ -269,6 +291,8 @@ namespace UnityEngine.Rendering.Universal
                 {
                     using (new ProfilingScope(null, Profiling.Pipeline.beginCameraRendering))
                     {
+                        // --- 回调函数 触发点 ---: 
+                        // 触发并执行: 所有绑定到委托 "RenderPipelineManager.beginCameraRendering" 上的 callbacks;
                         BeginCameraRendering(renderContext, camera);
                     }
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
@@ -281,6 +305,8 @@ namespace UnityEngine.Rendering.Universal
 
                     using (new ProfilingScope(null, Profiling.Pipeline.endCameraRendering))
                     {
+                        // --- 回调函数 触发点 ---: 
+                        // 触发并执行: 所有绑定到委托 "RenderPipelineManager.endCameraRendering" 上的 callbacks;
                         EndCameraRendering(renderContext, camera);
                     }
                 }
@@ -288,13 +314,17 @@ namespace UnityEngine.Rendering.Universal
 #if UNITY_2021_1_OR_NEWER
             using (new ProfilingScope(null, Profiling.Pipeline.endContextRendering))
             {
+                // --- 回调函数 触发点 ---: 
+                // 触发并执行: 所有绑定到委托 "RenderPipelineManager.endContextRendering 和 endFrameRendering" 上的 callbacks;
                 EndContextRendering(renderContext, cameras);
             }
 #else
+            /*   tpr
             using (new ProfilingScope(null, Profiling.Pipeline.endFrameRendering))
             {
                 EndFrameRendering(renderContext, cameras);
             }
+            */
 #endif
         }//Render end
 
@@ -328,6 +358,8 @@ namespace UnityEngine.Rendering.Universal
 #endif
             RenderSingleCamera(context, cameraData, cameraData.postProcessEnabled);
         }
+
+
 
         static bool TryGetCullingParameters(CameraData cameraData, out ScriptableCullingParameters cullingParams)
         {
@@ -516,6 +548,8 @@ namespace UnityEngine.Rendering.Universal
             bool isStackedRendering = lastActiveOverlayCameraIndex != -1;
             using (new ProfilingScope(null, Profiling.Pipeline.beginCameraRendering))
             {
+                // --- 回调函数 触发点 ---: 
+                // 触发并执行: 所有绑定到委托 "RenderPipelineManager.beginCameraRendering" 上的 callbacks;
                 BeginCameraRendering(context, baseCamera);
             }
 
@@ -551,7 +585,6 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
 
-
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
             //It should be called before culling to prepare material. When there isn't any VisualEffect component, this method has no effect.
             VFX.VFXManager.PrepareCamera(baseCamera);
@@ -563,6 +596,8 @@ namespace UnityEngine.Rendering.Universal
             RenderSingleCamera(context, baseCameraData, anyPostProcessingEnabled);
             using (new ProfilingScope(null, Profiling.Pipeline.endCameraRendering))
             {
+                // --- 回调函数 触发点 ---: 
+                // 触发并执行: 所有绑定到委托 "RenderPipelineManager.endCameraRendering" 上的 callbacks;
                 EndCameraRendering(context, baseCamera);
             }
 
@@ -584,6 +619,8 @@ namespace UnityEngine.Rendering.Universal
 
                         using (new ProfilingScope(null, Profiling.Pipeline.beginCameraRendering))
                         {
+                            // --- 回调函数 触发点 ---: 
+                            // 触发并执行: 所有绑定到委托 "RenderPipelineManager.beginCameraRendering" 上的 callbacks;
                             BeginCameraRendering(context, currCamera);
                         }
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
@@ -602,6 +639,8 @@ namespace UnityEngine.Rendering.Universal
 
                         using (new ProfilingScope(null, Profiling.Pipeline.endCameraRendering))
                         {
+                            // --- 回调函数 触发点 ---: 
+                            // 触发并执行: 所有绑定到委托 "RenderPipelineManager.endCameraRendering" 上的 callbacks;
                             EndCameraRendering(context, currCamera);
                         }
                     }

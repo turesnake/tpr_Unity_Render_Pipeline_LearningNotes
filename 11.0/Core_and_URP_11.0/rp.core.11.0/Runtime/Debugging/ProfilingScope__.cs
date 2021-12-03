@@ -1,8 +1,17 @@
+/*
+    TProfilingSampler<TEnum>.samples should just be an array. 
+    Unfortunately, Enum cannot be converted to int without generating garbage.
+    This could be worked around by using Unsafe but it's not available at the moment.
+    So in the meantime we use a Dictionary with a perf hit...
+    --- 
 
-// TProfilingSampler<TEnum>.samples should just be an array. Unfortunately, Enum cannot be converted to int without generating garbage.
-// This could be worked around by using Unsafe but it's not available at the moment.
-// So in the meantime we use a Dictionary with a perf hit...
-//#define USE_UNSAFE
+    "TProfilingSampler<TEnum>.samples" 应该必须是个 array;
+    不幸的是, Enum 无法在不引发 GC 的情况下转换成 int;
+    如果使用 unsafe 代码, 可以绕过这点, 但目前为止它来不可行;
+    所有目前, 我们使用一个 性能良好的 Dictionary
+*/
+//#define USE_UNSAFE      unity 自己注释掉的
+
 
 #if UNITY_2020_1_OR_NEWER
     #define UNITY_USE_RECORDER
@@ -17,40 +26,55 @@ using UnityEngine.Profiling;
 namespace UnityEngine.Rendering
 {
 
+    /*
+        仅在本文件内 被使用
+    */
     class TProfilingSampler<TEnum> //TProfilingSampler__RR
         : ProfilingSampler 
         where TEnum : Enum
     {
 #if USE_UNSAFE
+        /*   tpr
         internal static TProfilingSampler<TEnum>[] samples;
+        */
 #else
+        /*
+            TEnum 的每个成员, 都会被生成一个对应 name 的 TProfilingSampler<TEnum> 实例, 组成 pair 存储于此
+        */
         internal static Dictionary<TEnum, TProfilingSampler<TEnum>> samples = new Dictionary<TEnum, TProfilingSampler<TEnum>>();
 #endif
+
+        // static 构造函数
         static TProfilingSampler()
         {
-            var names = Enum.GetNames(typeof(TEnum));
+            var names = Enum.GetNames(typeof(TEnum)); // string array
 #if USE_UNSAFE
+            /*   tpr
             var values = Enum.GetValues(typeof(TEnum)).Cast<int>().ToArray();
             samples = new TProfilingSampler<TEnum>[values.Max() + 1];
+            */
 #else
-            var values = Enum.GetValues(typeof(TEnum));
+            var values = Enum.GetValues(typeof(TEnum)); // Array
 #endif
 
             for (int i = 0; i < names.Length; i++)
             {
                 var sample = new TProfilingSampler<TEnum>(names[i]);
 #if USE_UNSAFE
+                /*   tpr
                 samples[values[i]] = sample;
+                */
 #else
-                samples.Add((TEnum)values.GetValue(i), sample);
+                samples.Add( (TEnum)values.GetValue(i), sample );
 #endif
             }
         }
 
+        // 实例 构造函数
         public TProfilingSampler(string name)
             : base(name)
-        {
-        }
+        {}
+
     }// TProfilingSampler end
 
 
@@ -58,14 +82,21 @@ namespace UnityEngine.Rendering
 
 
     /*
+        =================================================< ProfilingSampler >========================================:
         Wrapper around CPU and GPU profiling samplers.
         ---
         配合使用 "ProfilingScope" to profile a piece of code.
+
+        有两种新建实例的方法:
+        -1-:
+            ProfilingSampler.Get( EnumA.val_1 );
+        -2-:
+            ProfilingSampler p = new ProfilingSampler( "Deferred Pass" );
+
+
     */
     public class ProfilingSampler//ProfilingSampler__RR
     {
-
-
         /*
             Get the sampler for the corresponding enumeration value.
         */
@@ -76,7 +107,9 @@ namespace UnityEngine.Rendering
             where TEnum : Enum
         {
 #if USE_UNSAFE
+            /*   tpr
             return TProfilingSampler<TEnum>.samples[Unsafe.As<TEnum, int>(ref marker)];
+            */
 #else
             TProfilingSampler<TEnum>.samples.TryGetValue(marker, out var sampler);
             return sampler;
@@ -90,8 +123,13 @@ namespace UnityEngine.Rendering
         /// <param name="name">Name of the profiling sampler.</param>
         public ProfilingSampler(string name)
         {
-            // Caution: Name of sampler MUST not match name provide to cmd.BeginSample(), 
-            // otherwise we get a mismatch of marker when enabling the profiler.
+            /*
+                Caution: Name of sampler MUST not match name provide to cmd.BeginSample(), 
+                otherwise we get a mismatch of marker when enabling the profiler.
+                --
+                注意: 参数 name 不能和 cmd.BeginSample() 的参数 name 同值;
+                否则在启用 profiler 时会遭遇 marker 不清楚的问题;
+            */
 
 // 2020_1 OR NEWER
 #if UNITY_USE_RECORDER
@@ -103,8 +141,6 @@ namespace UnityEngine.Rendering
             sampler = CustomSampler.Create($"Dummy_{name}");
             */
 #endif
-
-
             inlineSampler = CustomSampler.Create($"Inl_{name}"); // Profiles code "immediately"
             this.name = name;
 
@@ -118,14 +154,13 @@ namespace UnityEngine.Rendering
         }//构造函数 end
 
 
-
-        /// <summary>
-        /// Begin the profiling block.
-        /// </summary>
+        /*
+            begin the profiling block.
+        */
         /// <param name="cmd">Command buffer used by the profiling block.</param>
         public void Begin(CommandBuffer cmd)
         {
-            if (cmd != null)
+            if (cmd != null){
 
 // 2020_1 OR NEWER
 #if UNITY_USE_RECORDER
@@ -138,8 +173,7 @@ namespace UnityEngine.Rendering
                 cmd.BeginSample(name);
                 */
 #endif
-
-
+            }
             inlineSampler?.Begin();
         }
 
@@ -152,7 +186,7 @@ namespace UnityEngine.Rendering
         public void End(CommandBuffer cmd)
         {
             if (cmd != null)
-
+            {
 // 2020_1 OR NEWER
 #if UNITY_USE_RECORDER
                 if (sampler != null && sampler.isValid)
@@ -164,8 +198,7 @@ namespace UnityEngine.Rendering
                 m_Cmd.EndSample(name);
                 */
 #endif
-
-
+            }
             inlineSampler?.End();
         }
 
@@ -180,7 +213,7 @@ namespace UnityEngine.Rendering
 // 2020_1 OR NEWER
 #if UNITY_USE_RECORDER
         Recorder m_Recorder;
-        Recorder m_InlineRecorder;
+        Recorder m_InlineRecorder;// 当 cmd==null, 调用此值;
 #endif
 
         
@@ -235,6 +268,7 @@ namespace UnityEngine.Rendering
 #endif
 
         // Keep the constructor private
+        // 不许外部调用 默认构造函数
         ProfilingSampler() {}
     }// ProfilingSampler end
 
@@ -244,9 +278,29 @@ namespace UnityEngine.Rendering
 
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
     /*
-        ======================================================================================================:
+        =================================================< ProfilingScope >==============================================:
         Scoped Profiling markers
         开发者版, Editor 版;
+
+        使用方式:
+        -1-:
+            using (new ProfilingScope(...))
+            {
+                // do something...
+            }
+
+        -2-: c#8.0:
+            void Foo(){
+                using var a = new ProfilingScope(...);
+                // do something...
+            }
+        
+        两种用法本质是相同的: 新建的 ProfilingScope 实例是个 未托管资源, 使用 using 语法来管理这个资源的 存活范围;
+        在这个范围内的代码, 就等于是被这个 ProfilingScope 实例 "捕获"了, 类似于一个 Begin/End pair;
+        block 内部的代码 的运行时间, 会被记录下来;
+
+        在本质上, 就是调用了 "ProfilingSampler.Begin()" 和 "ProfilingSampler.End()";
+
     */ 
     public struct ProfilingScope //ProfilingScope__RR_1
         : IDisposable
@@ -257,6 +311,10 @@ namespace UnityEngine.Rendering
 
         /*
             构造函数
+
+            如果 参数 cmd == null, 内部就调用 "CustomSampler.Begin() / End()" 来实现采样;
+            否则, 就调用 "cmd.BeginSample() / End()" 来实现采样; 
+
         */
         /// <param name="cmd">Command buffer used to add markers and compute execution timings.</param>
         /// <param name="sampler">Profiling Sampler to be used for this scope.</param>
@@ -331,7 +389,7 @@ namespace UnityEngine.Rendering
 
 #endif
 
-    /*
+    /*     tpr
     /// <summary>
     /// Profiling Sampler class.
     /// </summary>

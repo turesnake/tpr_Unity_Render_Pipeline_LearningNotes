@@ -584,14 +584,14 @@ namespace UnityEngine.Rendering.Universal
             if (cameras.Count > 1)
                 cameras.Sort(cameraComparison);
         }
-
 #else
+        /*   tpr
         void SortCameras(Camera[] cameras)
         {
             if (cameras.Length > 1)
                 Array.Sort(cameras, cameraComparison);
         }
-
+        */
 #endif
 
         static RenderTextureDescriptor CreateRenderTextureDescriptor(Camera camera, float renderScale,

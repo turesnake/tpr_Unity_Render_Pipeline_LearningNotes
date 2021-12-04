@@ -21,7 +21,14 @@ Shader "Universal Render Pipeline/Lit"
         _SpecGlossMap("Specular", 2D) = "white" {}
 
         [ToggleOff] _SpecularHighlights("Specular Highlights", Float) = 1.0
+
+        /*
+            若启用此开关:   使用 反射探针, lightprobe 来获取 简介光;
+            若关闭此开关,   使用一个 constant color 来表示 间接镜反光: "_GlossyEnvironmentColor";
+                            同时设置 keyword: "_ENVIRONMENTREFLECTIONS_OFF"
+        */
         [ToggleOff] _EnvironmentReflections("Environment Reflections", Float) = 1.0
+
 
         _BumpScale("Scale", Float) = 1.0
         _BumpMap("Normal Map", 2D) = "bump" {}
@@ -107,6 +114,7 @@ Shader "Universal Render Pipeline/Lit"
             // -------------------------------------
             // Material Keywords
             #pragma shader_feature_local _NORMALMAP
+            // 仅在 frag-shader 中起效的 局部keyword
             #pragma shader_feature_local_fragment _ALPHATEST_ON
             #pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local_fragment _EMISSION
@@ -116,6 +124,9 @@ Shader "Universal Render Pipeline/Lit"
             #pragma shader_feature_local _PARALLAXMAP
             #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
             #pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
+
+            
+            // 
             #pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
             #pragma shader_feature_local_fragment _SPECULAR_SETUP
             #pragma shader_feature_local _RECEIVE_SHADOWS_OFF

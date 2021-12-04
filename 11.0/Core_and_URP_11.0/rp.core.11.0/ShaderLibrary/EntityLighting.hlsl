@@ -339,14 +339,31 @@ real3 DecodeLightmap(real4 encodedIlluminance, real4 decodeInstructions)
 #endif
 }
 
+
+
+/*
+    将编码过的 Irradiance 信息 解码; 具体查找笔记: "UNITY_USE_NATIVE_HDR"
+    ---
+    如果 Reflection Probes (as lightmaps) texel 数据格式不是 "native HDR texture", (16bit per channel or BC6H),
+    那么它就应该被编码了: RGBM, 或 dLDR; 想要访问这个数据 就必须对其解码;
+
+
+    参数 decodeInstructions 是解码参数, 通常为: unity_SpecCube0_HDR
+
+    解码过程, 似乎和 built-in 中 "DecodeHDR()" 相似;
+    暂未细看...
+*/
 real3 DecodeHDREnvironment(real4 encodedIrradiance, real4 decodeInstructions)
 {
     // Take into account texture alpha if decodeInstructions.w is true(the alpha value affects the RGB channels)
+    // 如果 decodeInstructions.w 为 true，则考虑 texture alpha 值（alpha 值影响 RGB 通道）
     real alpha = max(decodeInstructions.w * (encodedIrradiance.a - 1.0) + 1.0, 0.0);
 
     // If Linear mode is not supported we can skip exponent part
     return (decodeInstructions.x * PositivePow(alpha, decodeInstructions.y)) * encodedIrradiance.rgb;
 }
+
+
 
 #if defined(UNITY_DOTS_INSTANCING_ENABLED)
 #define TEXTURE2D_LIGHTMAP_PARAM TEXTURE2D_ARRAY_PARAM

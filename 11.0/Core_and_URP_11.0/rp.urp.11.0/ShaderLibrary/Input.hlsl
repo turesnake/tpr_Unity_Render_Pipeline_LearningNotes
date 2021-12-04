@@ -35,7 +35,12 @@ struct InputData
 //                      Constant Buffers                                     //
 ///////////////////////////////////////////////////////////////////////////////
 
+
+// 启用了 keyword: "_GlossyEnvironmentColor", 无法使用 反射探针时, 
+// 此时使用 本 const color 来计算 间接镜反光; 
 half4 _GlossyEnvironmentColor;
+
+// Lighting Mode 选择 "Subtractive" 时才被使用;
 half4 _SubtractiveShadowColor;
 
 #define _InvCameraViewProj unity_MatrixInvVP

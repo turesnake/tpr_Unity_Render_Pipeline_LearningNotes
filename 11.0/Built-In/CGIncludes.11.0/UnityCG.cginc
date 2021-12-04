@@ -510,6 +510,7 @@ half4 UnityEncodeRGBM (half3 color, float maxRGBM)
 inline half3 DecodeHDR (half4 data, half4 decodeInstructions)
 {
     // Take into account texture alpha if decodeInstructions.w is true(the alpha value affects the RGB channels)
+    // 如果 decodeInstructions.w 为 true，则考虑 texture alpha 值（alpha 值影响 RGB 通道）
     half alpha = decodeInstructions.w * (data.a - 1.0) + 1.0;
 
     // If Linear mode is not supported we can skip exponent part

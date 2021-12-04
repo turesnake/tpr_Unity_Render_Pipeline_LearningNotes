@@ -9,7 +9,8 @@ namespace UnityEngine.Rendering
     /// <see cref="VolumeManager.CreateStack"/> if you need to update the manager with specific
     /// settings and store the results for later use.
     /// </summary>
-    public sealed class VolumeStack : IDisposable
+    public sealed class VolumeStack //VolumeStack__RR
+        : IDisposable
     {
         // Holds the state of _all_ component types you can possibly add on volumes
         internal Dictionary<Type, VolumeComponent> components;

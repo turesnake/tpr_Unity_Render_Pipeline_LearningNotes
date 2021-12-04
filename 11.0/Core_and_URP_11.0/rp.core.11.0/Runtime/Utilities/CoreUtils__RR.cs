@@ -849,10 +849,12 @@ namespace UnityEngine.Rendering
             DrawFullScreen(commandBuffer, material, colorBuffers, colorBuffers[0], properties, shaderPassId);
         }
 
-        // Color space utilities
-        /// <summary>
-        /// Converts the provided sRGB color to the current active color space.
-        /// </summary>
+        
+        // ================= Color space utilities =================:
+
+        /*
+            Converts the provided sRGB color to the current active color space.
+        */
         /// <param name="color">Input color.</param>
         /// <returns>Linear color if the active color space is ColorSpace.Linear, the original input otherwise.</returns>
         public static Color ConvertSRGBToActiveColorSpace(Color color)
@@ -860,15 +862,17 @@ namespace UnityEngine.Rendering
             return (QualitySettings.activeColorSpace == ColorSpace.Linear) ? color.linear : color;
         }
 
-        /// <summary>
-        /// Converts the provided linear color to the current active color space.
-        /// </summary>
+
+        /*
+            Converts the provided linear color to the current active color space.
+        */
         /// <param name="color">Input color.</param>
         /// <returns>sRGB color if the active color space is ColorSpace.Gamma, the original input otherwise.</returns>
         public static Color ConvertLinearToActiveColorSpace(Color color)
         {
             return (QualitySettings.activeColorSpace == ColorSpace.Linear) ? color : color.gamma;
         }
+
 
         /*
             Creates a Material with the provided "shader path" / "shader";
@@ -1092,9 +1096,12 @@ namespace UnityEngine.Rendering
             return mesh;
         }
 
-        /// <summary>
-        /// Returns true if "Post Processes" are enabled for the view associated with the given camera.
-        /// </summary>
+        /*
+            Returns true if "Post Processes" are enabled for the view associated with the given camera.
+
+            非 editor 模式, 一定返回 true;
+
+        */
         /// <param name="camera">Input camera.</param>
         /// <returns>True if "Post Processes" are enabled for the view associated with the given camera.</returns>
         public static bool ArePostProcessesEnabled(Camera camera)
@@ -1103,7 +1110,7 @@ namespace UnityEngine.Rendering
 
         #if UNITY_EDITOR
             if (camera.cameraType == CameraType.SceneView)
-            {
+            {// editor scene 窗口使用的 camera
                 enabled = false;
 
                 // Determine whether the "Post Processes" checkbox is checked for the current view.
@@ -1125,6 +1132,8 @@ namespace UnityEngine.Rendering
 
             return enabled;
         }
+
+
 
         /// <summary>
         /// Returns true if "Animated Materials" are enabled for the view associated with the given camera.

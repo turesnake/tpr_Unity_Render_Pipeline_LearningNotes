@@ -113,6 +113,8 @@ namespace UnityEngine.Rendering.Universal
                 This setting controls if the urp asset should expose MSAA option.
                 --
                 "urp asset" 是否应该暴露 MSAA option (猜测是 inspector 中的)
+
+                但在实际使用时, 此值的意思却是: "是否开启 msaa 功能";
             */
             public bool msaa { get; set; } = true;
         }

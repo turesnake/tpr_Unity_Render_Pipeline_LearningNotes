@@ -462,9 +462,8 @@ namespace UnityEngine.Rendering.Universal
 #endif
         }
 
-        /// <summary>
-        /// Returns the default renderer being used by this pipeline.
-        /// </summary>
+        
+        // Returns the default renderer being used by this pipeline. 比如 "Forward Renderer" 
         public ScriptableRenderer scriptableRenderer
         {
             get
@@ -568,12 +567,15 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
+        
+        //  是否将 camera 的 depth buffer 复制一份到 "_CameraDepth"
         public bool supportsCameraDepthTexture
         {
             get { return m_RequireDepthTexture; }
             set { m_RequireDepthTexture = value; }
         }
 
+        // 是否将 camera 的 不透明物的 color buffer 复制一份到 "_CameraOpaque"
         public bool supportsCameraOpaqueTexture
         {
             get { return m_RequireOpaqueTexture; }

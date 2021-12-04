@@ -6,9 +6,12 @@
 #define SHADERGRAPH_BAKED_GI(positionWS, normalWS, uvStaticLightmap, uvDynamicLightmap, applyScaling) shadergraph_LWBakedGI(positionWS, normalWS, uvStaticLightmap, uvDynamicLightmap, applyScaling)
 #define SHADERGRAPH_REFLECTION_PROBE(viewDir, normalOS, lod) shadergraph_LWReflectionProbe(viewDir, normalOS, lod)
 #define SHADERGRAPH_FOG(position, color, density) shadergraph_LWFog(position, color, density)
+
+// 环境光: 顶光, 赤道光, 底光 (暂未看到被 urp 使用)
 #define SHADERGRAPH_AMBIENT_SKY unity_AmbientSky
 #define SHADERGRAPH_AMBIENT_EQUATOR unity_AmbientEquator
 #define SHADERGRAPH_AMBIENT_GROUND unity_AmbientGround
+
 
 #if defined(REQUIRE_DEPTH_TEXTURE)
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"

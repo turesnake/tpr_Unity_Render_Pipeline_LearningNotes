@@ -52,7 +52,7 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-
+    // ========================================< CameraData >====================================:
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
     public struct CameraData//CameraData__RR
     {
@@ -68,7 +68,7 @@ namespace UnityEngine.Rendering.Universal
             m_ProjectionMatrix = projectionMatrix;
         }
 
-    
+
         /*
             Returns the camera view-matrix.
         */
@@ -121,38 +121,51 @@ namespace UnityEngine.Rendering.Universal
         public Camera camera;
 
         // enum: Base, Overlay
-        public CameraRenderType renderType;
+        public CameraRenderType renderType; // Base, Overlay
 
-        public RenderTexture targetTexture;
+        public RenderTexture targetTexture; // = Camera's; [- stack 中所有 camera 的值都相同 -]
 
         public RenderTextureDescriptor cameraTargetDescriptor;
 
-        internal Rect pixelRect;
+        // ---------------------------------------------------:
+        // 下面这组 viewport 相关值, 都直接源自 base camera 的数据, 
+        // overlay camera 的 CameraData 中的数据也等于 base camera 的;
+        // 但这不意味着, overlay camera 的 viewport 一定要和 base camera 的一样
+        // 那些独立的不一样的值, 被记录在 overlay camera 的 "Camera" class 实例内 
+        internal Rect pixelRect; // [- stack 中所有 camera 的值都相同 -]
+        internal int pixelWidth; // [- stack 中所有 camera 的值都相同 -]
+        internal int pixelHeight; // [- stack 中所有 camera 的值都相同 -]
+        internal float aspectRatio; // 横纵比; [- stack 中所有 camera 的值都相同 -]
 
-        internal int pixelWidth;
-        internal int pixelHeight;
-
-        internal float aspectRatio; // 横纵比
-
-        public float renderScale; // 好像是从外部设置的, 内容未知
-
-        public bool clearDepth; // 猜测: 是否清理 depth buffer
 
         /*
-            enum: Game, SceneView, Preview, VR, Reflection
+            渲染区域缩放因子;
+            如果 asset.renderScale 十分接近 1.0, 那就设为 1.0;  否则, 沿用 asset.renderScale 的值;
+            [- stack 中所有 camera 的值都相同 -]
         */
-        public CameraType cameraType;
+        public float renderScale;
+
+        public bool clearDepth; // 是否清理 depth buffer
+
+        
+        //    enum: Game, SceneView, Preview, VR, Reflection
+        public CameraType cameraType; // = Camera's; [- stack 中所有 camera 的值都相同 -]
 
         /*
             从外部被设置;
             猜测: 只有当 viewport 为 全屏时, 才算是 default 的, 此值才为 true; 
+            [- stack 中所有 camera 的值都相同 -]
         */
         public bool isDefaultViewport;
 
-        public bool isHdrEnabled;
+        public bool isHdrEnabled;//[- stack 中所有 camera 的值都相同 -]
 
-        public bool requiresDepthTexture;
+        // 是否将 camera 的 depth buffer 复制一份到 "_CameraDepth"
+        // 从实现中看到: overlay camera 不支持
+        public bool requiresDepthTexture; 
 
+        //  是否将 camera 的 不透明物的 color buffer 复制一份到 "_CameraOpaque"
+        //  从实现中看到: overlay camera 不支持
         public bool requiresOpaqueTexture;
 
 /*   tpr
@@ -160,8 +173,6 @@ namespace UnityEngine.Rendering.Universal
         public bool xrRendering;
 #endif
 */
-
-
         internal bool requireSrgbConversion
         {
             get
@@ -176,7 +187,6 @@ namespace UnityEngine.Rendering.Universal
                 return Display.main.requiresSrgbBlitToBackbuffer;
             }
         }
-
         
         // True if the camera rendering is for the scene window in the editor
         // 仅在 editor 中存在
@@ -227,12 +237,20 @@ namespace UnityEngine.Rendering.Universal
 
 
         /*
-            enum: 几种物体排序方法, flags 可以组合;
+            处理 不透明物体的 排序技术 flags ( flags 可组合)
+
+            通常沿用 "SortingCriteria.CommonOpaque", 
+            
+            有的 支持 "hidden surface removal". (隐藏面去除) 的gpu 不需要对 不透明物体执行 "front-to-back" 排序工作,
+            还有的 camera 出于性能考虑手动关闭了 排序工作
+            对于这种情况, 可在 "SortingCriteria.CommonOpaque" 的基础上, 减去 "QuantizedFrontToBack" 排序;
+            [- stack 中所有 camera 的值都相同 -]
         */
         public SortingCriteria defaultOpaqueSortFlags;
 
         /*
             只要不加载 xr,vr package, xr.enable 就为 false
+            [- stack 中所有 camera 的值都相同 -]
         */
         internal XRPass xr;
 
@@ -241,34 +259,64 @@ namespace UnityEngine.Rendering.Universal
         public bool isStereoEnabled;
         */
 
-        public float maxShadowDistance;
+
+        
+        public float maxShadowDistance; // 见具体设置,
+
+        // 是否支持 后处理,
         public bool postProcessEnabled;
 
+        // 元素们 原本存储在 "CameraCaptureBridge" 中
+        // [- stack 中所有 camera 的值都相同 -]  
         public IEnumerator<Action<RenderTargetIdentifier, CommandBuffer>> captureActions;
 
-        public LayerMask volumeLayerMask; // 猜测: volume 的 LayerMask
+        // the Layer Mask that defines which Volumes affect this Camera. 
+        // [- stack 中所有 camera 的值都相同 -]
+        public LayerMask volumeLayerMask;
 
+        /*
+            Assign a Transform that the Volume system uses to handle the position of this Camera. 
+            
+            For example, if your application uses 第三人称角色, set this property to the character's Transform. 
+            The Camera then uses the post-processing and Scene settings for Volumes that the character enters. 
+            If you do not assign a Transform, the Camera uses its own Transform instead.
+
+            [- stack 中所有 camera 的值都相同 -]
+        */
         public Transform volumeTrigger;
 
+        /*
+            暂时将 shaders 中的所有 NaN/Inf 值都替换成一个 黑色pix, 以避免 "中断某个效果";
+            开启此功能会影响性能, 只推荐在 修复 NaN bug 时使用, GLES2 平台不支持本功能;
+            [- stack 中所有 camera 的值都相同 -]
+        */
         public bool isStopNaNEnabled;
 
+        /*
+            Enable the checkbox to apply 8-bit dithering to the final render. 
+            This can help reduce banding on wide gradients and low light areas.
+            [- stack 中所有 camera 的值都相同 -]
+        */
         public bool isDitheringEnabled;
 
-        public AntialiasingMode antialiasing;
+        public AntialiasingMode antialiasing;// [- stack 中所有 camera 的值都相同 -]
 
-        public AntialiasingQuality antialiasingQuality;
+        public AntialiasingQuality antialiasingQuality;// [- stack 中所有 camera 的值都相同 -]
 
-        /// <summary>
-        /// Returns the current renderer used by this camera.
-        /// <see cref="ScriptableRenderer"/>
-        /// </summary>
+        
+        // Returns the current renderer used by this camera.  比如 "Forward Renderer"
         public ScriptableRenderer renderer;
 
-        /// <summary>
-        /// True if this camera is resolving rendering to the final camera render target.
-        /// When rendering a stack of cameras only the last camera in the stack will resolve to camera target.
-        /// </summary>
+
+        /*
+            True if this camera is resolving rendering to the final camera render target.
+            When rendering a stack of cameras only the last camera in the stack will resolve to camera target.
+
+            如果这是 stack 中最后一个 camera, 则为 true;
+        */
         public bool resolveFinalTarget;
+
+
     }// CameraData end
 
 
@@ -336,9 +384,10 @@ namespace UnityEngine.Rendering.Universal
         public static readonly int glossyEnvironmentColor = Shader.PropertyToID("_GlossyEnvironmentColor");
         public static readonly int subtractiveShadowColor = Shader.PropertyToID("_SubtractiveShadowColor");
 
-        public static readonly int ambientSkyColor = Shader.PropertyToID("unity_AmbientSky");
-        public static readonly int ambientEquatorColor = Shader.PropertyToID("unity_AmbientEquator");
-        public static readonly int ambientGroundColor = Shader.PropertyToID("unity_AmbientGround");
+        // 环境光: 顶光, 赤道光, 底光
+        public static readonly int ambientSkyColor      = Shader.PropertyToID("unity_AmbientSky");
+        public static readonly int ambientEquatorColor  = Shader.PropertyToID("unity_AmbientEquator");//赤道
+        public static readonly int ambientGroundColor   = Shader.PropertyToID("unity_AmbientGround");
 
         public static readonly int time = Shader.PropertyToID("_Time");
         public static readonly int sinTime = Shader.PropertyToID("_SinTime");
@@ -476,9 +525,9 @@ namespace UnityEngine.Rendering.Universal
         static List<Vector4> m_ShadowBiasData = new List<Vector4>();
         static List<int> m_ShadowResolutionData = new List<int>();
 
-        /// <summary>
-        /// Checks if a camera is a game camera.
-        /// </summary>
+        /*
+            Checks if a camera is a game camera.
+        */
         /// <param name="camera">Camera to check state from.</param>
         /// <returns>true if given camera is a game camera, false otherwise.</returns>
         public static bool IsGameCamera(Camera camera)
@@ -488,6 +537,7 @@ namespace UnityEngine.Rendering.Universal
 
             return camera.cameraType == CameraType.Game || camera.cameraType == CameraType.VR;
         }
+
 
         /*
         /// <summary>
@@ -508,6 +558,9 @@ namespace UnityEngine.Rendering.Universal
 
 
         /*
+            ===========================================================================
+                                        asset  真正出处!
+            ---------------------------------------------------------------------------
             Returns the current render pipeline asset for the current quality setting.
             If no render pipeline asset is assigned in QualitySettings, then returns the one assigned in GraphicsSettings.
             --
@@ -516,7 +569,7 @@ namespace UnityEngine.Rendering.Universal
         */
         public static UniversalRenderPipelineAsset asset
         {
-            // 和上文注释不同,  好像是直接访问 QualitySettings 中的值
+            // 和上文注释不同,  好像是直接访问 GraphicsSettings 中的值
             get => GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
         }
 
@@ -577,8 +630,12 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
 
+        // 排序方式, 依靠 camera1.depth, 值小的排前面
         Comparison<Camera> cameraComparison = (camera1, camera2) => { return (int)camera1.depth - (int)camera2.depth; };
+
+
 #if UNITY_2021_1_OR_NEWER
+
         void SortCameras(List<Camera> cameras)
         {
             if (cameras.Count > 1)
@@ -594,9 +651,16 @@ namespace UnityEngine.Rendering.Universal
         */
 #endif
 
-        static RenderTextureDescriptor CreateRenderTextureDescriptor(Camera camera, float renderScale,
-            bool isHdrEnabled, int msaaSamples, bool needsAlpha, bool requiresOpaqueTexture)
-        {
+
+
+        static RenderTextureDescriptor CreateRenderTextureDescriptor(
+                                        Camera camera, 
+                                        float renderScale,
+                                        bool isHdrEnabled, 
+                                        int msaaSamples, 
+                                        bool needsAlpha, 
+                                        bool requiresOpaqueTexture
+        ){
             RenderTextureDescriptor desc;
             GraphicsFormat renderTextureFormatDefault = SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
 
@@ -652,6 +716,9 @@ namespace UnityEngine.Rendering.Universal
 
             return desc;
         }
+
+
+        
 
         static Lightmapping.RequestLightsDelegate lightsDelegate = (Light[] requests, NativeArray<LightDataGI> lightsOutput) =>
         {

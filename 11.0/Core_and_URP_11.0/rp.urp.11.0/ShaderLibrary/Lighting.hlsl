@@ -679,24 +679,34 @@ half3 SampleLightmap(float2 lightmapUV, half3 normalWS)
 #define SAMPLE_GI(lmName, shName, normalWSName) SampleSHPixel(shName, normalWSName)
 #endif
 
+
+
 half3 GlossyEnvironmentReflection(half3 reflectVector, half perceptualRoughness, half occlusion)
 {
+
 #if !defined(_ENVIRONMENTREFLECTIONS_OFF)
+    // ----- 使用 反射探针 数据 -----:
     half mip = PerceptualRoughnessToMipmapLevel(perceptualRoughness);
     half4 encodedIrradiance = SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0, samplerunity_SpecCube0, reflectVector, mip);
 
-//TODO:DOTS - we need to port probes to live in c# so we can manage this manually.
-#if defined(UNITY_USE_NATIVE_HDR) || defined(UNITY_DOTS_INSTANCING_ENABLED)
-    half3 irradiance = encodedIrradiance.rgb;
-#else
-    half3 irradiance = DecodeHDREnvironment(encodedIrradiance, unity_SpecCube0_HDR);
-#endif
+    //TODO:DOTS - we need to port probes to live in c# so we can manage this manually.
+    //  我们需要将探针移植到 C# 中，以便我们可以手动管理它。
+    #if defined(UNITY_USE_NATIVE_HDR) || defined(UNITY_DOTS_INSTANCING_ENABLED)
+        // 笔记查找 "UNITY_USE_NATIVE_HDR"
+        // 如果 texel 是 native hdr 数据, 则无需 解码
+        half3 irradiance = encodedIrradiance.rgb;
+    #else
+        // texel 类型大概为: RGBM 或 dLDR,  都需要解码;
+        half3 irradiance = DecodeHDREnvironment(encodedIrradiance, unity_SpecCube0_HDR);
+    #endif
 
     return irradiance * occlusion;
 #endif // GLOSSY_REFLECTIONS
-
+    // ----- 使用 const color 作为 镜反数据 -----:
     return _GlossyEnvironmentColor.rgb * occlusion;
 }
+
+
 
 half3 SubtractDirectMainLightFromLightmap(Light mainLight, half3 normalWS, half3 bakedGI)
 {

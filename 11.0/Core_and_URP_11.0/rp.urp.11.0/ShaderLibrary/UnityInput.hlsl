@@ -166,7 +166,10 @@ CBUFFER_START(UnityPerDraw)
 
     // ----- Reflection Probe 0 block feature -----
     // HDR environment map decode instructions
+    // 主要作为 "DecodeHDREnvironment()" 的参数;
+    // 需要去网页查找 它的具体填入数据...
     real4 unity_SpecCube0_HDR;
+
 
     // ----- Lightmap block feature -----
     float4 unity_LightmapST;
@@ -243,9 +246,12 @@ float4x4 glstate_matrix_transpose_modelview0;
 // ----------------------------------------------------------------------------
 
 real4 glstate_lightmodel_ambient;
+
+// 环境光: 顶光, 赤道光, 底光 (暂未看到被 urp 使用)
 real4 unity_AmbientSky;
 real4 unity_AmbientEquator;
 real4 unity_AmbientGround;
+
 real4 unity_IndirectSpecColor;
 float4 unity_FogParams;
 real4  unity_FogColor;

@@ -5,7 +5,10 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEditor.Rendering.Universal.ShaderGUI
 {
-    [MovedFrom("UnityEditor.Rendering.LWRP.ShaderGUI")] public static class LitGUI
+    /*
+        规划了 Lit shader inspector 窗口中的元素布局
+    */
+    [MovedFrom("UnityEditor.Rendering.LWRP.ShaderGUI")] public static class LitGUI//LitGUI__RR
     {
         public enum WorkflowMode
         {
@@ -114,7 +117,9 @@ namespace UnityEditor.Rendering.Universal.ShaderGUI
                 occlusionMap = BaseShaderGUI.FindProperty("_OcclusionMap", properties, false);
                 // Advanced Props
                 highlights = BaseShaderGUI.FindProperty("_SpecularHighlights", properties, false);
+
                 reflections = BaseShaderGUI.FindProperty("_EnvironmentReflections", properties, false);
+
 
                 clearCoat           = BaseShaderGUI.FindProperty("_ClearCoat", properties, false);
                 clearCoatMap        = BaseShaderGUI.FindProperty("_ClearCoatMap", properties, false);
@@ -122,6 +127,8 @@ namespace UnityEditor.Rendering.Universal.ShaderGUI
                 clearCoatSmoothness = BaseShaderGUI.FindProperty("_ClearCoatSmoothness", properties, false);
             }
         }
+
+
 
         public static void Inputs(LitProperties properties, MaterialEditor materialEditor, Material material)
         {
@@ -291,9 +298,16 @@ namespace UnityEditor.Rendering.Universal.ShaderGUI
             if (material.HasProperty("_SpecularHighlights"))
                 CoreUtils.SetKeyword(material, "_SPECULARHIGHLIGHTS_OFF",
                     material.GetFloat("_SpecularHighlights") == 0.0f);
-            if (material.HasProperty("_EnvironmentReflections"))
-                CoreUtils.SetKeyword(material, "_ENVIRONMENTREFLECTIONS_OFF",
-                    material.GetFloat("_EnvironmentReflections") == 0.0f);
+
+            if (material.HasProperty("_EnvironmentReflections")){
+                // 用户没有 启用 "Environment Reflections" 时, 才会设置 keyword: "_ENVIRONMENTREFLECTIONS_OFF"
+                CoreUtils.SetKeyword(
+                    material, 
+                    "_ENVIRONMENTREFLECTIONS_OFF",
+                    material.GetFloat("_EnvironmentReflections") == 0.0f
+                );
+            }
+
             if (material.HasProperty("_OcclusionMap"))
                 CoreUtils.SetKeyword(material, "_OCCLUSIONMAP", material.GetTexture("_OcclusionMap"));
 

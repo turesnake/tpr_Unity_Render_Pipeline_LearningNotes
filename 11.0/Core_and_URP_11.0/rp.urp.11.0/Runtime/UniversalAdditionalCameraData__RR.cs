@@ -160,17 +160,13 @@ namespace UnityEngine.Rendering.Universal
         本类允许 urp 来拓展和覆写 "unity 标准 camera 组件" 的 功能和界面;
 
         在 urp 中, 如果一个 go 绑定了 camera 组件, 那么它也必须绑定 本类的组件;
-
-        如果你在一个 urp 项目中新建一个 camera go 时, unity 会自动绑定上 本类组件;
-        而且无法移除这个 本类组件;
+        如果你在一个 urp 项目中新建一个 camera go 时, unity 会自动绑定上 本类组件; 而且无法移除这个 本类组件;
 
         如果你并不使用 脚本 来控制和自定义 urp, 那么你不需要对 本类组件 做任何事;
-
         如果你想使用 脚本 来自定义 urp, 你可以这样写:
             var cameraData = camera.GetUniversalAdditionalCameraData();
 
         来得到 camera 的本类组件实例;
-
         如果你要经常访问 本类数据, 应该做个缓存, 以减少 cpu 开支;
     */
     [DisallowMultipleComponent]
@@ -413,7 +409,7 @@ namespace UnityEngine.Rendering.Universal
 
        
         /*
-            返回的 ScriptableRenderer 被用来渲染本 camera
+            返回 用来渲染本 camera的 ScriptableRenderer, 如 "Forward Renderer"
         */
         public ScriptableRenderer scriptableRenderer
         {
@@ -444,12 +440,20 @@ namespace UnityEngine.Rendering.Universal
             m_RendererIndex = index;
         }
 
+        // the Layer Mask that defines which Volumes affect this Camera.
         public LayerMask volumeLayerMask
         {
             get => m_VolumeLayerMask;
             set => m_VolumeLayerMask = value;
         }
 
+        /*
+            Assign a Transform that the Volume system uses to handle the position of this Camera. 
+            
+            For example, if your application uses 第三人称角色, set this property to the character's Transform. 
+            The Camera then uses the post-processing and Scene settings for Volumes that the character enters. 
+            If you do not assign a Transform, the Camera uses its own Transform instead.
+        */
         public Transform volumeTrigger
         {
             get => m_VolumeTrigger;
@@ -485,12 +489,20 @@ namespace UnityEngine.Rendering.Universal
             set => m_AntialiasingQuality = value;
         }
 
+        /*
+            暂时将 shaders 中的所有 NaN/Inf 值都替换成一个 黑色pix, 以避免 "中断某个效果";
+            开启此功能会影响性能, 只推荐在 修复 NaN bug 时使用, GLES2 平台不支持本功能;
+        */
         public bool stopNaN
         {
             get => m_StopNaN;
             set => m_StopNaN = value;
         }
 
+        /*
+            Enable the checkbox to apply 8-bit dithering to the final render. 
+            This can help reduce banding on wide gradients and low light areas.
+        */
         public bool dithering
         {
             get => m_Dithering;

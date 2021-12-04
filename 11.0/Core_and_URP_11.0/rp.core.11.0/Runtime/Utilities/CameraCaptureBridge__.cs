@@ -3,36 +3,31 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Rendering
 {
-    /// <summary>
-    /// Bridge class for camera captures.
-    /// </summary>
-    public static class CameraCaptureBridge
+
+    /*
+        Bridge class for camera captures.
+    */
+    public static class CameraCaptureBridge//CameraCaptureBridge__
     {
         private static Dictionary<Camera, HashSet<Action<RenderTargetIdentifier, CommandBuffer>>> actionDict =
             new Dictionary<Camera, HashSet<Action<RenderTargetIdentifier, CommandBuffer>>>();
 
         private static bool _enabled;
 
-        /// <summary>
-        /// Enable camera capture.
-        /// </summary>
+        
+        // Enable camera capture.
         public static bool enabled
         {
-            get
-            {
-                return _enabled;
-            }
-            set
-            {
-                _enabled = value;
-            }
+            get{ return _enabled; }
+            set{ _enabled = value; }
         }
 
-        /// <summary>
-        /// Provides the set actions to the renderer to be triggered at the end of the render loop for camera capture
-        /// </summary>
+
+        /*
+            Provides the set actions to the renderer to be triggered at the end of the render loop for camera capture
+        */
         /// <param name="camera">The camera to get actions for</param>
-        /// <returns>Enumeration of actions</returns>
+        /// <returns>Enumeration of actions, 没找到就返回 null </returns>
         public static IEnumerator<Action<RenderTargetIdentifier, CommandBuffer>> GetCaptureActions(Camera camera)
         {
             if (!actionDict.TryGetValue(camera, out var actions))
@@ -40,6 +35,7 @@ namespace UnityEngine.Rendering
 
             return actions.GetEnumerator();
         }
+
 
         /// <summary>
         /// Adds actions for camera capture
@@ -57,6 +53,7 @@ namespace UnityEngine.Rendering
 
             actions.Add(action);
         }
+
 
         /// <summary>
         /// Removes actions for camera capture

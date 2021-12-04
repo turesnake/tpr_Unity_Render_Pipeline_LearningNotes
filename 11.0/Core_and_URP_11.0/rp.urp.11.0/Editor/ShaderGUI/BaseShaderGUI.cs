@@ -595,14 +595,22 @@ namespace UnityEditor
         }
 
         // Copied from shaderGUI as it is a protected function in an abstract class, unavailable to others
-
         public new static MaterialProperty FindProperty(string propertyName, MaterialProperty[] properties)
         {
             return FindProperty(propertyName, properties, true);
         }
 
-        // Copied from shaderGUI as it is a protected function in an abstract class, unavailable to others
 
+        /*
+            Copied from shaderGUI as it is a protected function in an abstract class, unavailable to others
+        */
+        /// <param name="propertyName"></param>
+        /// <param name="properties"></param>
+        /// <param name="propertyIsMandatory"> 
+        ///     若为 true,  结果未能找到目标 property, 本函数将报错
+        ///     若为 false, 结果未能找到目标 property, 本函数仅返回一个 null;
+        /// </param>
+        /// <returns></returns>
         public new static MaterialProperty FindProperty(string propertyName, MaterialProperty[] properties, bool propertyIsMandatory)
         {
             for (int index = 0; index < properties.Length; ++index)
@@ -614,6 +622,8 @@ namespace UnityEditor
                 throw new ArgumentException("Could not find MaterialProperty: '" + propertyName + "', Num properties: " + (object)properties.Length);
             return null;
         }
+
+
 
         #endregion
     }

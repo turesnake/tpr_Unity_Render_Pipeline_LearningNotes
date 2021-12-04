@@ -12,7 +12,7 @@ namespace UnityEngine.Rendering
     /// A global manager that tracks all the Volumes in the currently loaded Scenes and does all the
     /// interpolation work.
     /// </summary>
-    public sealed class VolumeManager
+    public sealed class VolumeManager//VolumeManager__RR
     {
         static readonly Lazy<VolumeManager> s_Instance = new Lazy<VolumeManager>(() => new VolumeManager());
 
@@ -21,11 +21,13 @@ namespace UnityEngine.Rendering
         /// </summary>
         public static VolumeManager instance => s_Instance.Value;
 
+
         /// <summary>
         /// A reference to the main <see cref="VolumeStack"/>.
         /// </summary>
         /// <seealso cref="VolumeStack"/>
         public VolumeStack stack { get; private set; }
+
 
         /*    tpr
         /// The current list of all available types that derive from <see cref="VolumeComponent"/>.

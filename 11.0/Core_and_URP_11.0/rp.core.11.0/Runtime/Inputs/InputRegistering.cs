@@ -158,6 +158,7 @@ namespace UnityEngine
 
         public static void RegisterInputs(List<InputManagerEntry> entries)
         {
+// ENABLE_INPUT_SYSTEM_PACKAGE: 如果 package: "com.unity.inputsystem" 版本大于等于 0.0.0
 #if ENABLE_INPUT_SYSTEM && ENABLE_INPUT_SYSTEM_PACKAGE
             Debug.LogWarning("Trying to add entry in the legacy InputManager but using InputSystem package. Skiping.");
             return;

@@ -20,33 +20,35 @@ namespace UnityEngine.Rendering.Universal
     };
 
 
+
+    /*
+        "InitializeRenderingData()" 初始化一个完整的 RenderingData 实例;
+    */
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
-    public struct RenderingData//RenderingData__RR
+    public struct RenderingData//RenderingData__
     {
         public CullingResults cullResults;
         public CameraData cameraData;
         public LightData lightData;
         public ShadowData shadowData;
         public PostProcessingData postProcessingData;
-        public bool supportsDynamicBatching;
+        public bool supportsDynamicBatching; // 动态批处理优化技术, 不建议使用
         public PerObjectData perObjectData;
 
-        /*
-            True if post-processing effect is enabled while rendering the camera stack.
-        */
+        //  True if post-processing effect is enabled while rendering the camera stack.
         public bool postProcessingEnabled;
     }
 
 
 
-
-    [MovedFrom("UnityEngine.Rendering.LWRP")] public struct LightData
+    // RenderingData 的一个成员
+    [MovedFrom("UnityEngine.Rendering.LWRP")] public struct LightData//LightData__
     {
-        public int mainLightIndex;
-        public int additionalLightsCount;
+        public int mainLightIndex; // main light 在 visibleLights 中的 idx
+        public int additionalLightsCount; // add light 的数量
         public int maxPerObjectAdditionalLightsCount;
         public NativeArray<VisibleLight> visibleLights;
-        public bool shadeAdditionalLightsPerVertex;
+        public bool shadeAdditionalLightsPerVertex; // add光 mode 是 逐顶点吗 ?
         public bool supportsMixedLighting;
     }
 
@@ -118,7 +120,7 @@ namespace UnityEngine.Rendering.Universal
         }
 
 
-        public Camera camera;
+        public Camera camera; // camera 本体, 
 
         // enum: Base, Overlay
         public CameraRenderType renderType; // Base, Overlay
@@ -235,7 +237,6 @@ namespace UnityEngine.Rendering.Universal
         }
 
 
-
         /*
             处理 不透明物体的 排序技术 flags ( flags 可组合)
 
@@ -324,8 +325,8 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-
-    [MovedFrom("UnityEngine.Rendering.LWRP")] public struct ShadowData
+    // RenderingData 的一个成员
+    [MovedFrom("UnityEngine.Rendering.LWRP")] public struct ShadowData//ShadowData__
     {
         public bool supportsMainLightShadows;
 
@@ -334,18 +335,40 @@ namespace UnityEngine.Rendering.Universal
         public bool requiresScreenSpaceShadowResolve;
         */
 
-        public int mainLightShadowmapWidth;
-        public int mainLightShadowmapHeight;
-        public int mainLightShadowCascadesCount;
+        public int mainLightShadowmapWidth; // 其实就是 shadow resolution
+        public int mainLightShadowmapHeight; // 其实就是 shadow resolution
+        public int mainLightShadowCascadesCount;// 使用几层 cascade, 区间[1,4]
+
+        /*
+            就是 cascade ratio, 分别定义了 第1,2,3层 cascade 占据的区域的 比例;
+        */
         public Vector3 mainLightShadowCascadesSplit;
+
         public bool supportsAdditionalLightShadows;
-        public int additionalLightsShadowmapWidth;
-        public int additionalLightsShadowmapHeight;
+        public int additionalLightsShadowmapWidth; // 其实就是 shadow resolution
+        public int additionalLightsShadowmapHeight; // 其实就是 shadow resolution
         public bool supportsSoftShadows;
-        public int shadowmapDepthBufferBits;
+        public int shadowmapDepthBufferBits; // 比如 16: 一个texl 存储消耗 16-bits
+
+        /*
+            visibleLights 中, 每个光的 ShadowBias 数据
+                x: shadowBias
+                y: shadowNormalBias
+                z: 0.0
+                w: 0.0
+            要么使用 light 的设置, 要么使用 asset 的设置;
+        */
         public List<Vector4> bias;
+
+        /*
+            visibleLights 中, 每个光的 ShadowRe solution 值(像素为档位.)
+            不同的 配置档次的(tier), 得到的值不同, 比如 低档配置:512, 中档配置:1024, 高档配置:2048
+            可以是设置在 asset 中的值, 也可以是设置在 light 中的值;
+        */
         public List<int> resolution;
     }
+
+
 
     // Precomputed tile data.
     public struct PreTile
@@ -426,13 +449,19 @@ namespace UnityEngine.Rendering.Universal
         public static readonly int rendererColor = Shader.PropertyToID("_RendererColor");
     }
 
-    public struct PostProcessingData
+
+
+    // RenderingData 的一个成员
+    public struct PostProcessingData//PostProcessingData__
     {
-        public ColorGradingMode gradingMode;
-        public int lutSize;
-        /// <summary>
-        /// True if fast approximation functions are used when converting between the sRGB and Linear color spaces, false otherwise.
-        /// </summary>
+        public ColorGradingMode gradingMode; // 颜色渐变模式; enum: LowDynamicRange, HighDynamicRange
+        public int lutSize; // 通常为 32,
+ 
+        /*
+            True if fast approximation functions are used when converting between the sRGB and Linear color spaces, false otherwise.
+            快速但不够精确的 sRGB<->Linear 转换函数;
+            默认为 false;
+        */
         public bool useFastSRGBLinearConversion;
     }
 
@@ -522,8 +551,22 @@ namespace UnityEngine.Rendering.Universal
         static Vector4 k_DefaultLightSpotDirection = new Vector4(0.0f, 0.0f, 1.0f, 0.0f);
         static Vector4 k_DefaultLightsProbeChannel = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 
+        /*
+            visibleLights 中, 每个光的 ShadowBias 数据
+                x: shadowBias
+                y: shadowNormalBias
+                z: 0.0
+                w: 0.0
+            要么使用 light 的设置, 要么使用 asset 的设置;
+        */
         static List<Vector4> m_ShadowBiasData = new List<Vector4>();
-        static List<int> m_ShadowResolutionData = new List<int>();
+
+        /*
+            visibleLights 中, 每个光的 ShadowRe solution 值(像素为档位.)
+            不同的 配置档次的(tier), 得到的值不同, 比如 低档配置:512, 中档配置:1024, 高档配置:2048
+            可以是设置在 asset 中的值, 也可以是设置在 light 中的值;
+        */
+        static List<int> m_ShadowResolutionData = new List<int>(); 
 
         /*
             Checks if a camera is a game camera.
@@ -652,9 +695,9 @@ namespace UnityEngine.Rendering.Universal
 #endif
 
 
-
-        static RenderTextureDescriptor CreateRenderTextureDescriptor(
-                                        Camera camera, 
+        // 拿着现有数据, 新建并初始化一个 RenderTextureDescriptor 实例;
+        static RenderTextureDescriptor CreateRenderTextureDescriptor(  // 读完__
+                                        Camera camera,      // must be base camera
                                         float renderScale,
                                         bool isHdrEnabled, 
                                         int msaaSamples, 
@@ -662,10 +705,12 @@ namespace UnityEngine.Rendering.Universal
                                         bool requiresOpaqueTexture
         ){
             RenderTextureDescriptor desc;
+
+            // 当前平台为 LHR 预定的 具体数据format, 比如 B8G8R8A8_SRGB 这种的;
             GraphicsFormat renderTextureFormatDefault = SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
 
             if (camera.targetTexture == null)
-            {
+            {// 需要从零配置一个新的
                 desc = new RenderTextureDescriptor(camera.pixelWidth, camera.pixelHeight);
                 desc.width = (int)((float)desc.width * renderScale);
                 desc.height = (int)((float)desc.height * renderScale);
@@ -673,6 +718,7 @@ namespace UnityEngine.Rendering.Universal
 
                 GraphicsFormat hdrFormat;
                 if (!needsAlpha && RenderingUtils.SupportsGraphicsFormat(GraphicsFormat.B10G11R11_UFloatPack32, FormatUsage.Linear | FormatUsage.Render))
+                    // 不需要 alpha 通道
                     hdrFormat = GraphicsFormat.B10G11R11_UFloatPack32;
                 else if (RenderingUtils.SupportsGraphicsFormat(GraphicsFormat.R16G16B16A16_SFloat, FormatUsage.Linear | FormatUsage.Render))
                     hdrFormat = GraphicsFormat.R16G16B16A16_SFloat;
@@ -682,35 +728,60 @@ namespace UnityEngine.Rendering.Universal
                 desc.graphicsFormat = isHdrEnabled ? hdrFormat : renderTextureFormatDefault;
                 desc.depthBufferBits = 32;
                 desc.msaaSamples = msaaSamples;
+                // 是否启用 sRGB read/write conversions, 
+                // 若为 true, 那么不管 render texture 内部数据format 是 ldr 还是 hdr, 它的对外读写口都一定是 linear 格式的;
                 desc.sRGB = (QualitySettings.activeColorSpace == ColorSpace.Linear);
             }
             else
-            {
+            {// 沿用 camera.targetTexture 中已经分配好的
                 desc = camera.targetTexture.descriptor;
                 desc.width = camera.pixelWidth;
                 desc.height = camera.pixelHeight;
-                if (camera.cameraType == CameraType.SceneView  && !isHdrEnabled)
+                if (camera.cameraType==CameraType.SceneView  && !isHdrEnabled)
                 {
                     desc.graphicsFormat = renderTextureFormatDefault;
                 }
-                // SystemInfo.SupportsRenderTextureFormat(camera.targetTexture.descriptor.colorFormat)
-                // will assert on R8_SINT since it isn't a valid value of RenderTextureFormat.
-                // If this is fixed then we can implement debug statement to the user explaining why some
-                // RenderTextureFormats available resolves in a black render texture when no warning or error
-                // is given.
+                /*
+                    SystemInfo.SupportsRenderTextureFormat(camera.targetTexture.descriptor.colorFormat)
+                    will assert on R8_SINT since it isn't a valid value of RenderTextureFormat.
+                    --
+                    If this is fixed then we can implement debug statement to the user explaining why some
+                    RenderTextureFormats available resolves in a black render texture when no warning or error
+                    is given.
+                    ---
+                    如果这个问题得到了修复, 那么我们就能向用户实现一个 debug statement, 以解释为什么在没有 warning 和 error
+                    的情况下, 有些可用的 render texture format 会解析出一张纯黑的画面;
+                */
             }
 
             desc.enableRandomWrite = false;
             desc.bindMS = false;
             desc.useDynamicScale = camera.allowDynamicResolution;
 
-            // check that the requested MSAA samples count is supported by the current platform. If it's not supported,
-            // replace the requested desc.msaaSamples value with the actual value the engine falls back to
+            /*
+                check that the requested MSAA samples count is supported by the current platform. If it's not supported,
+                replace the requested desc.msaaSamples value with the actual value the engine falls back to
+                --
+                参数 desc 中记录了需要的 msaa 采样次数值, 本函数检测当前平台是否支持这个 采样次数;
+                -- 如果支持这个次数, 那就返回这个次数值;
+                -- 如果不支持, 那就返回一个 fallback 值; (当前平台支持的最大 msaa 采样次数值)
+            */ 
             desc.msaaSamples = SystemInfo.GetRenderTextureSupportedMSAASampleCount(desc);
 
-            // if the target platform doesn't support storing multisampled RTs and we are doing a separate opaque pass, using a Load load action on the subsequent passes
-            // will result in loading Resolved data, which on some platforms is discarded, resulting in losing the results of the previous passes.
-            // As a workaround we disable MSAA to make sure that the results of previous passes are stored. (fix for Case 1247423).
+            /*
+                if the target platform doesn't support storing multisampled RTs, and we are doing a separate opaque pass, 
+                using a Load load action on the subsequent passes will result in loading Resolved data, 
+                which on some platforms is discarded, resulting in losing the results of the previous passes.
+                ---
+                As a workaround we disable MSAA to make sure that the results of previous passes are stored. (fix for Case 1247423).
+                ---
+
+                如果目标平台 并不支持 "multisampled RTs", 而且我们正在执行一个单独的 opaque pass, 
+                在后续 passes 中执行 "Load" 操作时, 可能因为某些平台的不支持, 而导致之前存储的 数据(可能时 msaa 处理过的数据) 被丢弃,
+                进而加载失败;
+
+                此处的弥补方案就是彻底关闭 msaa, 以保证 之前pass 渲染的结果, 一定能在后续pass 中加载得到; 
+            */
             if (!SystemInfo.supportsStoreAndResolveAction && requiresOpaqueTexture)
                 desc.msaaSamples = 1;
 

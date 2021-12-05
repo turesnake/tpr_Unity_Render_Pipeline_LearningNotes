@@ -92,6 +92,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
             {
                 bounds = renderer.bounds;
             }
+// 如果 package: "com.unity.modules.physics2d" 版本大于等于 1.0.0
 #if USING_PHYSICS2D_MODULE
             else
             {

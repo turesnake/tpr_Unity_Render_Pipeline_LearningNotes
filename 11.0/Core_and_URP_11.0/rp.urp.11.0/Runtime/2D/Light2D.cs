@@ -60,6 +60,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
         [SerializeField] ComponentVersions m_ComponentVersion = ComponentVersions.Version_Unserialized;
 
 
+// 如果 package: "com.unity.modules.animation" 版本大于等于 1.0.0
 #if USING_ANIMATION_MODULE
         [UnityEngine.Animations.NotKeyable]
 #endif
@@ -91,6 +92,8 @@ namespace UnityEngine.Experimental.Rendering.Universal
         [FormerlySerializedAs("m_PointLightDistance")]
         [SerializeField] float m_NormalMapDistance = 3.0f;
 
+
+// 如果 package: "com.unity.modules.animation" 版本大于等于 1.0.0
 #if USING_ANIMATION_MODULE
         [UnityEngine.Animations.NotKeyable]
 #endif

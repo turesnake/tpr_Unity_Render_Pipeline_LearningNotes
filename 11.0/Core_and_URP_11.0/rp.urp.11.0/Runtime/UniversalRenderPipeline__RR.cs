@@ -44,9 +44,15 @@ namespace UnityEngine.Rendering.Universal
             public static readonly ProfilingSampler unknownSampler = new ProfilingSampler("Unknown");
 
 
-            // Specialization for camera loop to avoid allocations.
-            public static ProfilingSampler TryGetOrAddCameraSampler(Camera camera)
+            /*
+                Specialization for camera loop to avoid allocations.
+                --
+                将每个 camera 的 (cameraId,ProfilingSampler) 信息存储起来, 以便下次访问时直接使用,
+                避免多次分配;
+            */
+            public static ProfilingSampler TryGetOrAddCameraSampler(Camera camera)// 读完__
             {
+                // 暂未在任何地方见到这个 宏 的定义
                 #if UNIVERSAL_PROFILING_NO_ALLOC
                     return unknownSampler;
                 #else
@@ -56,12 +62,14 @@ namespace UnityEngine.Rendering.Universal
                     if (!exists)
                     {
                         // NOTE: camera.name allocates!
-                        ps = new ProfilingSampler($"{nameof(UniversalRenderPipeline)}.{nameof(RenderSingleCamera)}: {camera.name}");// "UniversalRenderPipeline.RenderSingleCamera: "
+                        ps = new ProfilingSampler($"{nameof(UniversalRenderPipeline)}.{nameof(RenderSingleCamera)}: {camera.name}");
                         s_HashSamplerCache.Add(cameraId, ps);
                     }
                     return ps;
                 #endif
-            }
+            }// 函数完__
+
+
 
             public static class Pipeline
             {
@@ -143,17 +151,32 @@ namespace UnityEngine.Rendering.Universal
         internal const int k_MaxVisibleAdditionalLightsMobileShaderLevelLessThan45 = 16;
         internal const int k_MaxVisibleAdditionalLightsMobile    = 32;
         internal const int k_MaxVisibleAdditionalLightsNonMobile = 256;
+
+
         public static int maxVisibleAdditionalLights
         {
             get
             {
                 bool isMobile = Application.isMobilePlatform;
-                if (isMobile && (SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2 || (SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES3 && Graphics.minOpenGLESVersion <= OpenGLESVersion.OpenGLES30)))
-                    return k_MaxVisibleAdditionalLightsMobileShaderLevelLessThan45;
+                if( isMobile && 
+                    (
+                        SystemInfo.graphicsDeviceType==GraphicsDeviceType.OpenGLES2 || 
+                        (SystemInfo.graphicsDeviceType==GraphicsDeviceType.OpenGLES3 && Graphics.minOpenGLESVersion<=OpenGLESVersion.OpenGLES30)
+                    )
+                ){
+                    return k_MaxVisibleAdditionalLightsMobileShaderLevelLessThan45; // 16
+                }
 
                 // GLES can be selected as platform on Windows (not a mobile platform) but uniform buffer size so we must use a low light count.
-                return (isMobile || SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLCore || SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2 || SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES3)
-                    ? k_MaxVisibleAdditionalLightsMobile : k_MaxVisibleAdditionalLightsNonMobile;
+                return 
+                    (
+                        isMobile || 
+                        SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLCore || 
+                        SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2 || 
+                        SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES3
+                    )
+                    ? k_MaxVisibleAdditionalLightsMobile    // 32
+                    : k_MaxVisibleAdditionalLightsNonMobile;// 256 
             }
         }
 
@@ -192,7 +215,7 @@ namespace UnityEngine.Rendering.Universal
             CameraCaptureBridge.enabled = true;
 
             RenderingUtils.ClearSystemInfoCache();
-        }
+        }// 函数完__
 
 
 
@@ -218,7 +241,7 @@ namespace UnityEngine.Rendering.Universal
 #endif
             Lightmapping.ResetDelegate();
             CameraCaptureBridge.enabled = false;
-        }
+        }// 函数完__
 
 
 
@@ -304,7 +327,7 @@ namespace UnityEngine.Rendering.Universal
                         BeginCameraRendering(renderContext, camera);
                     }
 
-// 当 Visual Effect Graph 版本 >= 0.0.1
+// 如果 package: "com.unity.visualeffectgraph" 版本大于 0.0.1
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
                     //It should be called before culling to prepare material. 
                     //When there isn't any VisualEffect component, this method has no effect.
@@ -340,7 +363,7 @@ namespace UnityEngine.Rendering.Universal
             }
             */
 #endif
-        }//Render end
+        }// 函数完__
 
 
 
@@ -351,12 +374,11 @@ namespace UnityEngine.Rendering.Universal
             本函数体内不调用 "BeginCameraRendering()" and "EndCameraRendering()" callbacks.
 
             只有 base camera 可调用本重载版本;
-
             只是调用另一个 同名重载函数;
         */
         /// <param name="context">Render context used to record commands during execution.</param>
         /// <param name="camera">Camera to render.</param>
-        public static void RenderSingleCamera(ScriptableRenderContext context, Camera camera)
+        public static void RenderSingleCamera(ScriptableRenderContext context, Camera camera)// 读完__
         {
             UniversalAdditionalCameraData additionalCameraData = null;
             if (IsGameCamera(camera))
@@ -376,21 +398,21 @@ namespace UnityEngine.Rendering.Universal
                 true,                   // 参数 camera 是不是 stack 中的最后一个;
                 out var cameraData      // 输出值
             );
+// 如果 package: "com.unity.adaptiveperformance" 版本大于 2.0.0
 #if ADAPTIVE_PERFORMANCE_2_0_0_OR_NEWER
             if (asset.useAdaptivePerformance)
                 ApplyAdaptivePerformance(ref cameraData);
 #endif
-            RenderSingleCamera(context, cameraData, cameraData.postProcessEnabled);
-        }
+            RenderSingleCamera(context, cameraData, cameraData.postProcessEnabled);// -2-
+        }// 函数完__
 
 
 
 
-        /// <param name="cameraData"></param>
-        /// <param name="cullingParams"> 输出值 </param>
+        
         /// <returns> 如果目标 camera 不能渲染, 返回 false; (empty viewport rectangle, invalid clip plane setup etc.).
         /// </returns>
-        static bool TryGetCullingParameters(CameraData cameraData, out ScriptableCullingParameters cullingParams)
+        static bool TryGetCullingParameters(CameraData cameraData, out ScriptableCullingParameters cullingParams)// 读完__
         {
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
@@ -405,10 +427,10 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
             return cameraData.camera.TryGetCullingParameters(
-                false,              // Generate single-pass stereo aware culling parameters. 
+                false,              // Generate single-pass stereo aware culling parameters. 非 xr 版
                 out cullingParams   // Resultant "culling parameters".  输出端;
             );
-        }
+        }// 函数完__
 
 
 
@@ -419,50 +441,68 @@ namespace UnityEngine.Rendering.Universal
         /// <param name="context">Render context used to record commands during execution.</param>
         /// <param name="cameraData">Camera rendering data. This might contain data inherited from a base camera.</param>
         /// <param name="anyPostProcessingEnabled">True if at least one camera has post-processing enabled in the stack, false otherwise.</param>
-        static void RenderSingleCamera(ScriptableRenderContext context, CameraData cameraData, bool anyPostProcessingEnabled)
-        {
-            Camera camera = cameraData.camera;
-            var renderer = cameraData.renderer;
+        static void RenderSingleCamera(
+                                        ScriptableRenderContext context, 
+                                        CameraData cameraData, 
+                                        bool anyPostProcessingEnabled
+        ){
+            Camera camera = cameraData.camera; // base / overlay camera 皆可
+            var renderer = cameraData.renderer; // 比如 "Forward Renderer"
             if (renderer == null)
             {
                 Debug.LogWarning(string.Format("Trying to render {0} with an invalid renderer. Camera rendering will be skipped.", camera.name));
                 return;
             }
 
-            if (!TryGetCullingParameters(cameraData, out var cullingParameters))
+            if (!TryGetCullingParameters(cameraData, out ScriptableCullingParameters cullingParameters))
                 return;
 
             ScriptableRenderer.current = renderer;
 
-            // 是否为 editor: scene 窗口 使用的 camera;
+            // 是否为 editor: scene 窗口使用的 camera;
             bool isSceneViewCamera = cameraData.isSceneViewCamera;
 
-            // NOTE: Do NOT mix ProfilingScope with named CommandBuffers i.e. CommandBufferPool.Get("name").
-            // Currently there's an issue which results in mismatched markers.
-            // The named CommandBuffer will close its "profiling scope" on execution.
-            // That will orphan ProfilingScope markers as the named CommandBuffer markers are their parents.
-            // Resulting in following pattern:
-            // exec(cmd.start, scope.start, cmd.end) and exec(cmd.start, scope.end, cmd.end)
+            /*
+                NOTE: Do NOT mix ScriptableCullingParameters with named CommandBuffers i.e. CommandBufferPool.Get("name").
+                Currently there's an issue which results in mismatched markers.
+                The named CommandBuffer will close its "profiling scope" on execution.
+                That will orphan ProfilingScope markers as the named CommandBuffer markers are their parents.
+                Resulting in following pattern:
+                exec(cmd.start, scope.start, cmd.end) and exec(cmd.start, scope.end, cmd.end)
+                ---
+                注意:
+                不要将 "ScriptableCullingParameters" 和 "命名版 CommandBuffers" (比如 CommandBufferPool.Get("name")) 混淆;
+                当前存在一个问题, 它会得到不必配的 markers;
+                在运行时, "命名版 CommandBuffers" 会关闭自己的 "profiling scope"; 这将孤立 ProfilingScope markers，
+                因为命名的 CommandBuffer markers 是它们的父级。从而导致以下 pattern:
+                exec(cmd.start, scope.start, cmd.end) and exec(cmd.start, scope.end, cmd.end)
+            */
             CommandBuffer cmd = CommandBufferPool.Get();
 
-            // TODO: move skybox code from C++ to URP in order to remove the call to context.Submit() inside DrawSkyboxPass
-            // Until then, we can't use nested profiling scopes with XR multipass
-            // --
-            // 非 xr 程序, 得到 cmd
-            CommandBuffer cmdScope = cameraData.xr.enabled ? null : cmd; 
-
+            /*
+                TODO: move skybox code from C++ to URP in order to remove the call to context.Submit() inside DrawSkyboxPass
+                Until then, we can't use nested profiling scopes with XR multipass
+                --
+                TODO: 将 Skybox 代码从 C++ 移至 URP，以删除对 DrawSkyboxPass 内的 context.Submit() 的调用;
+                在此之前，我们不能将 "nested profiling scopes" 与 "XR multipass" 一起使用
+            */
+            CommandBuffer cmdScope = cameraData.xr.enabled ? null : cmd; // 非 xr 程序, 得到 cmd
 
             ProfilingSampler sampler = Profiling.TryGetOrAddCameraSampler(camera);
-            using (new ProfilingScope(cmdScope, sampler)) // Enqueues a "BeginSample" command into the CommandBuffer cmd
+            // Enqueues a "BeginSample" command into the CommandBuffer cmd
+            // 等同于调用 "cmdScope.BeginSample()"
+            using (new ProfilingScope(cmdScope, sampler)) 
             {
                 renderer.Clear(cameraData.renderType);
 
                 using (new ProfilingScope(cmd, Profiling.Pipeline.Renderer.setupCullingParameters))
                 {
+                    // 为 "参数 cullingParameters" 设置一部分成员数据;
                     renderer.SetupCullingParameters(ref cullingParameters, ref cameraData);
                 }
 
-                context.ExecuteCommandBuffer(cmd); // Send all the commands enqueued so far in the CommandBuffer cmd, to the ScriptableRenderContext context
+                // Send all the commands enqueued so far in the CommandBuffer cmd, to the context;
+                context.ExecuteCommandBuffer(cmd); 
                 cmd.Clear();
 
 #if UNITY_EDITOR
@@ -473,9 +513,12 @@ namespace UnityEngine.Rendering.Universal
                 }
 #endif
 
-                var cullResults = context.Cull(ref cullingParameters);
-                InitializeRenderingData(asset, ref cameraData, ref cullResults, anyPostProcessingEnabled, out var renderingData);
+                CullingResults cullResults = context.Cull(ref cullingParameters);
 
+                // 初始化 "参数 renderingData" 中的全部数据;
+                InitializeRenderingData(asset, ref cameraData, ref cullResults, anyPostProcessingEnabled, out RenderingData renderingData);
+
+// 如果 package: "com.unity.adaptiveperformance" 版本大于 2.0.0
 #if ADAPTIVE_PERFORMANCE_2_0_0_OR_NEWER
                 if (asset.useAdaptivePerformance)
                     ApplyAdaptivePerformance(ref renderingData);
@@ -488,7 +531,8 @@ namespace UnityEngine.Rendering.Universal
 
                 // Timing scope inside
                 renderer.Execute(context, ref renderingData);
-            } // When ProfilingSample goes out of scope, an "EndSample" command is enqueued into CommandBuffer cmd
+            }// 等同于调用 "cmdScope.EndSample()"
+
 
             cameraData.xr.EndCamera(cmd, cameraData);
             context.ExecuteCommandBuffer(cmd); // Sends to ScriptableRenderContext all the commands enqueued since cmd.Clear, i.e the "EndSample" command
@@ -500,7 +544,9 @@ namespace UnityEngine.Rendering.Universal
             }
 
             ScriptableRenderer.current = null;
-        }
+        }// 函数完__
+
+
 
 
         /*
@@ -619,10 +665,14 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
 
+
+// 如果 package: "com.unity.visualeffectgraph" 版本大于 0.0.1
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
             //It should be called before culling to prepare material. When there isn't any VisualEffect component, this method has no effect.
             VFX.VFXManager.PrepareCamera(baseCamera);
 #endif
+
+// 如果 package: "com.unity.adaptiveperformance" 版本大于 2.0.0
 #if ADAPTIVE_PERFORMANCE_2_0_0_OR_NEWER
             if (asset.useAdaptivePerformance)
                 ApplyAdaptivePerformance(ref baseCameraData);
@@ -657,6 +707,8 @@ namespace UnityEngine.Rendering.Universal
                             // 触发并执行: 所有绑定到委托 "RenderPipelineManager.beginCameraRendering" 上的 callbacks;
                             BeginCameraRendering(context, currCamera);
                         }
+
+// 如果 package: "com.unity.visualeffectgraph" 版本大于 0.0.1
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
                         //It should be called before culling to prepare material. When there isn't any VisualEffect component, this method has no effect.
                         VFX.VFXManager.PrepareCamera(currCamera);
@@ -705,7 +757,7 @@ namespace UnityEngine.Rendering.Universal
         m_XRSystem.ReleaseFrame();
 #endif
 */
-        }//RenderCameraStack end
+        }// 函数完__
 
 
 
@@ -739,12 +791,12 @@ namespace UnityEngine.Rendering.Universal
             }
 
             VolumeManager.instance.Update(trigger, layerMask);
-        }
+        }// 函数完__
 
         
 
         // 后处理中: SMAA, DepthOfField, MotionBlur 都需要用到 depth buffer, 此时返回 true;
-        static bool CheckPostProcessForDepth(in CameraData cameraData)
+        static bool CheckPostProcessForDepth(in CameraData cameraData)// 读完__
         {
             if (!cameraData.postProcessEnabled)
                 return false;
@@ -761,7 +813,7 @@ namespace UnityEngine.Rendering.Universal
                 return true;
 
             return false;
-        }
+        }// 函数完__
 
 
 
@@ -783,11 +835,11 @@ namespace UnityEngine.Rendering.Universal
             };
             SceneViewDrawMode.SetupDrawMode();
 #endif
-        }
+        }// 函数完__
 
 
-
-        static void InitializeCameraData(
+        // 为一个 base camera, 新建并初始化它的 CameraData 实例;
+        static void InitializeCameraData(   // 读完__
                                 Camera camera, // must be base camera
                                 UniversalAdditionalCameraData additionalCameraData, // 和参数 camera 一起的
                                 bool resolveFinalTarget, // 参数 camera 是不是 stack 中的最后一个;
@@ -822,7 +874,9 @@ namespace UnityEngine.Rendering.Universal
                 msaaSamples = XRSystem.GetMSAALevel();
 #endif
 */
-            bool needsAlphaChannel = Graphics.preserveFramebufferAlpha; //是否保留 framebuffer 的 alpha 通道信息 (readonly).
+            // 右侧原值意思: 是否保留 framebuffer 的 alpha 通道信息 (readonly).
+            // 此处左侧变量含义: 选择合适的 texture/render texture 的 GraphicsFormat 类型, 比如是否携带 alpha 通道;
+            bool needsAlphaChannel = Graphics.preserveFramebufferAlpha; 
             cameraData.cameraTargetDescriptor = CreateRenderTextureDescriptor(
                 camera, 
                 cameraData.renderScale,
@@ -831,7 +885,7 @@ namespace UnityEngine.Rendering.Universal
                 needsAlphaChannel, 
                 cameraData.requiresOpaqueTexture
             );
-        }
+        }// 函数完__
 
 
 
@@ -954,7 +1008,7 @@ namespace UnityEngine.Rendering.Universal
             cameraData.defaultOpaqueSortFlags = canSkipFrontToBackSorting ? noFrontToBackOpaqueFlags : commonOpaqueFlags;
             // urp 自身代码中, 并未向向容器写入元素;
             cameraData.captureActions = CameraCaptureBridge.GetCaptureActions(baseCamera);
-        }
+        }// 函数完__
 
 
 
@@ -970,7 +1024,7 @@ namespace UnityEngine.Rendering.Universal
         /// <param name="additionalCameraData">Additional camera data component to initialize settings from.</param>
         /// <param name="resolveFinalTarget">True if this is the last camera in the stack and rendering should resolve to camera target.</param>
         /// <param name="cameraData">Settings to be initilized.</param>
-        static void InitializeAdditionalCameraData(  //   看完__
+        static void InitializeAdditionalCameraData(  //   读完__
                                             Camera camera, 
                                             UniversalAdditionalCameraData additionalCameraData, 
                                             bool resolveFinalTarget,  // 参数 camera 是不是 stack 中的最后一个;
@@ -1077,26 +1131,33 @@ namespace UnityEngine.Rendering.Universal
             }
 
             cameraData.SetViewAndProjectionMatrix(camera.worldToCameraMatrix, projectionMatrix);
-        }
+        }// 函数完__
 
 
 
-
-        static void InitializeRenderingData(UniversalRenderPipelineAsset settings, ref CameraData cameraData, ref CullingResults cullResults,
-            bool anyPostProcessingEnabled, out RenderingData renderingData)
-        {
+        
+        //    初始化 "参数 renderingData" 中的全部数据;
+        static void InitializeRenderingData( //   读完__
+                                    UniversalRenderPipelineAsset settings, 
+                                    ref CameraData cameraData, 
+                                    ref CullingResults cullResults,
+                                    bool anyPostProcessingEnabled, 
+                                    out RenderingData renderingData
+        ){
             using var profScope = new ProfilingScope(null, Profiling.Pipeline.initializeRenderingData);
 
             var visibleLights = cullResults.visibleLights;
 
+            // 若找到合适的 main light, 就返回它在 visibleLights 中的 idx;  没找到就返回 -1;
             int mainLightIndex = GetMainLightIndex(settings, visibleLights);
             bool mainLightCastShadows = false;
             bool additionalLightsCastShadows = false;
 
             if (cameraData.maxShadowDistance > 0.0f)
             {
-                mainLightCastShadows = (mainLightIndex != -1 && visibleLights[mainLightIndex].light != null &&
-                    visibleLights[mainLightIndex].light.shadows != LightShadows.None);
+                mainLightCastShadows = (mainLightIndex!=-1 && 
+                                        visibleLights[mainLightIndex].light!=null &&
+                                        visibleLights[mainLightIndex].light.shadows!=LightShadows.None);
 
                 // If additional lights are shaded per-pixel they cannot cast shadows
                 if (settings.additionalLightsRenderingMode == LightRenderingMode.PerPixel)
@@ -1109,8 +1170,11 @@ namespace UnityEngine.Rendering.Universal
                         Light light = visibleLights[i].light;
 
                         // UniversalRP doesn't support additional directional light shadows yet
-                        if ((visibleLights[i].lightType == LightType.Spot || visibleLights[i].lightType == LightType.Point) && light != null && light.shadows != LightShadows.None)
-                        {
+                        // urp 暂时不支持 "add 平行光" 的阴影;
+                        if( (visibleLights[i].lightType==LightType.Spot || visibleLights[i].lightType==LightType.Point) && 
+                            light!=null && 
+                            light.shadows!=LightShadows.None
+                        ){
                             additionalLightsCastShadows = true;
                             break;
                         }
@@ -1121,15 +1185,28 @@ namespace UnityEngine.Rendering.Universal
             renderingData.cullResults = cullResults;
             renderingData.cameraData = cameraData;
             InitializeLightData(settings, visibleLights, mainLightIndex, out renderingData.lightData);
-            InitializeShadowData(settings, visibleLights, mainLightCastShadows, additionalLightsCastShadows && !renderingData.lightData.shadeAdditionalLightsPerVertex, out renderingData.shadowData);
+            InitializeShadowData(
+                settings, visibleLights, mainLightCastShadows, 
+                additionalLightsCastShadows && !renderingData.lightData.shadeAdditionalLightsPerVertex, 
+                out renderingData.shadowData
+            );
             InitializePostProcessingData(settings, out renderingData.postProcessingData);
             renderingData.supportsDynamicBatching = settings.supportsDynamicBatching;
             renderingData.perObjectData = GetPerObjectLightFlags(renderingData.lightData.additionalLightsCount);
             renderingData.postProcessingEnabled = anyPostProcessingEnabled;
-        }
+        }// 函数完__
 
-        static void InitializeShadowData(UniversalRenderPipelineAsset settings, NativeArray<VisibleLight> visibleLights, bool mainLightCastShadows, bool additionalLightsCastShadows, out ShadowData shadowData)
-        {
+
+
+
+        // 初始化 "参数 shadowData" 中的全部数据, ( 它其实是 renderingData.shadowData )
+        static void InitializeShadowData( // 读完__
+                                    UniversalRenderPipelineAsset settings, 
+                                    NativeArray<VisibleLight> visibleLights, 
+                                    bool mainLightCastShadows, 
+                                    bool additionalLightsCastShadows, 
+                                    out ShadowData shadowData
+        ){
             using var profScope = new ProfilingScope(null, Profiling.Pipeline.initializeShadowData);
 
             m_ShadowBiasData.Clear();
@@ -1138,6 +1215,9 @@ namespace UnityEngine.Rendering.Universal
             for (int i = 0; i < visibleLights.Length; ++i)
             {
                 Light light = visibleLights[i].light;
+
+                // 一个可以绑定到 light go 上的组件, 用户可在脚本中改写这个 组件中的数据;
+                // 这个组件 很可能是不存的; (用户没有绑定它)
                 UniversalAdditionalLightData data = null;
                 if (light != null)
                 {
@@ -1145,17 +1225,24 @@ namespace UnityEngine.Rendering.Universal
                 }
 
                 if (data && !data.usePipelineSettings)
+                    // 使用 light 的配置数据
                     m_ShadowBiasData.Add(new Vector4(light.shadowBias, light.shadowNormalBias, 0.0f, 0.0f));
                 else
+                    // 使用 asset 的配置数据
                     m_ShadowBiasData.Add(new Vector4(settings.shadowDepthBias, settings.shadowNormalBias, 0.0f, 0.0f));
 
-                if (data && (data.additionalLightsShadowResolutionTier == UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierCustom))
+
+                if( data && (data.additionalLightsShadowResolutionTier==UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierCustom))
                 {
                     m_ShadowResolutionData.Add((int)light.shadowResolution); // native code does not clamp light.shadowResolution between -1 and 3
                 }
-                else if (data && (data.additionalLightsShadowResolutionTier != UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierCustom))
+                else if( data && (data.additionalLightsShadowResolutionTier!=UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierCustom))
                 {
-                    int resolutionTier = Mathf.Clamp(data.additionalLightsShadowResolutionTier, UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow, UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierHigh);
+                    int resolutionTier = Mathf.Clamp(
+                        data.additionalLightsShadowResolutionTier, 
+                        UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow, //0
+                        UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierHigh //2
+                    );
                     m_ShadowResolutionData.Add(settings.GetAdditionalLightsShadowResolution(resolutionTier));
                 }
                 else
@@ -1166,6 +1253,7 @@ namespace UnityEngine.Rendering.Universal
 
             shadowData.bias = m_ShadowBiasData;
             shadowData.resolution = m_ShadowResolutionData;
+
             shadowData.supportsMainLightShadows = SystemInfo.supportsShadows && settings.supportsMainLightShadows && mainLightCastShadows;
 
             // We no longer use screen space shadows in URP.
@@ -1181,18 +1269,22 @@ namespace UnityEngine.Rendering.Universal
             switch (shadowData.mainLightShadowCascadesCount)
             {
                 case 1:
+                    // (1, 0, 0)
                     shadowData.mainLightShadowCascadesSplit = new Vector3(1.0f, 0.0f, 0.0f);
                     break;
 
                 case 2:
+                    // ( 0.25, 1, 0 )
                     shadowData.mainLightShadowCascadesSplit = new Vector3(settings.cascade2Split, 1.0f, 0.0f);
                     break;
 
                 case 3:
+                    // ( 0.1, 0.3, 0 )
                     shadowData.mainLightShadowCascadesSplit = new Vector3(settings.cascade3Split.x, settings.cascade3Split.y, 0.0f);
                     break;
 
                 default:
+                    // (0.067f, 0.2f, 0.467f)
                     shadowData.mainLightShadowCascadesSplit = settings.cascade4Split;
                     break;
             }
@@ -1201,20 +1293,33 @@ namespace UnityEngine.Rendering.Universal
             shadowData.additionalLightsShadowmapWidth = shadowData.additionalLightsShadowmapHeight = settings.additionalLightsShadowmapResolution;
             shadowData.supportsSoftShadows = settings.supportsSoftShadows && (shadowData.supportsMainLightShadows || shadowData.supportsAdditionalLightShadows);
             shadowData.shadowmapDepthBufferBits = 16;
-        }
+        }// 函数完__
 
-        static void InitializePostProcessingData(UniversalRenderPipelineAsset settings, out PostProcessingData postProcessingData)
-        {
+
+
+        // 初始化 "参数 postProcessingData" 中的全部数据, ( 它其实是 renderingData.postProcessingData )
+        static void InitializePostProcessingData(   // 读完__
+                                            UniversalRenderPipelineAsset settings, 
+                                            out PostProcessingData postProcessingData
+        ){
+            // 颜色渐变模式
             postProcessingData.gradingMode = settings.supportsHDR
                 ? settings.colorGradingMode
                 : ColorGradingMode.LowDynamicRange;
 
             postProcessingData.lutSize = settings.colorGradingLutSize;
             postProcessingData.useFastSRGBLinearConversion = settings.useFastSRGBLinearConversion;
-        }
+        }// 函数完__
 
-        static void InitializeLightData(UniversalRenderPipelineAsset settings, NativeArray<VisibleLight> visibleLights, int mainLightIndex, out LightData lightData)
-        {
+
+
+        // 初始化 参数 lightData;  (它是 renderingData.lightData )
+        static void InitializeLightData( // 读完__
+                                    UniversalRenderPipelineAsset settings, 
+                                    NativeArray<VisibleLight> visibleLights, 
+                                    int mainLightIndex, 
+                                    out LightData lightData
+        ){
             using var profScope = new ProfilingScope(null, Profiling.Pipeline.initializeLightData);
 
             int maxPerObjectAdditionalLights = UniversalRenderPipeline.maxPerObjectLights;
@@ -1223,52 +1328,86 @@ namespace UnityEngine.Rendering.Universal
             lightData.mainLightIndex = mainLightIndex;
 
             if (settings.additionalLightsRenderingMode != LightRenderingMode.Disabled)
-            {
-                lightData.additionalLightsCount =
-                    Math.Min((mainLightIndex != -1) ? visibleLights.Length - 1 : visibleLights.Length,
-                        maxVisibleAdditionalLights);
-                lightData.maxPerObjectAdditionalLightsCount = Math.Min(settings.maxAdditionalLightsCount, maxPerObjectAdditionalLights);
+            {// mode: PerVertex or PerPixel
+                lightData.additionalLightsCount = Math.Min(   
+                    (mainLightIndex!=-1) ? visibleLights.Length-1 : visibleLights.Length,
+                    maxVisibleAdditionalLights 
+                );
+                lightData.maxPerObjectAdditionalLightsCount = Math.Min( settings.maxAdditionalLightsCount, maxPerObjectAdditionalLights );
             }
             else
-            {
+            {// mode: Disabled
                 lightData.additionalLightsCount = 0;
                 lightData.maxPerObjectAdditionalLightsCount = 0;
             }
 
-            lightData.shadeAdditionalLightsPerVertex = settings.additionalLightsRenderingMode == LightRenderingMode.PerVertex;
+            lightData.shadeAdditionalLightsPerVertex = settings.additionalLightsRenderingMode==sLightRenderingMode.PerVertex;
             lightData.visibleLights = visibleLights;
             lightData.supportsMixedLighting = settings.supportsMixedLighting;
-        }
+        }// 函数完__
 
-        static PerObjectData GetPerObjectLightFlags(int additionalLightsCount)
+
+        /*
+            配置一个 PerObjectData 实例 并返回之;
+        */
+        /// <param name="additionalLightsCount"> add light 的数量 </param>
+        /// <returns> 配置好的 PerObjectData 实例 </returns>
+        static PerObjectData GetPerObjectLightFlags(int additionalLightsCount)//   读完__
         {
             using var profScope = new ProfilingScope(null, Profiling.Pipeline.getPerObjectLightFlags);
 
-            var configuration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.LightProbe | PerObjectData.LightData | PerObjectData.OcclusionProbe | PerObjectData.ShadowMask;
+            var configuration = PerObjectData.ReflectionProbes | 
+                                PerObjectData.Lightmaps | 
+                                PerObjectData.LightProbe | 
+                                PerObjectData.LightData |       // 逐物体-光信息
+                                PerObjectData.OcclusionProbe |  // 即: light probe(occlusion)
+                                PerObjectData.ShadowMask;
 
             if (additionalLightsCount > 0)
             {
-                configuration |= PerObjectData.LightData;
+                configuration |= PerObjectData.LightData; // 感觉重复了...
 
                 // In this case we also need per-object indices (unity_LightIndices)
+                //  "per-object light indices" 是一个 unity 自带系统, 可在笔记中搜索此关键词;
+                //  catlike: 此系统存在问题, 最好别用;
                 if (!RenderingUtils.useStructuredBuffer)
                     configuration |= PerObjectData.LightIndices;
             }
 
             return configuration;
-        }
+        }// 函数完__
 
-        // Main Light is always a directional light
-        static int GetMainLightIndex(UniversalRenderPipelineAsset settings, NativeArray<VisibleLight> visibleLights)
+
+
+
+        /*
+            Main Light is always a directional light
+            --
+            寻找 visibleLights 中的 main light;
+            返回值是 目标light 在 visibleLights 中的 idx:
+
+            --  如果 "RenderSettings.sun" 是一个位于 visibleLights 中的平行光, (潜在地说明它是 enable 的)
+                那就选用 sun, 哪怕它并不是 候选者中 最亮的平行光
+
+            --  如果 visibleLights 中存在平行光, 但 "RenderSettings.sun" 并不在里面 
+                (要么是 disable 的, 要么不是平行光)
+                就从这些 可选的平行光中, 选择最亮的那栈;
+
+            -- 如果以上都不符合, 就说明没找到合适的 main light, 此时返回 -1;
+        */
+        static int GetMainLightIndex(UniversalRenderPipelineAsset settings, NativeArray<VisibleLight> visibleLights)// 读完__
         {
             using var profScope = new ProfilingScope(null, Profiling.Pipeline.getMainLightIndex);
 
             int totalVisibleLights = visibleLights.Length;
 
-            if (totalVisibleLights == 0 || settings.mainLightRenderingMode != LightRenderingMode.PerPixel)
+            // 失败
+            if (totalVisibleLights == 0 || settings.mainLightRenderingMode!=LightRenderingMode.PerPixel)
                 return -1;
 
-            Light sunLight = RenderSettings.sun;
+            // 要么是用户显式设置的(此时可以是任意类型, 用户绑定啥就是啥, 哪怕此光不是 平行光, 哪怕是 disable 的), 
+            // 要么是 unity自动找到的 "场景中最亮的平行光";
+            Light sunLight = RenderSettings.sun; 
             int brightestDirectionalLightIndex = -1;
             float brightestLightIntensity = 0.0f;
             for (int i = 0; i < totalVisibleLights; ++i)
@@ -1276,15 +1415,22 @@ namespace UnityEngine.Rendering.Universal
                 VisibleLight currVisibleLight = visibleLights[i];
                 Light currLight = currVisibleLight.light;
 
-                // Particle system lights have the light property as null. We sort lights so all particles lights
-                // come last. Therefore, if first light is particle light then all lights are particle lights.
-                // In this case we either have no main light or already found it.
+                /*
+                    Particle system lights have the light property as null. 
+                    We sort lights so all particles lights come last. 
+                    Therefore, if first light is particle light then all lights are particle lights.
+                    In this case we either have no main light or already found it.
+                    ---
+                    粒子系统的 visibleLight, 其 light 成员值为 null;
+                    按照这里的说法, 这些 lights 是经过排序的 ?, 如果访问到了 null, 就说明后面的都是 粒子系统光了;
+                */
                 if (currLight == null)
                     break;
 
                 if (currVisibleLight.lightType == LightType.Directional)
                 {
                     // Sun source needs be a directional light
+                    // 只有位于 visibleLights 中的 "sun", 才是有效的, 立即使用
                     if (currLight == sunLight)
                         return i;
 
@@ -1296,9 +1442,10 @@ namespace UnityEngine.Rendering.Universal
                     }
                 }
             }
-
             return brightestDirectionalLightIndex;
-        }
+        }// 函数完__
+
+
 
 
         // 将每一帧的 "shader const global 数据" 写入 shader;
@@ -1344,12 +1491,12 @@ namespace UnityEngine.Rendering.Universal
                 2D 系统的, 直接不关心;
             */
             Shader.SetGlobalColor(ShaderPropertyId.rendererColor, Color.white);//"_RendererColor"
-        }
+        }// 函数完__
 
 
 
 
-
+// 如果 package: "com.unity.adaptiveperformance" 版本大于 2.0.0
 #if ADAPTIVE_PERFORMANCE_2_0_0_OR_NEWER
         static void ApplyAdaptivePerformance(ref CameraData cameraData)
         {

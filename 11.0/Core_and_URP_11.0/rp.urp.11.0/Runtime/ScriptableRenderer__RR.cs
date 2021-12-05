@@ -528,7 +528,7 @@ namespace UnityEngine.Rendering.Universal
         /*
             构造函数
         */
-        public ScriptableRenderer(ScriptableRendererData data)
+        public ScriptableRenderer(ScriptableRendererData data)// 读完__
         {
             profilingExecute = new ProfilingSampler(
                 $"{nameof(ScriptableRenderer)}.{nameof(ScriptableRenderer.Execute)}: {data.name}"
@@ -569,16 +569,25 @@ namespace UnityEngine.Rendering.Universal
         {
         }
 
-        /// <summary>
-        /// Configures the camera target.
-        /// </summary>
-        /// <param name="colorTarget">Camera color target. Pass BuiltinRenderTextureType.CameraTarget if rendering to backbuffer.</param>
-        /// <param name="depthTarget">Camera depth target. Pass BuiltinRenderTextureType.CameraTarget if color has depth or rendering to backbuffer.</param>
+
+        /*
+            Configures the camera target.
+
+            下文注释中的 "CameraTarget", 仅指: "current camera 的 render target", 但它不一定是: "Currently active render target";
+        */
+        /// <param name="colorTarget">Camera color target. 
+        ///                           Pass "BuiltinRenderTextureType.CameraTarget" if rendering to backbuffer.
+        /// </param>
+        /// <param name="depthTarget">Camera depth target. 
+        ///                           Pass "BuiltinRenderTextureType.CameraTarget" if color has depth or rendering to backbuffer.
+        /// </param>
         public void ConfigureCameraTarget(RenderTargetIdentifier colorTarget, RenderTargetIdentifier depthTarget)
         {
             m_CameraColorTarget = colorTarget;
             m_CameraDepthTarget = depthTarget;
         }
+
+
 
         // This should be removed when early camera color target assignment is removed.
         internal void ConfigureCameraColorTarget(RenderTargetIdentifier colorTarget)
@@ -614,7 +623,8 @@ namespace UnityEngine.Rendering.Universal
         */
         /// <param name="cullingParameters">Use this to change culling parameters used by the render pipeline.</param>
         /// <param name="cameraData">Current render state information.</param>
-        public virtual void SetupCullingParameters(ref ScriptableCullingParameters cullingParameters,
+        public virtual void SetupCullingParameters(
+            ref ScriptableCullingParameters cullingParameters,
             ref CameraData cameraData)
         {}
 
@@ -707,6 +717,8 @@ namespace UnityEngine.Rendering.Universal
                     // Reset shader time variables as they were overridden in SetupCameraProperties. If we don't do it we might have a mismatch between shadows and main rendering
                     SetShaderTimeValues(cmd, time, deltaTime, smoothDeltaTime);
 
+
+// 如果 package: "com.unity.visualeffectgraph" 版本大于 0.0.1
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
                     //Triggers dispatch per camera, all global parameters should have been setup at this stage.
                     VFX.VFXManager.ProcessCameraCommand(camera, cmd);
@@ -757,15 +769,16 @@ namespace UnityEngine.Rendering.Universal
         }
 
         
-
-        /// <summary>
-        /// Enqueues a render pass for execution.
-        /// </summary>
+        /*
+            Enqueues a render pass for execution.
+        */
         /// <param name="pass">Render pass to be enqueued.</param>
         public void EnqueuePass(ScriptableRenderPass pass)
         {
             m_ActiveRenderPassQueue.Add(pass);
         }
+
+
 
         /// <summary>
         /// Returns a clear flag based on CameraClearFlags.
@@ -811,10 +824,12 @@ namespace UnityEngine.Rendering.Universal
             return ClearFlag.All;
         }
 
-        /// <summary>
-        /// Calls <c>AddRenderPasses</c> for each feature added to this renderer.
-        /// <seealso cref="ScriptableRendererFeature.AddRenderPasses(ScriptableRenderer, ref RenderingData)"/>
-        /// </summary>
+
+        /*
+            Calls "AddRenderPasses" for each feature added to this renderer.
+            ---
+            查看: "ScriptableRendererFeature.AddRenderPasses(ScriptableRenderer, ref RenderingData)"
+        */
         /// <param name="renderingData"></param>
         protected void AddRenderPasses(ref RenderingData renderingData)
         {
@@ -839,6 +854,8 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
+
+
         void ClearRenderingState(CommandBuffer cmd)
         {
             using var profScope = new ProfilingScope(cmd, Profiling.clearRenderingState);
@@ -857,20 +874,28 @@ namespace UnityEngine.Rendering.Universal
             cmd.DisableShaderKeyword(ShaderKeywordStrings.LinearToSRGBConversion);
         }
 
+
+        /*
+        */
+        /// <param name="cameraType"> enum: Base, Overlay
+        /// </param>
         internal void Clear(CameraRenderType cameraType)
         {
+            // 右值: current camera 的 render target, (但不一定是 current active render target)
             m_ActiveColorAttachments[0] = BuiltinRenderTextureType.CameraTarget;
+
             for (int i = 1; i < m_ActiveColorAttachments.Length; ++i)
                 m_ActiveColorAttachments[i] = 0;
 
             m_ActiveDepthAttachment = BuiltinRenderTextureType.CameraTarget;
 
-            m_FirstTimeCameraColorTargetIsBound = cameraType == CameraRenderType.Base;
+            m_FirstTimeCameraColorTargetIsBound = cameraType==CameraRenderType.Base;
             m_FirstTimeCameraDepthTargetIsBound = true;
 
             m_CameraColorTarget = BuiltinRenderTextureType.CameraTarget;
             m_CameraDepthTarget = BuiltinRenderTextureType.CameraTarget;
         }
+
 
         /*
             参数:

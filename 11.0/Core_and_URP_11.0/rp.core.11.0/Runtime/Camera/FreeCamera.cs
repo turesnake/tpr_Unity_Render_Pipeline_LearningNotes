@@ -1,3 +1,4 @@
+// ENABLE_INPUT_SYSTEM_PACKAGE: 如果 package: "com.unity.inputsystem" 版本大于等于 0.0.0
 #if ENABLE_INPUT_SYSTEM && ENABLE_INPUT_SYSTEM_PACKAGE
     #define USE_INPUT_SYSTEM
 using UnityEngine.InputSystem;

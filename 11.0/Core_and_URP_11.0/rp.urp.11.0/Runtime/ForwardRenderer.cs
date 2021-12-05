@@ -3,15 +3,21 @@ using System.Reflection;
 
 namespace UnityEngine.Rendering.Universal
 {
-    /// <summary>
+
     /// Rendering modes for Universal renderer.
-    /// </summary>
-    public enum RenderingMode
+    public enum RenderingMode//RenderingMode__
     {
-        /// <summary>Render all objects and lighting in one pass, with a hard limit on the number of lights that can be applied on an object.</summary>
-        Forward,
-        /// <summary>Render all objects first in a g-buffer pass, then apply all lighting in a separate pass using deferred shading.</summary>
-        Deferred
+        /*
+            Render all objects and lighting in one pass, 
+            with a hard limit on the number of lights that can be applied on an object.
+            ---
+            和 built-in Forward 不用, urp 中可在 一个 pass 中完成所有 物体和光源的 渲染;
+        */
+        Forward,//0
+        
+        /// Render all objects first in a g-buffer pass, 
+        /// then apply all lighting in a separate pass using deferred shading.
+        Deferred//1
     };
 
 
@@ -34,9 +40,25 @@ namespace UnityEngine.Rendering.Universal
         }
 
         // Rendering mode setup from UI.
+        //  enum: Forward, Deferred;
         internal RenderingMode renderingMode { get { return m_RenderingMode;  } }
-        // Actual rendering mode, which may be different (ex: wireframe rendering, harware not capable of deferred rendering).
-        internal RenderingMode actualRenderingMode { get { return GL.wireframe || m_DeferredLights == null || !m_DeferredLights.IsRuntimeSupportedThisFrame()  ? RenderingMode.Forward : this.renderingMode; } }
+
+        /*
+            Actual rendering mode, which may be different 
+            (ex: wireframe rendering, harware not capable of deferred rendering).
+            --
+            某一个模式只能支持 前向渲染, 剩余情况则随意;
+        */
+        internal RenderingMode actualRenderingMode
+        {
+            get { return    GL.wireframe || 
+                            m_DeferredLights == null || 
+                            !m_DeferredLights.IsRuntimeSupportedThisFrame() 
+                    ? RenderingMode.Forward : this.renderingMode; 
+            } 
+        }
+
+
         internal bool accurateGbufferNormals { get { return m_DeferredLights != null ? m_DeferredLights.AccurateGbufferNormals : false; } }
         DepthOnlyPass m_DepthPrepass;
         DepthNormalOnlyPass m_DepthNormalPrepass;
@@ -187,6 +209,8 @@ namespace UnityEngine.Rendering.Universal
             
             m_DrawSkyboxPass = new DrawSkyboxPass(RenderPassEvent.BeforeRenderingSkybox);
             m_CopyColorPass = new CopyColorPass(RenderPassEvent.AfterRenderingSkybox, m_SamplingMaterial, m_BlitMaterial);
+
+// 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
             if (!UniversalRenderPipeline.asset.useAdaptivePerformance || AdaptivePerformance.AdaptivePerformanceRenderSettings.SkipTransparentObjects == false)
 #endif
@@ -243,7 +267,7 @@ namespace UnityEngine.Rendering.Universal
                     GraphicsDeviceType.OpenGLES3
                 };
             }
-        }// 构造函数 end
+        }// 函数完__
 
 
 
@@ -259,7 +283,7 @@ namespace UnityEngine.Rendering.Universal
             CoreUtils.Destroy(m_TileDepthInfoMaterial);
             CoreUtils.Destroy(m_TileDeferredMaterial);
             CoreUtils.Destroy(m_StencilDeferredMaterial);
-        }
+        }// 函数完__
 
 
 
@@ -269,15 +293,22 @@ namespace UnityEngine.Rendering.Universal
         /// <inheritdoc />
         public override void Setup(ScriptableRenderContext context, ref RenderingData renderingData)
         {
+// 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
             bool needTransparencyPass = !UniversalRenderPipeline.asset.useAdaptivePerformance || !AdaptivePerformance.AdaptivePerformanceRenderSettings.SkipTransparentObjects;
 #endif
-            Camera camera = renderingData.cameraData.camera;
+
+            Camera camera = renderingData.cameraData.camera; // base / overlay camera 皆可;
             ref CameraData cameraData = ref renderingData.cameraData;
             RenderTextureDescriptor cameraTargetDescriptor = renderingData.cameraData.cameraTargetDescriptor;
 
-            // Special path for depth only offscreen cameras. Only write opaques + transparents.
-            bool isOffscreenDepthTexture = cameraData.targetTexture != null && cameraData.targetTexture.format == RenderTextureFormat.Depth;
+            /*
+                ---------------------------------------------------------------------:
+                Special path for "depth only offscreen cameras". Only write opaques + transparents.
+                如果相机有自己得 rt, 且只渲染 depth 值;
+                此处所谓的 "offscreen", 就是 "并不渲染到屏幕上, 而是渲染到 rt 上" 的意思;
+            */
+            bool isOffscreenDepthTexture = cameraData.targetTexture!=null && cameraData.targetTexture.format == RenderTextureFormat.Depth;
             if (isOffscreenDepthTexture)
             {
                 ConfigureCameraTarget(BuiltinRenderTextureType.CameraTarget, BuiltinRenderTextureType.CameraTarget);
@@ -286,13 +317,17 @@ namespace UnityEngine.Rendering.Universal
 
                 // TODO: Do we need to inject transparents and skybox when rendering depth only camera? They don't write to depth.
                 EnqueuePass(m_DrawSkyboxPass);
+// 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
                 if (!needTransparencyPass)
                     return;
 #endif
+
                 EnqueuePass(m_RenderTransparentForwardPass);
                 return;
             }
+
+
 
             if (m_DeferredLights != null)
                 m_DeferredLights.ResolveMixedLightingMode(ref renderingData);
@@ -508,9 +543,11 @@ namespace UnityEngine.Rendering.Universal
                 m_CopyColorPass.Setup(m_ActiveCameraColorAttachment.Identifier(), m_OpaqueColor, downsamplingMethod);
                 EnqueuePass(m_CopyColorPass);
             }
+// 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
             if (needTransparencyPass)
 #endif
+
             {
                 if (transparentsNeedSettingsPass)
                 {
@@ -607,7 +644,7 @@ namespace UnityEngine.Rendering.Universal
                 EnqueuePass(m_SceneViewDepthCopyPass);
             }
 #endif
-        }
+        }// 函数完__
 
 
 
@@ -619,43 +656,61 @@ namespace UnityEngine.Rendering.Universal
             // Perform per-tile light culling on CPU
             if (this.actualRenderingMode == RenderingMode.Deferred)
                 m_DeferredLights.SetupLights(context, ref renderingData);
-        }
+        }// 函数完__
 
 
 
+        /*
+            为 "参数 cullingParameters" 设置一部分成员数据;
+        */
         /// <inheritdoc />
-        public override void SetupCullingParameters(ref ScriptableCullingParameters cullingParameters,
-            ref CameraData cameraData)
-        {
+        public override void SetupCullingParameters( // 读完__
+                        ref ScriptableCullingParameters cullingParameters,
+                        ref CameraData cameraData
+        ){
+
+            /*
             // TODO: PerObjectCulling also affect reflection probes. Enabling it for now.
             // if (asset.additionalLightsRenderingMode == LightRenderingMode.Disabled ||
-            //     asset.maxAdditionalLightsCount == 0)
+            //     asset. == 0)
             // {
             //     cullingParameters.cullingOptions |= CullingOptions.DisablePerObjectCulling;
             // }
+                ====== 官方把这段代码 注释掉了
+            */
 
-            // We disable shadow casters if both shadow casting modes are turned off
-            // or the shadow distance has been turned down to zero
+            // -------------
+            // 不再对 shader caster objs 执行 cull 操作, 如果:
+            //   --"shadow casting modes are turned off"
+            //   --"the shadow distance has been turned down to zero"
             bool isShadowCastingDisabled = !UniversalRenderPipeline.asset.supportsMainLightShadows && !UniversalRenderPipeline.asset.supportsAdditionalLightShadows;
             bool isShadowDistanceZero = Mathf.Approximately(cameraData.maxShadowDistance, 0.0f);
             if (isShadowCastingDisabled || isShadowDistanceZero)
             {
-                cullingParameters.cullingOptions &= ~CullingOptions.ShadowCasters;
+                cullingParameters.cullingOptions &= ~CullingOptions.ShadowCasters;// 关闭这个 flag
             }
 
+
             if (this.actualRenderingMode == RenderingMode.Deferred)
-                cullingParameters.maximumVisibleLights = 0xFFFF;
+                // 延迟渲染理论上支持: 每个物体 无数盏光
+                cullingParameters.maximumVisibleLights = 0xFFFF;// 65535
             else
             {
                 // We set the number of maximum visible lights allowed and we add one for the mainlight...
                 //
-                // Note: However ScriptableRenderContext.Cull() does not differentiate between light types.
-                //       If there is no active main light in the scene, ScriptableRenderContext.Cull() might return  ( cullingParameters.maximumVisibleLights )  visible additional lights.
-                //       i.e ScriptableRenderContext.Cull() might return  ( UniversalRenderPipeline.maxVisibleAdditionalLights + 1 )  visible additional lights !
+                // Note: 
+                // However "ScriptableRenderContext.Cull()" does not differentiate between light types.
+                // If there is no active main light in the scene, "ScriptableRenderContext.Cull()" might return  
+                // ( cullingParameters.maximumVisibleLights )  visible additional lights.
+                // i.e "ScriptableRenderContext.Cull()" might return  
+                // ( UniversalRenderPipeline.maxVisibleAdditionalLights + 1 ) visible additional lights !
                 cullingParameters.maximumVisibleLights = UniversalRenderPipeline.maxVisibleAdditionalLights + 1;
             }
             cullingParameters.shadowDistance = cameraData.maxShadowDistance;
-        }
+        }// 函数完__
+
+
+
 
         /// <inheritdoc />
         public override void FinishRendering(CommandBuffer cmd)
@@ -671,7 +726,8 @@ namespace UnityEngine.Rendering.Universal
                 cmd.ReleaseTemporaryRT(m_ActiveCameraDepthAttachment.id);
                 m_ActiveCameraDepthAttachment = RenderTargetHandle.CameraTarget;
             }
-        }
+        }// 函数完__
+
 
         void EnqueueDeferred(ref RenderingData renderingData, bool hasDepthPrepass, bool applyMainShadow, bool applyAdditionalShadow)
         {
@@ -719,7 +775,8 @@ namespace UnityEngine.Rendering.Universal
             }
 
             EnqueuePass(m_DeferredPass);
-        }
+        }// 函数完__
+
 
         private struct RenderPassInputSummary
         {
@@ -747,7 +804,8 @@ namespace UnityEngine.Rendering.Universal
             }
 
             return inputSummary;
-        }
+        }// 函数完__
+
 
         void CreateCameraRenderTarget(ScriptableRenderContext context, ref RenderTextureDescriptor descriptor, bool createColor, bool createDepth)
         {
@@ -783,7 +841,8 @@ namespace UnityEngine.Rendering.Universal
 
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
-        }
+        }// 函数完__
+
 
         bool PlatformRequiresExplicitMsaaResolve()
         {
@@ -796,7 +855,9 @@ namespace UnityEngine.Rendering.Universal
             return !SystemInfo.supportsMultisampleAutoResolve
                 && SystemInfo.graphicsDeviceType != GraphicsDeviceType.Metal;
             #endif
-        }
+        }// 函数完__
+
+
 
         /// <summary>
         /// Checks if the pipeline needs to create a intermediate render texture.
@@ -842,7 +903,9 @@ namespace UnityEngine.Rendering.Universal
 
             return requiresBlitForOffscreenCamera || isSceneViewCamera || isScaledRender || cameraData.isHdrEnabled ||
                 !isCompatibleBackbufferTextureDimension || isCapturing || cameraData.requireSrgbConversion;
-        }
+        }// 函数完__
+
+
 
         bool CanCopyDepth(ref CameraData cameraData)
         {
@@ -856,6 +919,6 @@ namespace UnityEngine.Rendering.Universal
             //bool msaaDepthResolve = msaaEnabledForCamera && SystemInfo.supportsMultisampledTextures != 0;
             bool msaaDepthResolve = false;
             return supportsDepthCopy || msaaDepthResolve;
-        }
+        }// 函数完__
     }
 }

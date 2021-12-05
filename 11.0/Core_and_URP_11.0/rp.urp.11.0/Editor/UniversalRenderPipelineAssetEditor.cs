@@ -166,6 +166,8 @@ namespace UnityEditor.Rendering.Universal
             DrawShadowSettings();
             DrawPostProcessingSettings();
             DrawAdvancedSettings();
+
+// 如果 package: "com.unity.adaptiveperformance" 版本大于 2.0.0
 #if ADAPTIVE_PERFORMANCE_2_0_0_OR_NEWER
             DrawAdaptivePerformance();
 #endif

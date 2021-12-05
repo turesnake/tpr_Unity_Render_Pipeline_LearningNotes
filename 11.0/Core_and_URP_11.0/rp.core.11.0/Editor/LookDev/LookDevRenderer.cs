@@ -6,7 +6,8 @@ using IDataProvider = UnityEngine.Rendering.LookDev.IDataProvider;
 namespace UnityEditor.Rendering.LookDev
 {
     /// <summary>Data container to be used with Renderer class</summary>
-    class RenderingData : IDisposable
+    class RenderingData // 主流的同名 RenderingData 不是这个
+        : IDisposable
     {
         /// <summary>
         /// Internally set to true when the given RenderTexture <see cref="output"/> was not the good size regarding <see cref="viewPort"/> and needed to be recreated

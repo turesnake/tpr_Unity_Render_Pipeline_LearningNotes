@@ -31,9 +31,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             get
             {
                 #if !UNITY_EDITOR && UNITY_SWITCH
-                return false;
+                    return false;
                 #else
-                return IsOpenGL;
+                    return IsOpenGL;
                 #endif
             }
         }
@@ -43,9 +43,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             get
             {
                 #if !UNITY_EDITOR && UNITY_SWITCH
-                return false;
+                    return false;
                 #else
-                return IsOpenGL;
+                    return IsOpenGL;
                 #endif
             }
         }
@@ -63,9 +63,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             get
             {
                 #if !UNITY_EDITOR && UNITY_SWITCH
-                return false;
+                    return false;
                 #else
-                return IsOpenGL;
+                    return IsOpenGL;
                 #endif
             }
         }
@@ -107,7 +107,7 @@ namespace UnityEngine.Rendering.Universal.Internal
     }
 
     // Manages tiled-based deferred lights.
-    internal class DeferredLights
+    internal class DeferredLights//DeferredLights__RR
     {
         internal static class ShaderConstants
         {
@@ -739,12 +739,15 @@ namespace UnityEngine.Rendering.Universal.Internal
             // Subtractive mixed lighting requires shadowMask output, which is actually used to store unity_ProbesOcclusion values.
         }
 
+
         public bool IsRuntimeSupportedThisFrame()
         {
             // GBuffer slice count can change depending actual geometry/light being rendered.
-            // For instance, we only bind shadowMask RT if the scene supports mix lighting and at least one visible light has subtractive mixed ligting mode.
+            // For instance, we only bind shadowMask RT if the scene supports mix lighting 
+            // and at least one visible light has subtractive mixed ligting mode.
             return this.GBufferSliceCount <= SystemInfo.supportedRenderTargetCount && !DeferredConfig.IsOpenGL;
         }
+
 
         public void Setup(ref RenderingData renderingData,
             AdditionalLightsShadowCasterPass additionalLightsShadowCasterPass,

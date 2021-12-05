@@ -610,6 +610,7 @@ namespace UnityEngine.Rendering.Universal
             set { m_RenderScale = ValidateRenderScale(value); }
         }
 
+        // main light 的模式: Disabled, PerVertex, PerPixel
         public LightRenderingMode mainLightRenderingMode
         {
             get { return m_MainLightRenderingMode; }
@@ -625,11 +626,13 @@ namespace UnityEngine.Rendering.Universal
             get { return (int)m_MainLightShadowmapResolution; }
         }
 
+        // add 光的模式: Disabled, PerVertex, PerPixel
         public LightRenderingMode additionalLightsRenderingMode
         {
             get { return m_AdditionalLightsRenderingMode; }
         }
 
+        // 支持的 add 光 的最大数量
         public int maxAdditionalLightsCount
         {
             get { return m_AdditionalLightsPerObjectLimit; }
@@ -646,31 +649,45 @@ namespace UnityEngine.Rendering.Universal
             get { return (int)m_AdditionalLightsShadowmapResolution; }
         }
 
-        /// <summary>
-        /// Returns the additional light shadow resolution defined for tier "Low" in the UniversalRenderPipeline asset.
-        /// </summary>
+       
+        /*
+            Returns the additional light shadow resolution defined for tier "Low" in the UniversalRenderPipeline asset.
+
+            Low 档配置中 shadow resolution 值;  默认: 512
+        */
         public int additionalLightsShadowResolutionTierLow
         {
             get { return (int)m_AdditionalLightsShadowResolutionTierLow; }
         }
 
-        /// <summary>
-        /// Returns the additional light shadow resolution defined for tier "Medium" in the UniversalRenderPipeline asset.
-        /// </summary>
+        
+        /*
+            Returns the additional light shadow resolution defined for tier "Medium" in the UniversalRenderPipeline asset.
+
+            Medium 档配置中 shadow resolution 值;   默认: 1024
+        */
         public int additionalLightsShadowResolutionTierMedium
         {
             get { return (int)m_AdditionalLightsShadowResolutionTierMedium; }
         }
 
-        /// <summary>
-        /// Returns the additional light shadow resolution defined for tier "High" in the UniversalRenderPipeline asset.
-        /// </summary>
+        
+        /*
+            Returns the additional light shadow resolution defined for tier "High" in the UniversalRenderPipeline asset.
+
+            High 档配置中 shadow resolution 值;  默认: 2048
+        */
         public int additionalLightsShadowResolutionTierHigh
         {
             get { return (int)m_AdditionalLightsShadowResolutionTierHigh; }
         }
 
-        internal int GetAdditionalLightsShadowResolution(int additionalLightsShadowResolutionTier)
+
+        /*
+            获得 shadow resolution 值(像素为单位)
+            参数 是 不同的 配置档次的 (tier), 比如 低档配置:512, 中档配置:1024, 高档配置:2048
+        */
+        internal int GetAdditionalLightsShadowResolution( int additionalLightsShadowResolutionTier )// 读完__
         {
             if (additionalLightsShadowResolutionTier <= UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow /* 0 */)
                 return additionalLightsShadowResolutionTierLow;
@@ -682,7 +699,9 @@ namespace UnityEngine.Rendering.Universal
                 return additionalLightsShadowResolutionTierHigh;
 
             return additionalLightsShadowResolutionTierMedium;
-        }
+        }// 函数完__
+
+
 
         /// <summary>
         /// Controls the maximum distance at which shadows are visible.
@@ -727,6 +746,7 @@ namespace UnityEngine.Rendering.Universal
             get { return m_Cascade3Split; }
         }
 
+
         /// <summary>
         /// Returns the split values.
         /// </summary>
@@ -762,12 +782,14 @@ namespace UnityEngine.Rendering.Universal
             get { return m_SoftShadowsSupported; }
         }
 
+        // 动态批处理优化技术, 不建议使用
         public bool supportsDynamicBatching
         {
             get { return m_SupportsDynamicBatching; }
             set { m_SupportsDynamicBatching = value; }
         }
 
+        // 是否支持 Mixed mode 的光;
         public bool supportsMixedLighting
         {
             get { return m_MixedLightingSupported; }
@@ -801,15 +823,22 @@ namespace UnityEngine.Rendering.Universal
             set { m_ColorGradingMode = value; }
         }
 
+        /*
+            可设置的区间 [16, 65], 通常为 32;
+        */
         public int colorGradingLutSize
         {
             get { return m_ColorGradingLutSize; }
             set { m_ColorGradingLutSize = Mathf.Clamp(value, k_MinLutSize, k_MaxLutSize); }
         }
 
-        /// <summary>
-        /// Returns true if fast approximation functions are used when converting between the sRGB and Linear color spaces, false otherwise.
-        /// </summary>
+       
+        /*
+            Returns true if "fast approximation functions" are used when converting between the sRGB and Linear color spaces, 
+            false otherwise.
+            ---
+            快速但不够精确的 sRGB<->Linear 转换函数
+        */
         public bool useFastSRGBLinearConversion
         {
             get { return m_UseFastSRGBLinearConversion; }
@@ -1060,6 +1089,8 @@ namespace UnityEngine.Rendering.Universal
             return Mathf.Max(0.0f, Mathf.Min(value, UniversalRenderPipeline.maxShadowBias));
         }
 
+        // 将 参数 value 约束在 [0, UniversalRenderPipeline.maxPerObjectLights] 之间;
+        // gles2 最多支持 4 个, 别的平台则是 8 个;
         int ValidatePerObjectLights(int value)
         {
             return System.Math.Max(0, System.Math.Min(value, UniversalRenderPipeline.maxPerObjectLights));

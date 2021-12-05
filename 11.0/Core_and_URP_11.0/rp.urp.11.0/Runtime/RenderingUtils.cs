@@ -85,6 +85,8 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
+        
+
         static Material s_ErrorMaterial;
         static Material errorMaterial
         {
@@ -284,10 +286,19 @@ namespace UnityEngine.Rendering.Universal
             return support;
         }
 
-        /// <summary>
-        /// Checks if a texture format is supported by the run-time system.
-        /// Similar to <see cref="SystemInfo.IsFormatSupported"/>, but doesn't allocate memory.
-        /// </summary>
+
+        /*
+            Checks if a texture format is supported by the run-time system.
+            Similar to "SystemInfo.IsFormatSupported()", but doesn't allocate memory.
+            --
+            查询在当前平台中, 参数format 是否支持 "参数usage 所指示的操作", 如果支持,就返回 true;
+            "GraphicsFormat" 表示 texture/render texture 的某种实际存储格式;
+            在不同平台上, 每一种格式, 都支持一系列操作; (但又不去全支持)
+            ---
+            和 "SystemInfo.IsFormatSupported()" 功能一致, 区别在于:
+            本函数每次执行查询后, 都会将查询信息记录下来, 下次查询相同的内容, 直接查表就行了,
+            无需再次调用 "SystemInfo.IsFormatSupported()";
+        */
         /// <param name="format">The format to look up.</param>
         /// <param name="usage">The format usage to look up.</param>
         /// <returns>Returns true if the graphics card supports the given <c>GraphicsFormat</c></returns>
@@ -301,17 +312,18 @@ namespace UnityEngine.Rendering.Universal
                 uses.Add(usage, support);
                 m_GraphicsFormatSupport.Add(format, uses);
             }
-            else
-            {
+            else{
                 if (!uses.TryGetValue(usage, out support))
                 {
                     support = SystemInfo.IsFormatSupported(format, usage);
                     uses.Add(usage, support);
                 }
             }
-
             return support;
         }
+
+
+
 
         /// <summary>
         /// Return the last colorBuffer index actually referring to an existing RenderTarget

@@ -10,9 +10,9 @@ using Lightmapping = UnityEngine.Experimental.GlobalIllumination.Lightmapping;
 namespace UnityEngine.Rendering.Universal
 {
 
-
+    // enum: None, ShadowMask, Subtractive;
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
-    public enum MixedLightingSetup
+    public enum MixedLightingSetup//MixedLightingSetup__
     {
         None,
         ShadowMask,
@@ -44,7 +44,9 @@ namespace UnityEngine.Rendering.Universal
     // RenderingData 的一个成员
     [MovedFrom("UnityEngine.Rendering.LWRP")] public struct LightData//LightData__
     {
-        public int mainLightIndex; // main light 在 visibleLights 中的 idx
+        // 在 "GetMainLightIndex()" 中计算而得; 表示 main light 在 visibleLights 中的 idx; 
+        // 若没找到合适的 main light, 此值为 -1;
+        public int mainLightIndex; 
         public int additionalLightsCount; // add light 的数量
         public int maxPerObjectAdditionalLightsCount;
         public NativeArray<VisibleLight> visibleLights;
@@ -540,13 +542,23 @@ namespace UnityEngine.Rendering.Universal
     //==========================================================================================================:
     public sealed partial class UniversalRenderPipeline//UniversalRenderPipeline__RR_2
     {
-        // Holds light direction for directional lights or position for punctual lights.
-        // When w is set to 1.0, it means it's a punctual light.
+        /*
+            Holds light direction for "directional lights" or position for "punctual lights".
+            When w is set to 1.0, it means it's a punctual light.
+            ---
+            若 w = 0:  xyz分量 存储的是 "punctual lights" 的 pos;
+            若 w = 1:  xyz分量 存储的是 平行光 的 方向;
+        */
         static Vector4 k_DefaultLightPosition = new Vector4(0.0f, 0.0f, 1.0f, 0.0f);
+
         static Vector4 k_DefaultLightColor = Color.black;
 
-        // Default light attenuation is setup in a particular way that it causes
-        // directional lights to return 1.0 for both distance and angle attenuation
+        /*
+            Default light attenuation is setup in a particular way 
+            that it causes "directional lights" to return 1.0 for both distance and angle attenuation
+            ---
+            若为平行光, distance 和 angle attenuation 都为 1;
+        */
         static Vector4 k_DefaultLightAttenuation = new Vector4(0.0f, 1.0f, 0.0f, 1.0f);
         static Vector4 k_DefaultLightSpotDirection = new Vector4(0.0f, 0.0f, 1.0f, 0.0f);
         static Vector4 k_DefaultLightsProbeChannel = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -786,7 +798,7 @@ namespace UnityEngine.Rendering.Universal
                 desc.msaaSamples = 1;
 
             return desc;
-        }
+        }// 函数完__
 
 
         
@@ -849,96 +861,178 @@ namespace UnityEngine.Rendering.Universal
                 lightsOutput[i] = lightData;
             }
 #endif
-        };
+        };// 函数完__
+
+
 
         // called from DeferredLights.cs too
-        public static void GetLightAttenuationAndSpotDirection(
-            LightType lightType, float lightRange, Matrix4x4 lightLocalToWorldMatrix,
-            float spotAngle, float? innerSpotAngle,
-            out Vector4 lightAttenuation, out Vector4 lightSpotDir)
-        {
+        public static void GetLightAttenuationAndSpotDirection(// 读完__
+                                            LightType lightType, 
+                                            float lightRange, 
+                                            Matrix4x4 lightLocalToWorldMatrix,
+                                            float spotAngle, 
+                                            float? innerSpotAngle,
+                                            out Vector4 lightAttenuation, // 核心
+                                            out Vector4 lightSpotDir
+        ){
             lightAttenuation = k_DefaultLightAttenuation;
             lightSpotDir = k_DefaultLightSpotDirection;
 
             // Directional Light attenuation is initialize so distance attenuation always be 1.0
-            if (lightType != LightType.Directional)
-            {
-                // Light attenuation in universal matches the unity vanilla one.
-                // attenuation = 1.0 / distanceToLightSqr
-                // We offer two different smoothing factors.
-                // The smoothing factors make sure that the light intensity is zero at the light range limit.
-                // The first smoothing factor is a linear fade starting at 80 % of the light range.
-                // smoothFactor = (lightRangeSqr - distanceToLightSqr) / (lightRangeSqr - fadeStartDistanceSqr)
-                // We rewrite smoothFactor to be able to pre compute the constant terms below and apply the smooth factor
-                // with one MAD instruction
-                // smoothFactor =  distanceSqr * (1.0 / (fadeDistanceSqr - lightRangeSqr)) + (-lightRangeSqr / (fadeDistanceSqr - lightRangeSqr)
-                //                 distanceSqr *           oneOverFadeRangeSqr             +              lightRangeSqrOverFadeRangeSqr
+            // 平行光的衰减值 永远为 1; (永远不衰减)
 
-                // The other smoothing factor matches the one used in the Unity lightmapper but is slower than the linear one.
-                // smoothFactor = (1.0 - saturate((distanceSqr * 1.0 / lightrangeSqr)^2))^2
-                float lightRangeSqr = lightRange * lightRange;
-                float fadeStartDistanceSqr = 0.8f * 0.8f * lightRangeSqr;
-                float fadeRangeSqr = (fadeStartDistanceSqr - lightRangeSqr);
+            if (lightType != LightType.Directional)
+            {//  ------ Point光 or Spot光 -----:
+
+                /*
+                    Light attenuation in universal matches the unity vanilla one.
+                    attenuation = 1.0 / distanceToLightSqr   
+                    (tpr: 1/d^2 )
+
+                    We offer two different smoothing factors.
+                    The smoothing factors make sure that the light intensity is zero at the light range limit.
+
+                --1--:
+                    The first smoothing factor is a linear fade starting at 80 % of the light range:
+
+                                         lightRangeSqr - distanceToLightSqr                   r^2 - d^2
+                        smoothFactor = ------------------------------------------ = (tpr) -------------------
+                                         lightRangeSqr - fadeStartDistanceSqr                r^2 - (0.8r)^2
+                    
+                        (其中, "d" 就是 "fragment 到 light 的距离";)
+
+                    --------
+                    We rewrite smoothFactor to be able to pre compute the constant terms below 
+                    and apply the smooth factor with one MAD instruction;
+                    将上面的 "smoothFactor" 做以下优化,变成如下公式: 
+
+                    (a)    smoothFactor =  distanceSqr * (1.0 / (fadeDistanceSqr - lightRangeSqr)) + (-lightRangeSqr / (fadeDistanceSqr - lightRangeSqr)
+                    (b)                    distanceSqr *           oneOverFadeRangeSqr             +              lightRangeSqrOverFadeRangeSqr
+
+                    其中, (a)行就是优化后的公式, (b)行则是对 (a)行的模块化; (b)中各变量的计算已在下方;
+
+                --2--:
+                    此段计算, 参考笔记图片: "点光源衰减的计算2.jpg"
+                    The other smoothing factor matches the one used in the Unity lightmapper but is slower than the linear one.
+ 
+                        smoothFactor = (1.0 - saturate((distanceSqr * 1.0 / lightrangeSqr)^2))^2
+
+
+                */
+                float lightRangeSqr = lightRange * lightRange; // r^2
+                float fadeStartDistanceSqr = 0.8f * 0.8f * lightRangeSqr; // (0.8r)^2
+                float fadeRangeSqr = (fadeStartDistanceSqr - lightRangeSqr); // ((0.8r)^2 - r^2) 负值
+
+                // 两个组件, 以便在 shader 代码中组装出 "smoothFactor"
                 float oneOverFadeRangeSqr = 1.0f / fadeRangeSqr;
-                float lightRangeSqrOverFadeRangeSqr = -lightRangeSqr / fadeRangeSqr;
+                float lightRangeSqrOverFadeRangeSqr = -lightRangeSqr / fadeRangeSqr; // r^2 / (r^2 - (0.8r)^2)
+
                 float oneOverLightRangeSqr = 1.0f / Mathf.Max(0.0001f, lightRange * lightRange);
 
                 // On mobile and Nintendo Switch: Use the faster linear smoothing factor (SHADER_HINT_NICE_QUALITY).
                 // On other devices: Use the smoothing factor that matches the GI.
-                lightAttenuation.x = Application.isMobilePlatform || SystemInfo.graphicsDeviceType == GraphicsDeviceType.Switch ? oneOverFadeRangeSqr : oneOverLightRangeSqr;
+                lightAttenuation.x = Application.isMobilePlatform || SystemInfo.graphicsDeviceType==GraphicsDeviceType.Switch 
+                                        ? oneOverFadeRangeSqr : oneOverLightRangeSqr;
+
                 lightAttenuation.y = lightRangeSqrOverFadeRangeSqr;
             }
 
+            // --------------------------------------------------------------------"
             if (lightType == LightType.Spot)
             {
-                Vector4 dir = lightLocalToWorldMatrix.GetColumn(2);
-                lightSpotDir = new Vector4(-dir.x, -dir.y, -dir.z, 0.0f);
+                
+                Vector4 dir = lightLocalToWorldMatrix.GetColumn(2);      // 方向: light->fragment
+                lightSpotDir = new Vector4(-dir.x, -dir.y, -dir.z, 0.0f);// 方向: fragment->light
 
-                // Spot Attenuation with a linear falloff can be defined as
-                // (SdotL - cosOuterAngle) / (cosInnerAngle - cosOuterAngle)
-                // This can be rewritten as
-                // invAngleRange = 1.0 / (cosInnerAngle - cosOuterAngle)
-                // SdotL * invAngleRange + (-cosOuterAngle * invAngleRange)
-                // If we precompute the terms in a MAD instruction
+                /*
+                    此段计算, 参考笔记图片: "spot光源衰减的计算.jpg"
+                    ----------------------------------------------------------
+                    Spot Attenuation with a linear falloff can be defined as:
+                                   SdotL - cosOuterAngle
+                      atten =  ---------------------------------
+                                 cosInnerAngle - cosOuterAngle
+
+                    If we precompute the terms in a MAD instruction,
+                    This can be rewritten as:
+
+                        invAngleRange = 1.0 / (cosInnerAngle - cosOuterAngle);  // 一个中间件
+                        atten = SdotL * invAngleRange + (-cosOuterAngle * invAngleRange);
+
+                    spotAngle 是全角,取一半来计算;
+                */
                 float cosOuterAngle = Mathf.Cos(Mathf.Deg2Rad * spotAngle * 0.5f);
-                // We neeed to do a null check for particle lights
+
+                // We neeed to do a null check for particle lights (粒子光)
                 // This should be changed in the future
                 // Particle lights will use an inline function
                 float cosInnerAngle;
                 if (innerSpotAngle.HasValue)
                     cosInnerAngle = Mathf.Cos(innerSpotAngle.Value * Mathf.Deg2Rad * 0.5f);
                 else
-                    cosInnerAngle = Mathf.Cos((2.0f * Mathf.Atan(Mathf.Tan(spotAngle * 0.5f * Mathf.Deg2Rad) * (64.0f - 18.0f) / 64.0f)) * 0.5f);
+                    // 此处实现猜测是针对 粒子光 的, 没有细读;
+                    cosInnerAngle = Mathf.Cos(
+                        (2.0f * Mathf.Atan(Mathf.Tan(spotAngle * 0.5f * Mathf.Deg2Rad) * (64.0f - 18.0f) / 64.0f)) * 0.5f
+                    );
+                
                 float smoothAngleRange = Mathf.Max(0.001f, cosInnerAngle - cosOuterAngle);
+
+                // 两个零件,
                 float invAngleRange = 1.0f / smoothAngleRange;
                 float add = -cosOuterAngle * invAngleRange;
+
                 lightAttenuation.z = invAngleRange;
                 lightAttenuation.w = add;
             }
-        }
+        }// 函数完__
 
-        public static void InitializeLightConstants_Common(NativeArray<VisibleLight> lights, int lightIndex, out Vector4 lightPos, out Vector4 lightColor, out Vector4 lightAttenuation, out Vector4 lightSpotDir, out Vector4 lightOcclusionProbeChannel)
-        {
-            lightPos = k_DefaultLightPosition;
-            lightColor = k_DefaultLightColor;
-            lightOcclusionProbeChannel = k_DefaultLightsProbeChannel;
+
+
+        /*
+            一次处理一个光源的: lights[lightIndex], 初始化它的一部分 "通用" 数据;
+        */
+        /// <param name="lights"></param>
+        /// <param name="lightIndex"></param>
+        /// <param name="lightPos"></param>
+        /// <param name="lightColor"></param>
+        /// <param name="lightAttenuation"></param>
+        /// <param name="lightSpotDir"></param>
+        /// <param name="lightOcclusionProbeChannel">
+        ///         一个 "通道筛选器", 类似 (0,0,1,0), 可以从一个 float4 中提取出对应分量的数值; 
+        ///         算是 array idx 的另类版本;  真正的 shadowmask 数据 并不存储于此;
+        /// </param>
+        public static void InitializeLightConstants_Common( //    读完__
+                                                    NativeArray<VisibleLight> lights, 
+                                                    int lightIndex, 
+                                                    out Vector4 lightPos, 
+                                                    out Vector4 lightColor, 
+                                                    out Vector4 lightAttenuation, 
+                                                    out Vector4 lightSpotDir, 
+                                                    out Vector4 lightOcclusionProbeChannel
+        ){
+            lightPos = k_DefaultLightPosition; // (0,0,1,0)
+            lightColor = k_DefaultLightColor; //黑色
+            lightOcclusionProbeChannel = k_DefaultLightsProbeChannel;//(0,0,0,0)
             lightAttenuation = k_DefaultLightAttenuation;
             lightSpotDir = k_DefaultLightSpotDirection;
 
             // When no lights are visible, main light will be set to -1.
             // In this case we initialize it to default values and return
+            // ---
+            // 感觉描述不够严谨, idx == -1 好像只能说明: 没有在场景中找到 main light, 还是可能存在 oth光源的
+            // 当然如果 lightIndex = -1, 说明当前正在处理的就是一个 不存在的 main light; 就不用处理了直接返回吧
             if (lightIndex < 0)
                 return;
 
+            // ---- 说明是个有效的光源 -----:
             VisibleLight lightData = lights[lightIndex];
             if (lightData.lightType == LightType.Directional)
-            {
-                Vector4 dir = -lightData.localToWorldMatrix.GetColumn(2);
+            {// 平行光中, lightPos 存储 光的方向: ( frag->light )
+                Vector4 dir = -lightData.localToWorldMatrix.GetColumn(2);// 第三列, 
                 lightPos = new Vector4(dir.x, dir.y, dir.z, 0.0f);
             }
             else
-            {
-                Vector4 pos = lightData.localToWorldMatrix.GetColumn(3);
+            {// 精确光中, lightPos 存储 光的 posWS
+                Vector4 pos = lightData.localToWorldMatrix.GetColumn(3);// 第四列
                 lightPos = new Vector4(pos.x, pos.y, pos.z, 1.0f);
             }
 
@@ -946,19 +1040,29 @@ namespace UnityEngine.Rendering.Universal
             lightColor = lightData.finalColor;
 
             GetLightAttenuationAndSpotDirection(
-                lightData.lightType, lightData.range, lightData.localToWorldMatrix,
-                lightData.spotAngle, lightData.light?.innerSpotAngle,
-                out lightAttenuation, out lightSpotDir);
+                lightData.lightType, 
+                lightData.range, 
+                lightData.localToWorldMatrix,
+                lightData.spotAngle, 
+                lightData.light?.innerSpotAngle,
+                out lightAttenuation, 
+                out lightSpotDir
+            );
 
             Light light = lightData.light;
 
-            if (light != null && light.bakingOutput.lightmapBakeType == LightmapBakeType.Mixed &&
-                0 <= light.bakingOutput.occlusionMaskChannel &&
-                light.bakingOutput.occlusionMaskChannel < 4)
-            {
+
+            if (light != null && 
+                light.bakingOutput.lightmapBakeType == LightmapBakeType.Mixed &&
+                // 说明 "occlusionMaskChannel" 不为 -1, 本光源参与到了 shadowmask 的计算, 此贡献被记录在 shadowmask float4 的某个分量里
+                // 使用这个 "occlusionMaskChannel" 可以充当 idx 访问到具体的分量;
+                0<=light.bakingOutput.occlusionMaskChannel && light.bakingOutput.occlusionMaskChannel<4
+            ){
+                // 这会导致 "lightOcclusionProbeChannel" 变成类似 (0,0,1,0) 的样子, 他是 "通道赛选器"
+                // 在 shader: BakedShadow() 中, 使用这个 Channel 信息去取出真正的 shadowmask 值;
                 lightOcclusionProbeChannel[light.bakingOutput.occlusionMaskChannel] = 1.0f;
             }
-        }
+        }// 函数完__
     }
 
 

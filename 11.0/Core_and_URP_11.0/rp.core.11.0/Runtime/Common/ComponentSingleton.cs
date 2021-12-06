@@ -20,6 +20,9 @@ namespace UnityEngine.Rendering
             {
                 if (s_Instance == null)
                 {
+                    // "HideAndDontSave":
+                    //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                    //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                     GameObject go = new GameObject("Default " + typeof(TType).Name) { hideFlags = HideFlags.HideAndDontSave };
                     go.SetActive(false);
                     s_Instance = go.AddComponent<TType>();

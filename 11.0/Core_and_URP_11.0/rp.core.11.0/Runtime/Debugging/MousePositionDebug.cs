@@ -53,6 +53,9 @@ namespace UnityEngine.Rendering
             {
                 Cleanup();
                 var go = new GameObject("__GameViewEventCatcher");
+                // "HideAndDontSave":
+                //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                 go.hideFlags = HideFlags.HideAndDontSave;
                 s_Instance = go.AddComponent<GameViewEventCatcher>();
             }

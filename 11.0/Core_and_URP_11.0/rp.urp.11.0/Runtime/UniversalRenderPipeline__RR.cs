@@ -153,6 +153,7 @@ namespace UnityEngine.Rendering.Universal
         internal const int k_MaxVisibleAdditionalLightsNonMobile = 256;
 
 
+        // 16, 32, 256
         public static int maxVisibleAdditionalLights
         {
             get
@@ -1394,6 +1395,7 @@ namespace UnityEngine.Rendering.Universal
                 就从这些 可选的平行光中, 选择最亮的那栈;
 
             -- 如果以上都不符合, 就说明没找到合适的 main light, 此时返回 -1;
+                比如: 没有手动设置 "sun", 且 visibleLights 中没有平行光;
         */
         static int GetMainLightIndex(UniversalRenderPipelineAsset settings, NativeArray<VisibleLight> visibleLights)// 读完__
         {

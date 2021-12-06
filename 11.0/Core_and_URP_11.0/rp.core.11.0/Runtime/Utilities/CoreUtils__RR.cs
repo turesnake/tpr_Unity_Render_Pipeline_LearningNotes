@@ -196,7 +196,7 @@ namespace UnityEngine.Rendering
         {
             if (clearFlag != ClearFlag.None)
                 cmd.ClearRenderTarget((clearFlag & ClearFlag.Depth) != 0, (clearFlag & ClearFlag.Color) != 0, clearColor);
-        }
+        }// 函数完__
 
         
         /*
@@ -211,7 +211,7 @@ namespace UnityEngine.Rendering
                 depthSlice = 0;
 
             return depthSlice;
-        }
+        }// 函数完__
 
         private static int FixupDepthSlice(int depthSlice, CubemapFace cubemapFace)
         {
@@ -433,7 +433,7 @@ namespace UnityEngine.Rendering
 #if UNITY_EDITOR
             SetViewport(cmd, buffer);
 #endif
-        }
+        }// 函数完__
 
 
 
@@ -699,7 +699,7 @@ namespace UnityEngine.Rendering
                 result = string.Format("{0}_{1}", result, "dynamic");
 
             return result;
-        }
+        }// 函数完__
 
         /// <summary>
         /// Generate a name based on texture parameters.
@@ -880,7 +880,7 @@ namespace UnityEngine.Rendering
         */
         /// <param name="shaderPath">Path of the shader used for the material.</param>
         /// <returns>A new Material instance using "the shader found at the provided path."</returns>
-        public static Material CreateEngineMaterial(string shaderPath)
+        public static Material CreateEngineMaterial(string shaderPath)// 读完__
         {
             Shader shader = Shader.Find(shaderPath);
             if (shader == null)
@@ -891,6 +891,9 @@ namespace UnityEngine.Rendering
 
             var mat = new Material(shader)
             {
+                // "HideAndDontSave":
+                //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                 hideFlags = HideFlags.HideAndDontSave
             };
             return mat;
@@ -898,7 +901,7 @@ namespace UnityEngine.Rendering
 
         /// <param name="shader">Shader used for the material.</param>
         /// <returns>A new Material instance using "the provided shader."</returns>
-        public static Material CreateEngineMaterial(Shader shader)
+        public static Material CreateEngineMaterial(Shader shader)// 读完__
         {
             if (shader == null)
             {
@@ -908,6 +911,9 @@ namespace UnityEngine.Rendering
 
             var mat = new Material(shader)
             {
+                // "HideAndDontSave":
+                //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                 hideFlags = HideFlags.HideAndDontSave
             };
             return mat;

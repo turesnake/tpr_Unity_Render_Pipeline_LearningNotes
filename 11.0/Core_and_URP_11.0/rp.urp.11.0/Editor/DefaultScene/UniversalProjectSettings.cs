@@ -47,6 +47,9 @@ namespace UnityEditor.Rendering.Universal
             if (s_Instance == null)
             {
                 UniversalProjectSettings created = CreateInstance<UniversalProjectSettings>();
+                // "HideAndDontSave":
+                //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                 created.hideFlags = HideFlags.HideAndDontSave;
             }
 

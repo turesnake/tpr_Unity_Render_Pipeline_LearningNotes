@@ -4,7 +4,7 @@ namespace UnityEngine.Rendering.Universal
 {
     [System.Serializable]
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
-    public class StencilStateData//StencilStateData__RR
+    public class StencilStateData//StencilStateData__
     {
         public bool overrideStencilState = false;
         public int stencilReference = 0;

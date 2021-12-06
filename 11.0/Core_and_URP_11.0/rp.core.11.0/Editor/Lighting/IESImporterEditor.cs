@@ -208,6 +208,10 @@ namespace UnityEditor.Rendering
 
                 GameObject previewWall = GameObject.CreatePrimitive(PrimitiveType.Plane);
                 previewWall.name = "IESPreviewWall";
+
+                // "HideAndDontSave":
+                //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                 previewWall.hideFlags = HideFlags.HideAndDontSave;
                 previewWall.transform.localPosition = new Vector3(0f, 4f, 0f);
                 previewWall.transform.localEulerAngles = new Vector3(0f, 0f, -90f);
@@ -223,6 +227,10 @@ namespace UnityEditor.Rendering
 
                 GameObject previewFloor = GameObject.CreatePrimitive(PrimitiveType.Plane);
                 previewFloor.name = "IESPreviewFloor";
+
+                // "HideAndDontSave":
+                //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                 previewFloor.hideFlags = HideFlags.HideAndDontSave;
                 previewFloor.transform.localPosition = new Vector3(4f, 0f, 0f);
                 previewFloor.transform.localEulerAngles = new Vector3(0f, 0f, 0f);

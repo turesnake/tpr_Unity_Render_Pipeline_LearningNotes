@@ -562,6 +562,9 @@ namespace UnityEngine.Rendering
                 RenderTextureFormat format = isShadowMap ? RenderTextureFormat.Shadowmap : RenderTextureFormat.Depth;
                 rt = new RenderTexture(width, height, (int)depthBufferBits, format, RenderTextureReadWrite.Linear)
                 {
+                    // "HideAndDontSave":
+                    //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                    //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                     hideFlags = HideFlags.HideAndDontSave,
                     volumeDepth = slices,
                     filterMode = filterMode,
@@ -583,6 +586,9 @@ namespace UnityEngine.Rendering
             {
                 rt = new RenderTexture(width, height, (int)depthBufferBits, colorFormat)
                 {
+                    // "HideAndDontSave":
+                    //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                    //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                     hideFlags = HideFlags.HideAndDontSave,
                     volumeDepth = slices,
                     filterMode = filterMode,
@@ -860,6 +866,9 @@ namespace UnityEngine.Rendering
                 GraphicsFormat stencilFormat = isShadowMap ? GraphicsFormat.None : GraphicsFormat.R8_UInt;
                 rt = new RenderTexture(width, height, (int)depthBufferBits, format, RenderTextureReadWrite.Linear)
                 {
+                    // "HideAndDontSave":
+                    //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                    //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                     hideFlags = HideFlags.HideAndDontSave,
                     volumeDepth = slices,
                     filterMode = filterMode,
@@ -882,6 +891,9 @@ namespace UnityEngine.Rendering
             {
                 rt = new RenderTexture(width, height, (int)depthBufferBits, colorFormat)
                 {
+                    // "HideAndDontSave":
+                    //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                    //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                     hideFlags = HideFlags.HideAndDontSave,
                     volumeDepth = slices,
                     filterMode = filterMode,

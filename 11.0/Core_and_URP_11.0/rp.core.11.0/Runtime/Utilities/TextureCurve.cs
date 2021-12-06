@@ -130,6 +130,9 @@ namespace UnityEngine.Rendering
             {
                 m_Texture = new Texture2D(k_Precision, 1, GetTextureFormat(), false, true);
                 m_Texture.name = "CurveTexture";
+                // "HideAndDontSave":
+                //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                 m_Texture.hideFlags = HideFlags.HideAndDontSave;
                 m_Texture.filterMode = FilterMode.Bilinear;
                 m_Texture.wrapMode = TextureWrapMode.Clamp;

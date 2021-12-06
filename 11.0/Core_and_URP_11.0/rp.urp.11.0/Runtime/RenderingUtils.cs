@@ -133,7 +133,7 @@ namespace UnityEngine.Rendering.Universal
                 cmd.SetGlobalMatrix(ShaderPropertyId.inverseProjectionMatrix, inverseProjectionMatrix);
                 cmd.SetGlobalMatrix(ShaderPropertyId.inverseViewAndProjectionMatrix, inverseViewProjection);
             }
-        }
+        }// 函数完__
 
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
@@ -233,13 +233,23 @@ namespace UnityEngine.Rendering.Universal
                 cmd.SetRenderTarget(destination, colorLoadAction, colorStoreAction, depthLoadAction, depthStoreAction);
                 cmd.Blit(source, BuiltinRenderTextureType.CurrentActive, material, passIndex);
             }
-        }
+        }// 函数完__
 
-        // This is used to render materials that contain built-in shader passes not compatible with URP.
-        // It will render those legacy passes with error/pink shader.
+
+        /*
+            This is used to render materials that contain built-in shader passes not compatible with URP.
+            It will render those legacy passes with error/pink shader.
+            ---
+            仅在 editor, development_build 模式下才被执行;
+        */
         [Conditional("DEVELOPMENT_BUILD"), Conditional("UNITY_EDITOR")]
-        internal static void RenderObjectsWithError(ScriptableRenderContext context, ref CullingResults cullResults, Camera camera, FilteringSettings filterSettings, SortingCriteria sortFlags)
-        {
+        internal static void RenderObjectsWithError(
+                                            ScriptableRenderContext context, 
+                                            ref CullingResults cullResults, 
+                                            Camera camera, 
+                                            FilteringSettings filterSettings, 
+                                            SortingCriteria sortFlags
+        ){
             // TODO: When importing project, AssetPreviewUpdater::CreatePreviewForAsset will be called multiple times.
             // This might be in a point that some resources required for the pipeline are not finished importing yet.
             // Proper fix is to add a fence on asset import.
@@ -257,7 +267,9 @@ namespace UnityEngine.Rendering.Universal
                 errorSettings.SetShaderPassName(i, m_LegacyShaderPassNames[i]);
 
             context.DrawRenderers(cullResults, ref errorSettings, ref filterSettings);
-        }
+        }// 函数完__
+
+
 
         // Caches render texture format support. SystemInfo.SupportsRenderTextureFormat and IsFormatSupported allocate memory due to boxing.
         static Dictionary<RenderTextureFormat, bool> m_RenderTextureFormatSupport = new Dictionary<RenderTextureFormat, bool>();
@@ -267,7 +279,8 @@ namespace UnityEngine.Rendering.Universal
         {
             m_RenderTextureFormatSupport.Clear();
             m_GraphicsFormatSupport.Clear();
-        }
+        }// 函数完__
+
 
         /// <summary>
         /// Checks if a render texture format is supported by the run-time system.
@@ -284,7 +297,7 @@ namespace UnityEngine.Rendering.Universal
             }
 
             return support;
-        }
+        }// 函数完__
 
 
         /*
@@ -320,7 +333,7 @@ namespace UnityEngine.Rendering.Universal
                 }
             }
             return support;
-        }
+        }// 函数完__
 
 
 
@@ -339,7 +352,7 @@ namespace UnityEngine.Rendering.Universal
                     break;
             }
             return i;
-        }
+        }// 函数完__
 
 
 
@@ -357,7 +370,7 @@ namespace UnityEngine.Rendering.Universal
                 }
             }
             return nonNullColorBuffers;
-        }
+        }// 函数完__
 
 
         /// <summary>
@@ -368,7 +381,7 @@ namespace UnityEngine.Rendering.Universal
         internal static bool IsMRT(RenderTargetIdentifier[] colorBuffers)
         {
             return GetValidColorBufferCount(colorBuffers) > 1;
-        }
+        }// 函数完__
 
 
         /// <summary>
@@ -385,7 +398,8 @@ namespace UnityEngine.Rendering.Universal
                     return true;
             }
             return false;
-        }
+        }// 函数完__
+
 
         /// <summary>
         /// Return the index where value was found source. Otherwise, return -1. (without recurring to Linq)
@@ -401,7 +415,8 @@ namespace UnityEngine.Rendering.Universal
                     return i;
             }
             return -1;
-        }
+        }// 函数完__
+
 
         /// <summary>
         /// Return the number of RenderTargetIdentifiers in "source" that are valid (not 0) and different from "value" (without recurring to Linq)
@@ -418,7 +433,8 @@ namespace UnityEngine.Rendering.Universal
                     ++count;
             }
             return count;
-        }
+        }// 函数完__
+
 
         /// <summary>
         /// Return the index of last valid (i.e different from 0) RenderTargetIdentifiers in "source" (without recurring to Linq)
@@ -433,7 +449,8 @@ namespace UnityEngine.Rendering.Universal
                     return i;
             }
             return -1;
-        }
+        }// 函数完__
+
 
         /// <summary>
         /// Return true if ClearFlag a contains ClearFlag b
@@ -444,7 +461,8 @@ namespace UnityEngine.Rendering.Universal
         internal static bool Contains(ClearFlag a, ClearFlag b)
         {
             return (a & b) == b;
-        }
+        }// 函数完__
+
 
         /// <summary>
         /// Return true if "left" and "right" are the same (without recurring to Linq)
@@ -462,6 +480,6 @@ namespace UnityEngine.Rendering.Universal
                     return false;
 
             return true;
-        }
+        }// 函数完__
     }
 }

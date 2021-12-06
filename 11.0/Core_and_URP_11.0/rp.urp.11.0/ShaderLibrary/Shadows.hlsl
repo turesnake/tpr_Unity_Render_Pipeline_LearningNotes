@@ -364,15 +364,30 @@ half MixRealtimeAndBakedShadows(half realtimeShadow, half bakedShadow, half shad
 #endif
 }
 
-half BakedShadow(half4 shadowMask, half4 occlusionProbeChannels)
+
+// 拿到本光源对应的 shadowmask 值; (1:光线无衰减; 0:光线全衰减)
+half BakedShadow(half4 shadowMask, half4 occlusionProbeChannels)//  读完__
 {
-    // Here occlusionProbeChannels used as mask selector to select shadows in shadowMask
-    // If occlusionProbeChannels all components are zero we use default baked shadow value 1.0
-    // This code is optimized for mobile platforms:
-    // half bakedShadow = any(occlusionProbeChannels) ? dot(shadowMask, occlusionProbeChannels) : 1.0h;
+    /*
+        Here occlusionProbeChannels used as mask selector to select shadows in shadowMask
+        If occlusionProbeChannels all components are zero we use default baked shadow value 1.0
+
+        This code is optimized for mobile platforms:
+        half bakedShadow = any(occlusionProbeChannels) ? dot(shadowMask, occlusionProbeChannels) : 1.0h;
+        (上面这行代码被 urp 自己注释掉了)
+        -------
+
+        下面这行之所以不直接写成:
+            half bakedShadow = dot(shadowMask, occlusionProbeChannels);  (b)
+        
+        仅仅是为了当 "occlusionProbeChannels" 中所有值都为 0 时, 能直接返回 1.0;
+        除此之外, 当 "occlusionProbeChannels" 有一个值为 1 时, 这行代码的行为 和上面的 (b) 是一样的;
+    */
     half bakedShadow = 1.0h + dot(shadowMask - 1.0h, occlusionProbeChannels);
     return bakedShadow;
 }
+
+
 
 half MainLightShadow(float4 shadowCoord, float3 positionWS, half4 shadowMask, half4 occlusionProbeChannels)
 {

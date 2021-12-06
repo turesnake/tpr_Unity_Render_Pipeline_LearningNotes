@@ -7,6 +7,11 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.Rendering.Universal
 {
+
+    /*
+
+
+    */
     [Serializable, ReloadGroup, ExcludeFromPreset]
     [MovedFrom("UnityEngine.Rendering.LWRP")]
     public class ForwardRendererData //ForwardRendererData__RR
@@ -36,7 +41,7 @@ namespace UnityEngine.Rendering.Universal
 #endif
 
         [Serializable, ReloadGroup]
-        public sealed class ShaderResources//ShaderResources__RR
+        public sealed class ShaderResources//ShaderResources__
         {
             [Reload("Shaders/Utils/Blit.shader")]
             public Shader blitPS;
@@ -72,7 +77,7 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
 
-        public ShaderResources shaders = null;
+        public ShaderResources shaders = null; // 见上方
 
         [SerializeField] LayerMask m_OpaqueLayerMask = -1;
         [SerializeField] LayerMask m_TransparentLayerMask = -1;
@@ -93,10 +98,12 @@ namespace UnityEngine.Rendering.Universal
             return new ForwardRenderer(this);
         }
 
-
-        /// <summary>
-        /// Use this to configure how to filter opaque objects.
-        /// </summary>
+        /*
+            Use this to configure how to filter opaque objects.
+            ---
+            指定了哪些 Layer 属于 不透明物部分
+            可在 Forward Renderer inspector 中设置
+        */
         public LayerMask opaqueLayerMask
         {
             get => m_OpaqueLayerMask;
@@ -107,9 +114,12 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
-        /// <summary>
-        /// Use this to configure how to filter transparent objects.
-        /// </summary>
+        /*
+            Use this to configure how to filter transparent objects.
+            ---
+            指定了哪些 Layer 属于 半透明物部分
+            可在 Forward Renderer inspector 中设置
+        */
         public LayerMask transparentLayerMask
         {
             get => m_TransparentLayerMask;
@@ -120,6 +130,11 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
+        /*
+            render state 中的 stencil 部分;
+            ---
+            可在 Forward Renderer inspector 中设置
+        */
         public StencilStateData defaultStencilState
         {
             get => m_DefaultStencilState;

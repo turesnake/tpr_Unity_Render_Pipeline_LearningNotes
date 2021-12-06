@@ -202,6 +202,14 @@ namespace UnityEngine.Rendering.Universal
         protected internal ProfilingSampler profilingSampler { get; set; }
 
 
+        /*
+            "m_ColorAttachments[0]", "m_DepthAttachment" 最初都被绑定为 "BuiltinRenderTextureType.CameraTarget";
+            (即: current camera 的 render target, 注意,这不意味着它一定就是 current active render target);
+            此时本值为 false;
+
+            如果用户调用 "ConfigureTarget()" 重新设置了 color 和 depth target, 
+            此时本值为 true; 
+        */
         internal bool overrideCameraTarget { get; set; }
         internal bool isBlitRenderPass { get; set; }
 
@@ -258,9 +266,9 @@ namespace UnityEngine.Rendering.Universal
         {
             overrideCameraTarget = true;
 
-            // 计算出 参数 colorAttachments 中 "有效的 color buffer" 的个数; (id值不为0, 就是有效的)
+            // 计算出 参数 colorAttachments 中 "有效的 color buffer" 的个数; (如果 id值不为0, 就是有效的)
             uint nonNullColorBuffers = RenderingUtils.GetValidColorBufferCount(colorAttachments);
-            // 不能超过 系统支持的最大值;
+            // 系统只支持 "同时向有限个 rt 输出数据", 不能超过 系统支持的最大值;
             if (nonNullColorBuffers > SystemInfo.supportedRenderTargetCount)
                 Debug.LogError("Trying to set " + nonNullColorBuffers + " renderTargets, which is more than the maximum supported:" + SystemInfo.supportedRenderTargetCount);
 
@@ -423,18 +431,20 @@ namespace UnityEngine.Rendering.Universal
         }
 
 
-
-        /// <summary>
-        /// Creates "DrawingSettings" based on current the rendering state.
-        /// </summary>
+        /*
+            Creates "DrawingSettings" based on current the rendering state.
+        */
         /// <param name="shaderTagId">Shader pass tag to render. 猜测就是要渲染的 pass
         /// </param>
         /// <param name="renderingData">Current rendering state.</param>
         /// <param name="sortingCriteria">Criteria to sort objects being rendered.</param>
         /// <returns></returns>
         /// <seealso cref="DrawingSettings"/>
-        public DrawingSettings CreateDrawingSettings(ShaderTagId shaderTagId, ref RenderingData renderingData, SortingCriteria sortingCriteria)
-        {
+        public DrawingSettings CreateDrawingSettings(
+                                                ShaderTagId shaderTagId, 
+                                                ref RenderingData renderingData, 
+                                                SortingCriteria sortingCriteria
+        ){
             Camera camera = renderingData.cameraData.camera;
             SortingSettings sortingSettings = new SortingSettings(camera) { criteria = sortingCriteria };
             DrawingSettings settings = new DrawingSettings(shaderTagId, sortingSettings)
@@ -454,10 +464,9 @@ namespace UnityEngine.Rendering.Universal
         }
 
 
-        // 看过 ---
-        /// <summary>
-        /// Creates "DrawingSettings" based on current rendering state.
-        /// </summary>
+        /*
+            重载-2-;
+        */
         /// /// <param name="shaderTagIdList">List of shader pass tag to render. 若干个要被执行的 shader pass
         /// </param>
         /// <param name="renderingData">Current rendering state.</param>
@@ -466,11 +475,11 @@ namespace UnityEngine.Rendering.Universal
         /// <seealso cref="DrawingSettings"/>
         /// 
         public DrawingSettings CreateDrawingSettings(
-            List<ShaderTagId> shaderTagIdList,
-            ref RenderingData renderingData, 
-            SortingCriteria sortingCriteria
+                                            List<ShaderTagId> shaderTagIdList,
+                                            ref RenderingData renderingData, 
+                                            SortingCriteria sortingCriteria
         ){
-            if (shaderTagIdList == null || shaderTagIdList.Count == 0)
+            if (shaderTagIdList==null || shaderTagIdList.Count==0)
             {
                 Debug.LogWarning("ShaderTagId list is invalid. DrawingSettings is created with default pipeline ShaderTagId");
                 return CreateDrawingSettings(new ShaderTagId("UniversalPipeline"), ref renderingData, sortingCriteria);
@@ -481,6 +490,8 @@ namespace UnityEngine.Rendering.Universal
                 settings.SetShaderPassName(i, shaderTagIdList[i]);
             return settings;
         }
+
+
 
 
 

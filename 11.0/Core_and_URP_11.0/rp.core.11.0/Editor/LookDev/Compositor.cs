@@ -73,6 +73,9 @@ namespace UnityEditor.Rendering.LookDev
                 m_RTs[index] = new RenderTexture(0, 0, 24, format);
                 m_RTs[index].name = renderDocName;
                 m_RTs[index].antiAliasing = 1;
+                // "HideAndDontSave":
+                //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                 m_RTs[index].hideFlags = HideFlags.HideAndDontSave;
             }
 

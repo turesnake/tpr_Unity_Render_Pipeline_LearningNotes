@@ -53,6 +53,9 @@ namespace UnityEditor.Rendering.LookDev
             m_PreviewScene = EditorSceneManager.NewPreviewScene();
             m_PreviewScene.name = sceneName;
 
+            // "HideAndDontSave":
+            //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+            //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
             var camGO = EditorUtility.CreateGameObjectWithHideFlags("Look Dev Camera", HideFlags.HideAndDontSave, typeof(Camera));
             MoveIntoStage(camGO, true); //position will be updated right before rendering
             camGO.layer = k_PreviewCullingLayerIndex;
@@ -66,6 +69,9 @@ namespace UnityEditor.Rendering.LookDev
             m_Camera.useOcclusionCulling = false;
             m_Camera.scene = m_PreviewScene;
 
+            // "HideAndDontSave":
+            //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+            //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
             var lightGO = EditorUtility.CreateGameObjectWithHideFlags("Look Dev Sun", HideFlags.HideAndDontSave, typeof(Light));
             MoveIntoStage(lightGO, true); //position will be updated right before rendering
             m_SunLight = lightGO.GetComponent<Light>();
@@ -182,6 +188,9 @@ namespace UnityEditor.Rendering.LookDev
 
         static void InitAddedObjectsRecursively(GameObject go)
         {
+            // "HideAndDontSave":
+            //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+            //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
             go.hideFlags = HideFlags.HideAndDontSave;
             go.layer = k_PreviewCullingLayerIndex;
 

@@ -69,7 +69,14 @@ namespace UnityEngine.Rendering.Universal
         TileDepthRangePass m_TileDepthRangePass;
         TileDepthRangePass m_TileDepthRangeExtraPass; // TODO use subpass API to hide this pass
         DeferredPass m_DeferredPass;
+
+
         DrawObjectsPass m_RenderOpaqueForwardOnlyPass;
+
+
+        // "渲染不透明物" 的 render pass 
+        // 始终创建此 render pass, 就算在 延迟渲染模式 也创建此 render pass, 
+        // 因为:(1) editor 中的线框模式, (2) 绘制到 depth render texture 的 camera, 都要用到它;
         DrawObjectsPass m_RenderOpaqueForwardPass;
         DrawSkyboxPass m_DrawSkyboxPass;
         CopyDepthPass m_CopyDepthPass;
@@ -105,15 +112,15 @@ namespace UnityEngine.Rendering.Universal
         ForwardLights m_ForwardLights;
         DeferredLights m_DeferredLights;
         RenderingMode m_RenderingMode;
-        StencilState m_DefaultStencilState;
+        StencilState m_DefaultStencilState;// 直接源自 Forward Renderer inspector 中设置的 stencil 部分 的数据;
 
         // Materials used in URP Scriptable Render Passes
-        Material m_BlitMaterial = null;
-        Material m_CopyDepthMaterial = null;
-        Material m_SamplingMaterial = null;
-        Material m_TileDepthInfoMaterial = null;
-        Material m_TileDeferredMaterial = null;
-        Material m_StencilDeferredMaterial = null;
+        Material m_BlitMaterial = null;//"Shaders/Utils/Blit.shader"
+        Material m_CopyDepthMaterial = null;//"Shaders/Utils/CopyDepth.shader"
+        Material m_SamplingMaterial = null;//"Shaders/Utils/Sampling.shader"
+        Material m_TileDepthInfoMaterial = null;// 未使用
+        Material m_TileDeferredMaterial = null;// 未使用
+        Material m_StencilDeferredMaterial = null;//"Shaders/Utils/StencilDeferred.shader"
 
         PostProcessPasses m_PostProcessPasses;
         internal ColorGradingLutPass colorGradingLutPass { get => m_PostProcessPasses.colorGradingLutPass; }
@@ -133,15 +140,17 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
 
-            m_BlitMaterial = CoreUtils.CreateEngineMaterial(data.shaders.blitPS);
+            m_BlitMaterial = CoreUtils.CreateEngineMaterial(data.shaders.blitPS);//"Shaders/Utils/Blit.shader"
+            m_CopyDepthMaterial = CoreUtils.CreateEngineMaterial(data.shaders.copyDepthPS);//"Shaders/Utils/CopyDepth.shader"
+            m_SamplingMaterial = CoreUtils.CreateEngineMaterial(data.shaders.samplingPS);//"Shaders/Utils/Sampling.shader"
 
-            m_CopyDepthMaterial = CoreUtils.CreateEngineMaterial(data.shaders.copyDepthPS);
-
-            m_SamplingMaterial = CoreUtils.CreateEngineMaterial(data.shaders.samplingPS);
+            // 下面两行是 urp 自己注释掉的:
             //m_TileDepthInfoMaterial = CoreUtils.CreateEngineMaterial(data.shaders.tileDepthInfoPS);
             //m_TileDeferredMaterial = CoreUtils.CreateEngineMaterial(data.shaders.tileDeferredPS);
-            m_StencilDeferredMaterial = CoreUtils.CreateEngineMaterial(data.shaders.stencilDeferredPS);
 
+            m_StencilDeferredMaterial = CoreUtils.CreateEngineMaterial(data.shaders.stencilDeferredPS);//"Shaders/Utils/StencilDeferred.shader"
+
+            // --- 直接源自 Forward Renderer inspector 中设置的 stencil 部分 的数据:
             StencilStateData stencilData = data.defaultStencilState;
             m_DefaultStencilState = StencilState.defaultValue;
             m_DefaultStencilState.enabled = stencilData.overrideStencilState;
@@ -149,6 +158,7 @@ namespace UnityEngine.Rendering.Universal
             m_DefaultStencilState.SetPassOperation(stencilData.passOperation);
             m_DefaultStencilState.SetFailOperation(stencilData.failOperation);
             m_DefaultStencilState.SetZFailOperation(stencilData.zFailOperation);
+
 
             m_ForwardLights = new ForwardLights();
             //m_DeferredLights.LightCulling = data.lightCulling;
@@ -167,6 +177,7 @@ namespace UnityEngine.Rendering.Universal
 */
             m_DepthPrepass = new DepthOnlyPass(RenderPassEvent.BeforeRenderingPrePasses, RenderQueueRange.opaque, data.opaqueLayerMask);
             m_DepthNormalPrepass = new DepthNormalOnlyPass(RenderPassEvent.BeforeRenderingPrePasses, RenderQueueRange.opaque, data.opaqueLayerMask);
+
 
             if (this.renderingMode == RenderingMode.Deferred)
             {
@@ -192,15 +203,41 @@ namespace UnityEngine.Rendering.Universal
                     new ShaderTagId("LightweightForward") // Legacy shaders (do not have a gbuffer pass) are considered forward-only for backward compatibility
                 };
                 int forwardOnlyStencilRef = stencilData.stencilReference | (int)StencilUsage.MaterialUnlit;
-                m_RenderOpaqueForwardOnlyPass = new DrawObjectsPass("Render Opaques Forward Only", forwardOnlyShaderTagIds, true, RenderPassEvent.BeforeRenderingOpaques + 1, RenderQueueRange.opaque, data.opaqueLayerMask, forwardOnlyStencilState, forwardOnlyStencilRef);
+
+                m_RenderOpaqueForwardOnlyPass = new DrawObjectsPass(
+                    "Render Opaques Forward Only", 
+                    forwardOnlyShaderTagIds, 
+                    true, 
+                    RenderPassEvent.BeforeRenderingOpaques + 1, 
+                    RenderQueueRange.opaque, 
+                    data.opaqueLayerMask, 
+                    forwardOnlyStencilState, 
+                    forwardOnlyStencilRef
+                );
+                
                 m_GBufferCopyDepthPass = new CopyDepthPass(RenderPassEvent.BeforeRenderingOpaques + 2, m_CopyDepthMaterial);
                 m_TileDepthRangePass = new TileDepthRangePass(RenderPassEvent.BeforeRenderingOpaques + 3, m_DeferredLights, 0);
                 m_TileDepthRangeExtraPass = new TileDepthRangePass(RenderPassEvent.BeforeRenderingOpaques + 4, m_DeferredLights, 1);
                 m_DeferredPass = new DeferredPass(RenderPassEvent.BeforeRenderingOpaques + 5, m_DeferredLights);
             }
 
-            // Always create this pass even in deferred because we use it for wireframe rendering in the Editor or offscreen depth texture rendering.
-            m_RenderOpaqueForwardPass = new DrawObjectsPass(URPProfileId.DrawOpaqueObjects, true, RenderPassEvent.BeforeRenderingOpaques, RenderQueueRange.opaque, data.opaqueLayerMask, m_DefaultStencilState, stencilData.stencilReference);
+
+            // Always create this pass even in deferred because we use it for
+            // wireframe rendering in the Editor, or offscreen depth texture rendering.
+            // --
+            // "渲染不透明物" 的 render pass 
+            // 始终创建此 render pass, 就算在 延迟渲染模式 也创建此 render pass, 
+            // 因为:(1) editor 中的线框模式, (2) 绘制到 depth render texture 的 camera, 都要用到它;
+            m_RenderOpaqueForwardPass = new DrawObjectsPass(
+                URPProfileId.DrawOpaqueObjects,         // 分析代码块 name
+                // ----------                           // 参数2被省略, 使用一组预定义 ShaderTagIds
+                true,                                   // 本 render pass 渲染的是 不透明物体
+                RenderPassEvent.BeforeRenderingOpaques, // 设置 render pass 执行时间: 在渲染 prepasses 之后, 在渲染不透明物体之前
+                RenderQueueRange.opaque,                // renderQueue 值位于此区间内的物体, 可被渲染, 比如 [0,2000]
+                data.opaqueLayerMask,                   // Forward Renderer inspector 中设置
+                m_DefaultStencilState,                  // 替换 render state 中的 stencil 部分
+                stencilData.stencilReference            // stencil ref 值
+            );
 
             m_CopyDepthPass = new CopyDepthPass(
                 RenderPassEvent.AfterRenderingSkybox, // 在所有 不透明物体之后, 执行本pass

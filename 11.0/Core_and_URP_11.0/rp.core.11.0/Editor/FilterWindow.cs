@@ -271,6 +271,9 @@ namespace UnityEditor.Rendering
                 if (s_FilterWindow == null)
                 {
                     s_FilterWindow = CreateInstance<FilterWindow>();
+                    // "HideAndDontSave":
+                    //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                    //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                     s_FilterWindow.hideFlags = HideFlags.HideAndDontSave;
                 }
 

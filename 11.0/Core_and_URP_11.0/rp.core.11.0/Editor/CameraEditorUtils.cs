@@ -29,6 +29,11 @@ namespace UnityEditor.Rendering
                 {
                     Shader shader = EditorGUIUtility.LoadRequired("SceneView/GUITextureBlit2SRGB.shader") as Shader;
                     s_GUITextureBlit2SRGBMaterial = new Material(shader);
+
+                    // "HideAndDontSave":
+                    //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, 
+                    //  and not unloaded by "Resources.UnloadUnusedAssets()".
+                    //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
                     s_GUITextureBlit2SRGBMaterial.hideFlags = HideFlags.HideAndDontSave;
                 }
                 s_GUITextureBlit2SRGBMaterial.SetFloat("_ManualTex2SRGB", QualitySettings.activeColorSpace == ColorSpace.Linear ? 1.0f : 0.0f);

@@ -160,7 +160,13 @@ namespace UnityEditor.Rendering.Universal
         void DrawBackgroundTexture(Rect rect, int pass)
         {
             if (s_MaterialGrid == null)
-                s_MaterialGrid = new Material(Shader.Find("Hidden/Universal Render Pipeline/Editor/CurveBackground")) { hideFlags = HideFlags.HideAndDontSave };
+                s_MaterialGrid = new Material(Shader.Find("Hidden/Universal Render Pipeline/Editor/CurveBackground")) 
+                { 
+                    // "HideAndDontSave":
+                    //  The GameObject is not shown in the Hierarchy, not saved to to Scenes, and not unloaded by "Resources.UnloadUnusedAssets()".
+                    //  This is most commonly used for GameObjects which are created by a script and are purely under the script's control.
+                    hideFlags = HideFlags.HideAndDontSave 
+                };
 
             float scale = EditorGUIUtility.pixelsPerPoint;
 

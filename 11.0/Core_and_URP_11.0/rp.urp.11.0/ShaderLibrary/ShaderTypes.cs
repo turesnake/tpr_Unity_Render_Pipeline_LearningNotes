@@ -1,5 +1,7 @@
 namespace UnityEngine.Rendering.Universal
 {
+    
+    // ShaderInput.LightData
     public static partial class ShaderInput//ShaderInput__RR
     {
         [GenerateHLSL(PackingRules.Exact, false)]

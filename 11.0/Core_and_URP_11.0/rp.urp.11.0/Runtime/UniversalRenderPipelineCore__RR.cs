@@ -10,11 +10,11 @@ using Lightmapping = UnityEngine.Experimental.GlobalIllumination.Lightmapping;
 namespace UnityEngine.Rendering.Universal
 {
 
-    // enum: None, ShadowMask, Subtractive;
+    // enum: None(Baked Indirect), ShadowMask, Subtractive;
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
     public enum MixedLightingSetup//MixedLightingSetup__
     {
-        None,
+        None, // 有时表示 "未初始化", 有时表示: (Baked Indirect)
         ShadowMask,
         Subtractive,
     };
@@ -47,10 +47,36 @@ namespace UnityEngine.Rendering.Universal
         // 在 "GetMainLightIndex()" 中计算而得; 表示 main light 在 visibleLights 中的 idx; 
         // 若没找到合适的 main light, 此值为 -1;
         public int mainLightIndex; 
-        public int additionalLightsCount; // add light 的数量
+
+        /*
+            visibleLights 中, add light 的数量; 
+            根据是否有 main light, 本值为: visibleLights.Length 或 visibleLights.Length-1;
+            同时, 还不能大于 "maxVisibleAdditionalLights" (16, 32, or 256)
+        */
+        public int additionalLightsCount;
+
+        /*
+            "逐物体 add light" 个数的上限值; 
+            分别受到:
+                -- "asset inspector 用户设置": [0,8] 
+                -- 平台(是否为GLES2) 的影响: 4 or 8 
+            取上述二值的 min, 最终值区间为: [0,8]
+        */
         public int maxPerObjectAdditionalLightsCount;
+
         public NativeArray<VisibleLight> visibleLights;
-        public bool shadeAdditionalLightsPerVertex; // add光 mode 是 逐顶点吗 ?
+
+        /*
+            -- true:  add light 是 逐顶点的;
+            -- false: add light 是 逐像素的;
+            受 asset inspector 用户配置 的控制, 是全局统一值;
+        */
+        public bool shadeAdditionalLightsPerVertex;
+
+        /*
+            是否支持 Mixed 光模式;  
+            受 asset inspector 用户配置 的控制, 是全局统一值;
+        */
         public bool supportsMixedLighting;
     }
 
@@ -339,11 +365,11 @@ namespace UnityEngine.Rendering.Universal
 
         public int mainLightShadowmapWidth; // 其实就是 shadow resolution
         public int mainLightShadowmapHeight; // 其实就是 shadow resolution
-        public int mainLightShadowCascadesCount;// 使用几层 cascade, 区间[1,4]
 
-        /*
-            就是 cascade ratio, 分别定义了 第1,2,3层 cascade 占据的区域的 比例;
-        */
+        public int mainLightShadowCascadesCount;// cascade 有几层, 区间[1,4]; (比如: 4个重叠的球体) 
+
+        
+        //    就是 cascade ratio, 分别定义了 第1,2,3层 cascade 占据的区域的 比例;
         public Vector3 mainLightShadowCascadesSplit;
 
         public bool supportsAdditionalLightShadows;
@@ -1015,11 +1041,16 @@ namespace UnityEngine.Rendering.Universal
             lightAttenuation = k_DefaultLightAttenuation;
             lightSpotDir = k_DefaultLightSpotDirection;
 
-            // When no lights are visible, main light will be set to -1.
-            // In this case we initialize it to default values and return
-            // ---
-            // 感觉描述不够严谨, idx == -1 好像只能说明: 没有在场景中找到 main light, 还是可能存在 oth光源的
-            // 当然如果 lightIndex = -1, 说明当前正在处理的就是一个 不存在的 main light; 就不用处理了直接返回吧
+            /*
+                When no lights are visible, main light will be set to -1.
+                In this case we initialize it to default values and return
+                ---
+                感觉描述不够严谨, idx == -1 好像只能说明: 没有在场景中找到 main light, 还是可能存在 oth光源的
+                当然如果 lightIndex = -1, 说明当前正在处理的就是一个 不存在的 main light; 就不用处理了直接返回吧
+                   ---
+                按照 add light 部分的代码可知, idx == -1 还可能表示: 
+                    这个 light 是 超量部分的 add light, 它也是不需要被处理的; 
+            */
             if (lightIndex < 0)
                 return;
 

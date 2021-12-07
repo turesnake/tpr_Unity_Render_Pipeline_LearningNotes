@@ -35,6 +35,20 @@
     #define OUTPUT_SH(normalWS, OUT) OUT.xyz = SampleSHVertex(normalWS)
 #endif
 
+/*
+    "_MIXED_LIGHTING_SUBTRACTIVE":
+        {Baked Indirect, ShadowMask, Subtractive} 中选择了 Subtractive;
+
+    "LIGHTMAP_SHADOW_MIXING":
+        满足其一即可:
+            -1- {Baked Indirect, ShadowMask, Subtractive} 中选择了 Subtractive;
+            -2- {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask,
+                ( 同时在次一级的 { Shadowmask, DistanceShadowmask } 中选择了 Shadowmask;
+
+    "SHADOWS_SHADOWMASK":
+        {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask; 
+        同时在次一级的 { Shadowmask, DistanceShadowmask } 中, 选择任意一项皆可;
+*/
 // Renamed -> LIGHTMAP_SHADOW_MIXING
 #if !defined(_MIXED_LIGHTING_SUBTRACTIVE) && defined(LIGHTMAP_SHADOW_MIXING) && !defined(SHADOWS_SHADOWMASK)
     #define _MIXED_LIGHTING_SUBTRACTIVE
@@ -115,6 +129,8 @@ Light GetMainLight()
     return light;
 }
 
+
+
 Light GetMainLight(float4 shadowCoord)
 {
     Light light = GetMainLight();
@@ -122,12 +138,16 @@ Light GetMainLight(float4 shadowCoord)
     return light;
 }
 
+
+
 Light GetMainLight(float4 shadowCoord, float3 positionWS, half4 shadowMask)
 {
     Light light = GetMainLight();
     light.shadowAttenuation = MainLightShadow(shadowCoord, positionWS, shadowMask, _MainLightOcclusionProbes);
     return light;
 }
+
+
 
 // Fills a light struct given a perObjectLightIndex
 Light GetAdditionalPerObjectLight(int perObjectLightIndex, float3 positionWS)
@@ -161,6 +181,9 @@ Light GetAdditionalPerObjectLight(int perObjectLightIndex, float3 positionWS)
 
     return light;
 }
+
+
+
 
 uint GetPerObjectLightIndexOffset()
 {
@@ -239,10 +262,17 @@ Light GetAdditionalLight(uint i, float3 positionWS, half4 shadowMask)
 
 int GetAdditionalLightsCount()
 {
-    // TODO: we need to expose in SRP api an ability for the pipeline cap the amount of lights
-    // in the culling. This way we could do the loop branch with an uniform
-    // This would be helpful to support baking exceeding lights in SH as well
-    return min(_AdditionalLightsCount.x, unity_LightData.y);
+    /*
+        TODO: we need to expose in SRP API an ability for the pipeline cap the amount of light in the culling. 
+        This way we could do the loop branch with an uniform;
+        This would be helpful to support baking exceeding lights(超出数量限制的光源们) in SH as well;
+        ---
+
+    */
+    return min(
+        _AdditionalLightsCount.x, 
+        unity_LightData.y
+    );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -778,6 +808,10 @@ half3 GlobalIllumination(BRDFData brdfData, half3 bakedGI, half occlusion, half3
 
 void MixRealtimeAndBakedGI(inout Light light, half3 normalWS, inout half3 bakedGI)
 {
+/*
+    "_MIXED_LIGHTING_SUBTRACTIVE":
+        {Baked Indirect, ShadowMask, Subtractive} 中选择了 Subtractive;
+*/
 #if defined(LIGHTMAP_ON) && defined(_MIXED_LIGHTING_SUBTRACTIVE)
     bakedGI = SubtractDirectMainLightFromLightmap(light, normalWS, bakedGI);
 #endif
@@ -890,10 +924,13 @@ half3 LightingPhysicallyBased(BRDFData brdfData, half3 lightColor, half3 lightDi
     return LightingPhysicallyBased(brdfData, light, viewDirectionWS, specularHighlightsOff, specularHighlightsOff);
 }
 
+
+
 half3 VertexLighting(float3 positionWS, half3 normalWS)
 {
     half3 vertexLightColor = half3(0.0, 0.0, 0.0);
 
+// add lights 是 "逐顶点" 的;
 #ifdef _ADDITIONAL_LIGHTS_VERTEX
     uint lightsCount = GetAdditionalLightsCount();
     for (uint lightIndex = 0u; lightIndex < lightsCount; ++lightIndex)
@@ -932,6 +969,12 @@ half4 UniversalFragmentPBR(InputData inputData, SurfaceData surfaceData)
     InitializeBRDFDataClearCoat(surfaceData.clearCoatMask, surfaceData.clearCoatSmoothness, brdfData, brdfDataClearCoat);
 #endif
 
+
+/*
+    "SHADOWS_SHADOWMASK":
+        {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask; 
+        同时在次一级的 { Shadowmask, DistanceShadowmask } 中, 选择任意一项皆可;
+*/
     // To ensure backward compatibility we have to avoid using shadowMask input, as it is not present in older shaders
 #if defined(SHADOWS_SHADOWMASK) && defined(LIGHTMAP_ON)
     half4 shadowMask = inputData.shadowMask;
@@ -958,6 +1001,7 @@ half4 UniversalFragmentPBR(InputData inputData, SurfaceData surfaceData)
                                      inputData.normalWS, inputData.viewDirectionWS,
                                      surfaceData.clearCoatMask, specularHighlightsOff);
 
+// add lights 是 "逐像素" 的;
 #ifdef _ADDITIONAL_LIGHTS
     uint pixelLightCount = GetAdditionalLightsCount();
     for (uint lightIndex = 0u; lightIndex < pixelLightCount; ++lightIndex)
@@ -973,6 +1017,7 @@ half4 UniversalFragmentPBR(InputData inputData, SurfaceData surfaceData)
     }
 #endif
 
+// add lights 是 "逐顶点" 的;
 #ifdef _ADDITIONAL_LIGHTS_VERTEX
     color += inputData.vertexLighting * brdfData.diffuse;
 #endif
@@ -1013,6 +1058,12 @@ half4 UniversalFragmentPBR( InputData inputData,
 
 half4 UniversalFragmentBlinnPhong(InputData inputData, half3 diffuse, half4 specularGloss, half smoothness, half3 emission, half alpha)
 {
+
+/*
+    "SHADOWS_SHADOWMASK":
+        {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask; 
+        同时在次一级的 { Shadowmask, DistanceShadowmask } 中, 选择任意一项皆可;
+*/
     // To ensure backward compatibility we have to avoid using shadowMask input, as it is not present in older shaders
 #if defined(SHADOWS_SHADOWMASK) && defined(LIGHTMAP_ON)
     half4 shadowMask = inputData.shadowMask;
@@ -1036,6 +1087,8 @@ half4 UniversalFragmentBlinnPhong(InputData inputData, half3 diffuse, half4 spec
     half3 diffuseColor = inputData.bakedGI + LightingLambert(attenuatedLightColor, mainLight.direction, inputData.normalWS);
     half3 specularColor = LightingSpecular(attenuatedLightColor, mainLight.direction, inputData.normalWS, inputData.viewDirectionWS, specularGloss, smoothness);
 
+
+// add lights 是 "逐像素" 的;
 #ifdef _ADDITIONAL_LIGHTS
     uint pixelLightCount = GetAdditionalLightsCount();
     for (uint lightIndex = 0u; lightIndex < pixelLightCount; ++lightIndex)
@@ -1050,6 +1103,8 @@ half4 UniversalFragmentBlinnPhong(InputData inputData, half3 diffuse, half4 spec
     }
 #endif
 
+
+// add lights 是 "逐顶点" 的;
 #ifdef _ADDITIONAL_LIGHTS_VERTEX
     diffuseColor += inputData.vertexLighting;
 #endif

@@ -38,8 +38,8 @@ namespace UnityEngine.Rendering.Universal
                 CoreUtils.SetRenderTarget(cmd, BuiltinRenderTextureType.CameraTarget);
                 cmd.SetGlobalTexture("_CameraDepthAttachment", source.Identifier());
                 
-                cmd.EnableShaderKeyword(ShaderKeywordStrings.DepthNoMsaa);
-                cmd.DisableShaderKeyword(ShaderKeywordStrings.DepthMsaa2);
+                cmd.EnableShaderKeyword(ShaderKeywordStrings.DepthNoMsaa);//"_DEPTH_NO_MSAA"
+                cmd.DisableShaderKeyword(ShaderKeywordStrings.DepthMsaa2);//"_DEPTH_MSAA_2"
                 cmd.DisableShaderKeyword(ShaderKeywordStrings.DepthMsaa4);
                 cmd.DisableShaderKeyword(ShaderKeywordStrings.DepthMsaa8);
                 // Blit has logic to flip projection matrix when rendering to render texture.

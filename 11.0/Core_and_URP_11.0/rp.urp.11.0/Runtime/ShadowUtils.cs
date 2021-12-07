@@ -3,14 +3,20 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.Rendering.Universal
 {
-    [MovedFrom("UnityEngine.Rendering.LWRP")] public struct ShadowSliceData
+
+
+    [MovedFrom("UnityEngine.Rendering.LWRP")] 
+    public struct ShadowSliceData//ShadowSliceData__
     {
         public Matrix4x4 viewMatrix;
         public Matrix4x4 projectionMatrix;
         public Matrix4x4 shadowTransform;
+
+        // tile 在 atlas 中的 offset;
         public int offsetX;
         public int offsetY;
-        public int resolution;
+
+        public int resolution;// tile 分辨率(pix)
         public ShadowSplitData splitData; // splitData contains culling information
 
         public void Clear()
@@ -22,6 +28,8 @@ namespace UnityEngine.Rendering.Universal
             resolution = 1024;
         }
     }
+
+
 
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
     public static class ShadowUtils//ShadowUtils__RR
@@ -46,23 +54,42 @@ namespace UnityEngine.Rendering.Universal
             return result;
         }
 
-        public static bool ExtractDirectionalLightMatrix(ref CullingResults cullResults, ref ShadowData shadowData, int shadowLightIndex, int cascadeIndex, int shadowmapWidth, int shadowmapHeight, int shadowResolution, float shadowNearPlane, out Vector4 cascadeSplitDistance, out ShadowSliceData shadowSliceData)
-        {
+        /*
+
+        */
+        public static bool ExtractDirectionalLightMatrix(
+                                            ref CullingResults cullResults, 
+                                            ref ShadowData shadowData, 
+                                            int shadowLightIndex, // light 在 visibleLights 中的 idx
+                                            int cascadeIndex,     // i
+                                            int shadowmapWidth, 
+                                            int shadowmapHeight, 
+                                            int shadowResolution,  //  shadowmap tile resolution
+                                            float shadowNearPlane, //  The near plane offset for the light.
+                                            out Vector4 cascadeSplitDistance, // xyz: sphere posWS;  w: sphere radius
+                                            out ShadowSliceData shadowSliceData
+        ){
+            // 为一个 平行光 生成一个 clip space cube, 使得它既能沿着 平行光的方向, 
+            // 又能覆盖 "camera 正看到的 平截头体",
+            // 同时支持 cascade 功能
             bool success = cullResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(
-                shadowLightIndex,
-                cascadeIndex, 
-                shadowData.mainLightShadowCascadesCount, 
-                shadowData.mainLightShadowCascadesSplit, 
-                shadowResolution, 
-                shadowNearPlane, 
-                out shadowSliceData.viewMatrix, 
-                out shadowSliceData.projectionMatrix,
-                out shadowSliceData.splitData
+                shadowLightIndex,                       // light 在 visibleLights 中的 idx
+                cascadeIndex,                           // i
+                shadowData.mainLightShadowCascadesCount, // cascade 有几层, 区间[1,4]; (比如: 4个重叠的球体) 
+                shadowData.mainLightShadowCascadesSplit, // cascade split ratios, 
+                shadowResolution,                       //  shadowmap tile resolution
+                shadowNearPlane,                        //  The near plane offset for the light.
+                out shadowSliceData.viewMatrix,         //  
+                out shadowSliceData.projectionMatrix,   //
+                out shadowSliceData.splitData           //  Describes the culling information for a given shadow split
             );
 
-            cascadeSplitDistance = shadowSliceData.splitData.cullingSphere;
+            cascadeSplitDistance = shadowSliceData.splitData.cullingSphere; // xyz: sphere posWS;  w: sphere radius
+
+            // tile 在 atlas 中的 offset;
             shadowSliceData.offsetX = (cascadeIndex % 2) * shadowResolution;
             shadowSliceData.offsetY = (cascadeIndex / 2) * shadowResolution;
+
             shadowSliceData.resolution = shadowResolution;
             shadowSliceData.shadowTransform = GetShadowTransform(shadowSliceData.projectionMatrix, shadowSliceData.viewMatrix);
 
@@ -72,11 +99,15 @@ namespace UnityEngine.Rendering.Universal
 
             // If we have shadow cascades baked into the atlas we bake cascade transform
             // in each shadow matrix to save shader ALU and L/S
+            // ---
+            // cascade 有几层, 区间[1,4]; (比如: 4个重叠的球体) 
             if (shadowData.mainLightShadowCascadesCount > 1)
                 ApplySliceTransform(ref shadowSliceData, shadowmapWidth, shadowmapHeight);
 
             return success;
-        }
+        }//   函数完__
+
+
 
         public static bool ExtractSpotLightMatrix(ref CullingResults cullResults, ref ShadowData shadowData, int shadowLightIndex, out Matrix4x4 shadowMatrix, out Matrix4x4 viewMatrix, out Matrix4x4 projMatrix, out ShadowSplitData splitData)
         {
@@ -107,7 +138,7 @@ namespace UnityEngine.Rendering.Universal
 
             shadowMatrix = GetShadowTransform(projMatrix, viewMatrix);
             return success;
-        }
+        }//   函数完__
 
         public static void RenderShadowSlice(CommandBuffer cmd, ref ScriptableRenderContext context,
             ref ShadowSliceData shadowSliceData, ref ShadowDrawingSettings settings,
@@ -134,17 +165,29 @@ namespace UnityEngine.Rendering.Universal
                 shadowSliceData.projectionMatrix, shadowSliceData.viewMatrix);
         }
 
-        public static int GetMaxTileResolutionInAtlas(int atlasWidth, int atlasHeight, int tileCount)
+
+        /*
+            将 shadowmap atlas 细分成 "tileCount" 个 小正方体 (tile);
+            返回 每个 tile 的分辨率; (边长,pix)
+        */
+        /// <param name="tileCount"> 需要将 atlas 细分成几块, (不是细分几次)</param>
+        public static int GetMaxTileResolutionInAtlas(int atlasWidth, int atlasHeight, int tileCount)//  读完__
         {
-            int resolution = Mathf.Min(atlasWidth, atlasHeight);
+            int resolution = Mathf.Min(atlasWidth, atlasHeight);// atlas 单边尺寸(pix)
+
+            // 使用上面的 "resolution" 能把 atlas 分成几份;
+            // 比如, 当参数 atlasWidth = 350; atlasHeight = 100; 此处可计算得 3; 
             int currentTileCount = atlasWidth / resolution * atlasHeight / resolution;
+
+            // 用上面得分割法还无法得到需要得 块数, 再做下述细分;
             while (currentTileCount < tileCount)
             {
-                resolution = resolution >> 1;
+                resolution = resolution >> 1;// 除2, 地板除
                 currentTileCount = atlasWidth / resolution * atlasHeight / resolution;
             }
             return resolution;
         }
+
 
         public static void ApplySliceTransform(ref ShadowSliceData shadowSliceData, int atlasWidth, int atlasHeight)
         {
@@ -229,7 +272,9 @@ namespace UnityEngine.Rendering.Universal
             }
 
             return new Vector4(depthBias, normalBias, 0.0f, 0.0f);
-        }
+        }//   函数完__
+
+
 
         public static void SetupShadowCasterConstantBuffer(CommandBuffer cmd, ref VisibleLight shadowLight, Vector4 shadowBias)
         {
@@ -243,6 +288,8 @@ namespace UnityEngine.Rendering.Universal
             Vector3 lightPosition = shadowLight.localToWorldMatrix.GetColumn(3);
             cmd.SetGlobalVector("_LightPosition", new Vector4(lightPosition.x, lightPosition.y, lightPosition.z, 1.0f));
         }
+
+
 
         internal static Vector4 GetMainLightShadowParams(ref RenderingData renderingData)
         {
@@ -266,12 +313,14 @@ namespace UnityEngine.Rendering.Universal
             float minusStartFade = -startFade * oneOverFadeDist;
 
             return new Vector4(mainLightShadowStrength, mainLightSoftShadowsProp, oneOverFadeDist, minusStartFade);
-        }
+        }//   函数完__
+
 
         internal static void SetupShadowReceiverConstantBuffer(CommandBuffer cmd, Vector4 mainLightShadowParams)
         {
             cmd.SetGlobalVector("_MainLightShadowParams", mainLightShadowParams);
         }
+
 
         public static RenderTexture GetTemporaryShadowTexture(int width, int height, int bits)
         {
@@ -282,12 +331,36 @@ namespace UnityEngine.Rendering.Universal
             return shadowTexture;
         }
 
-        static Matrix4x4 GetShadowTransform(Matrix4x4 proj, Matrix4x4 view)
+
+        /*
+            此函数内容 和 catlike: "ConvertToAtlasMatrix()"  几乎一致:
+            ----------------------------------
+            生成一个矩阵, 可以执行空间转换: posWS -> posSTS (shadow texture/tile space)
+
+            此处的空间变换, 是把平行光 假想成 相机 来执行的. 
+            而平行光的 VS 和 HCS, 都是个 正交空间 (而不是透视空间)
+
+            参数 m 为 P*V 矩阵,  理想状态下, 可直接通过: mul( m, posWS ) 计算出 posSTS. 
+            但是目前的 m 矩阵 并不完美:
+            -1- 
+                作为自定义矩阵, 我们需要手动为其实现 z-flip
+            -2- 
+                平行光的 HCS, 其 xyz 三轴皆位于 [-1,1] 区间内 (长得很像 NDC)
+                而 depth texture, 其 xy 两轴位于 [0,1] 区间, z值则位于 [0,1] 或 [1,0] 区间 (取决于 z-flip)
+                因此需要将 HCS 的 xyz 三轴 先缩小为 0.5 倍, 再朝三个轴的正方向 移动 0.5 个单位 
+            -3- 
+                现在得到了针对整张 depth texture 的 posSTS,
+                然后针对每一个 tile, 还要基于自身在 atlas 中的位置, 再次将自己缩小为 0.5倍, 然后做一段偏移. 
+                (如果整个 atlas 只有一个 tile, 则不需要这一步) 
+        */
+        static Matrix4x4 GetShadowTransform(Matrix4x4 proj, Matrix4x4 view)//   读完__
         {
             // Currently CullResults ComputeDirectionalShadowMatricesAndCullingPrimitives doesn't
             // apply z reversal to projection matrix. We need to do it manually here.
             if (SystemInfo.usesReversedZBuffer)
             {
+                // 将 第三行 的元素 取反, 最终会将 参与计算的 向量 float4 的 第三个元素(Z) 取反. 
+                // 但是, 此处操作仅仅 将 z值 取反, 还需配合下方 操作才能完成 "Reversed Z" 工作; 
                 proj.m20 = -proj.m20;
                 proj.m21 = -proj.m21;
                 proj.m22 = -proj.m22;
@@ -296,6 +369,16 @@ namespace UnityEngine.Rendering.Universal
 
             Matrix4x4 worldToShadow = proj * view;
 
+            /*
+                这个矩阵如下:
+                    0.5,    0,    0,   0.5
+                      0,  0.5,    0,   0.5 
+                      0,    0,  0.5,   0.5 
+                      0,    0,    0,     1 
+                能让对象 缩小为 0.5倍, 再向3个轴的正方向移动 0.5 个单位;
+                -- 让常规分量区间从 [-1,1] 变成 [0,1]
+                -- 让上面的反转的 z分量从 [1,-1] 变成 [1,0]
+            */
             var textureScaleAndBias = Matrix4x4.identity;
             textureScaleAndBias.m00 = 0.5f;
             textureScaleAndBias.m11 = 0.5f;
@@ -307,6 +390,6 @@ namespace UnityEngine.Rendering.Universal
 
             // Apply texture scale and offset to save a MAD in shader.
             return textureScaleAndBias * worldToShadow;
-        }
+        }//   函数完__
     }
 }

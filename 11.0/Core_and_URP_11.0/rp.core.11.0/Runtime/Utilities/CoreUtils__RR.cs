@@ -961,6 +961,7 @@ namespace UnityEngine.Rendering
                 cmd.DisableShaderKeyword(keyword);
         }
 
+
         // Caution: such a call should not be use interlaced with command buffer command, as it is immediate
         /// <summary>
         /// Set a keyword immediatly on a Material.
@@ -989,6 +990,8 @@ namespace UnityEngine.Rendering
             else
                 cs.DisableKeyword(keyword);
         }
+
+        
 
         /// <summary>
         /// Destroys a UnityObject safely.

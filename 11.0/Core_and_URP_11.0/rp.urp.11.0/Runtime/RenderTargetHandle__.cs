@@ -50,7 +50,7 @@ namespace UnityEngine.Rendering.Universal
 
         /*
             构造函数
-            见到有代码调用 无参数的 构造函数... 不知哪来的
+            urp 中直接调用 无参构造函数, 是因为本类是个 struct !
         */
         public RenderTargetHandle(RenderTargetIdentifier renderTargetIdentifier)
         {

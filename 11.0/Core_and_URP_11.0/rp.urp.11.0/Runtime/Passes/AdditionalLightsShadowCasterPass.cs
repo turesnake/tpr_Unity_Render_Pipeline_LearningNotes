@@ -49,7 +49,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         static int m_AdditionalLightsWorldToShadow_SSBO;
         static int m_AdditionalShadowParams_SSBO;
-        bool m_UseStructuredBuffer;
+        bool m_UseStructuredBuffer;// 暂为 false
 
         const int k_ShadowmapBufferBits = 16;
         private RenderTargetHandle m_AdditionalLightsShadowmap;
@@ -83,7 +83,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             {
                 if (UniversalRenderPipeline.maxVisibleAdditionalLights != UniversalRenderPipeline.k_MaxVisibleAdditionalLightsNonMobile)
                     // Reduce uniform block size on Mobile/GL to avoid shader performance or compilation issues - keep in sync with MAX_PUNCTUAL_LIGHT_SHADOW_SLICES_IN_UBO in Shadows.hlsl
-                    return UniversalRenderPipeline.maxVisibleAdditionalLights;
+                    return UniversalRenderPipeline.maxVisibleAdditionalLights; // 16, 32, or 256
                 else
                     return 545;  // keep in sync with MAX_PUNCTUAL_LIGHT_SHADOW_SLICES_IN_UBO in Shadows.hlsl
             }
@@ -106,11 +106,11 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_AdditionalLightsWorldToShadow_SSBO = Shader.PropertyToID("_AdditionalLightsWorldToShadow_SSBO");
             m_AdditionalShadowParams_SSBO = Shader.PropertyToID("_AdditionalShadowParams_SSBO");
 
-            m_UseStructuredBuffer = RenderingUtils.useStructuredBuffer;
+            m_UseStructuredBuffer = RenderingUtils.useStructuredBuffer; // 暂为 false
             m_SupportsBoxFilterForShadows = Application.isMobilePlatform || SystemInfo.graphicsDeviceType == GraphicsDeviceType.Switch;
 
             // Preallocated a fixed size. CommandBuffer.SetGlobal* does allow this data to grow.
-            int maxVisibleAdditionalLights = UniversalRenderPipeline.maxVisibleAdditionalLights;
+            int maxVisibleAdditionalLights = UniversalRenderPipeline.maxVisibleAdditionalLights;// 16, 32, or 256
             const int maxMainLights = 1;
             int maxVisibleLights = UniversalRenderPipeline.maxVisibleAdditionalLights + maxMainLights;
 
@@ -123,7 +123,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_AdditionalLightIndexToShadowParams = new Vector4[maxVisibleLights];
             m_VisibleLightIndexToCameraSquareDistance = new float[maxVisibleLights];
 
-            if (!m_UseStructuredBuffer)
+            if (!m_UseStructuredBuffer)// 成立
             {
                 // Uniform buffers are faster on some platforms, but they have stricter size limitations
 
@@ -600,9 +600,12 @@ namespace UnityEngine.Rendering.Universal.Internal
             if (m_AdditionalLightsShadowSlices == null || m_AdditionalLightsShadowSlices.Length < totalShadowSlicesCount)
                 m_AdditionalLightsShadowSlices = new ShadowSliceData[totalShadowSlicesCount];
 
+            // m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix can be resized when using SSBO to pass shadow data (no size limitation)
             if (m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix == null ||
-                (m_UseStructuredBuffer && (m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix.Length < totalShadowSlicesCount)))   // m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix can be resized when using SSBO to pass shadow data (no size limitation)
+                (m_UseStructuredBuffer && (m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix.Length<totalShadowSlicesCount))
+            ){
                 m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix = new Matrix4x4[totalShadowSlicesCount];
+            }
 
             // initialize _AdditionalShadowParams
             Vector4 defaultShadowParams = new Vector4(0 /*shadowStrength*/, 0, 0, -1 /*perLightFirstShadowSliceIndex*/);
@@ -856,7 +859,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                     Vector4 shadowBias = ShadowUtils.GetShadowBias(ref shadowLight, visibleLightIndex,
                         ref shadowData, shadowSliceData.projectionMatrix, shadowSliceData.resolution);
                     ShadowUtils.SetupShadowCasterConstantBuffer(cmd, ref shadowLight, shadowBias);
-                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.CastingPunctualLightShadow, true);
+                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.CastingPunctualLightShadow, true);//CastingPunctualLightShadow
                     ShadowUtils.RenderShadowSlice(cmd, ref context, ref shadowSliceData, ref settings);
                     additionalLightHasSoftShadows |= shadowLight.light.shadows == LightShadows.Soft;
                     anyShadowSliceRenderer = true;
@@ -874,8 +877,8 @@ namespace UnityEngine.Rendering.Universal.Internal
                 bool softShadows = shadowData.supportsSoftShadows &&
                     (mainLightHasSoftShadows || additionalLightHasSoftShadows);
 
-                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.AdditionalLightShadows, anyShadowSliceRenderer);
-                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.SoftShadows, softShadows);
+                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.AdditionalLightShadows, anyShadowSliceRenderer);//"_ADDITIONAL_LIGHT_SHADOWS"
+                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.SoftShadows, softShadows);//"_SHADOWS_SOFT"
 
                 if (anyShadowSliceRenderer)
                     SetupAdditionalLightsShadowReceiverConstants(cmd, ref shadowData, softShadows);
@@ -898,8 +901,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             // set shadow fade (shadow distance) parameters
             ShadowUtils.SetupShadowReceiverConstantBuffer(cmd, m_MainLightShadowParams);
 
-            if (m_UseStructuredBuffer)
-            {
+            if (m_UseStructuredBuffer)// 暂为 false
+            {   
+                /*    tpr
                 // per-light data
                 var shadowParamsBuffer = ShaderData.instance.GetAdditionalLightShadowParamsStructuredBuffer(m_AdditionalLightIndexToShadowParams.Length);
                 shadowParamsBuffer.SetData(m_AdditionalLightIndexToShadowParams);
@@ -909,6 +913,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 var shadowSliceMatricesBuffer = ShaderData.instance.GetAdditionalLightShadowSliceMatricesStructuredBuffer(m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix.Length);
                 shadowSliceMatricesBuffer.SetData(m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix);
                 cmd.SetGlobalBuffer(m_AdditionalLightsWorldToShadow_SSBO, shadowSliceMatricesBuffer);
+                */
             }
             else
             {

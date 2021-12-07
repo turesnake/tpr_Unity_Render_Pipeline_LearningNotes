@@ -308,6 +308,11 @@
         #if !defined(DYNAMICLIGHTMAP_ON)
             #define UNITY_USE_SHCOEFFS_ARRAYS
         #endif
+        /*
+            "SHADOWS_SHADOWMASK":
+                {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask; 
+                同时在次一级的 { Shadowmask, DistanceShadowmask } 中, 选择任意一项皆可;
+        */
         #if defined(SHADOWS_SHADOWMASK)
             #define UNITY_USE_PROBESOCCLUSION_ARRAY
         #endif

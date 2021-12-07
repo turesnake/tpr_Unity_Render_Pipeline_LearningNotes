@@ -31,6 +31,12 @@
 #define SHADOWMASK_SAMPLE_EXTRA_ARGS
 #endif
 
+
+/*
+    "SHADOWS_SHADOWMASK":
+        {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask; 
+        同时在次一级的 { Shadowmask, DistanceShadowmask } 中, 选择任意一项皆可;
+*/
 #if defined(SHADOWS_SHADOWMASK) && defined(LIGHTMAP_ON)
     #define SAMPLE_SHADOWMASK(uv) SAMPLE_TEXTURE2D_LIGHTMAP(SHADOWMASK_NAME, SHADOWMASK_SAMPLER_NAME, uv SHADOWMASK_SAMPLE_EXTRA_ARGS);
 #elif !defined (LIGHTMAP_ON)
@@ -41,8 +47,20 @@
 
 #define REQUIRES_WORLD_SPACE_POS_INTERPOLATOR
 
+/*
+    "LIGHTMAP_SHADOW_MIXING":
+        满足其一即可:
+            -1- {Baked Indirect, ShadowMask, Subtractive} 中选择了 Subtractive;
+            -2- {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask,
+                ( 同时在次一级的 { Shadowmask, DistanceShadowmask } 中选择了 Shadowmask;
+    
+    "SHADOWS_SHADOWMASK":
+        {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask; 
+        同时在次一级的 { Shadowmask, DistanceShadowmask } 中, 选择任意一项皆可;
+
+*/
 #if defined(LIGHTMAP_ON) || defined(LIGHTMAP_SHADOW_MIXING) || defined(SHADOWS_SHADOWMASK)
-#define CALCULATE_BAKED_SHADOWS
+    #define CALCULATE_BAKED_SHADOWS
 #endif
 
 SCREENSPACE_TEXTURE(_ScreenSpaceShadowmapTexture);
@@ -355,8 +373,16 @@ half GetShadowFade(float3 positionWS)
     return fade * fade;
 }
 
+
 half MixRealtimeAndBakedShadows(half realtimeShadow, half bakedShadow, half shadowFade)
 {
+/*
+    "LIGHTMAP_SHADOW_MIXING":
+        满足其一即可:
+            -1- {Baked Indirect, ShadowMask, Subtractive} 中选择了 Subtractive;
+            -2- {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask,
+                ( 同时在次一级的 { Shadowmask, DistanceShadowmask } 中选择了 Shadowmask;
+*/
 #if defined(LIGHTMAP_SHADOW_MIXING)
     return min(lerp(realtimeShadow, 1, shadowFade), bakedShadow);
 #else

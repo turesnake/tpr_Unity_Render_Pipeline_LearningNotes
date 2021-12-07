@@ -568,9 +568,9 @@ namespace UnityEngine.Rendering.Universal.Internal
                     bool isShadowMask = renderingData.lightData.supportsMixedLighting && this.MixedLightingSetup == MixedLightingSetup.ShadowMask;
                     bool isShadowMaskAlways = isShadowMask && QualitySettings.shadowmaskMode == ShadowmaskMode.Shadowmask;
                     bool isSubtractive = renderingData.lightData.supportsMixedLighting && this.MixedLightingSetup == MixedLightingSetup.Subtractive;
-                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.LightmapShadowMixing, isSubtractive || isShadowMaskAlways);
-                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.ShadowsShadowMask, isShadowMask);
-                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MixedLightingSubtractive, isSubtractive); // Backward compatibility
+                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.LightmapShadowMixing, isSubtractive || isShadowMaskAlways);//"LIGHTMAP_SHADOW_MIXING"
+                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.ShadowsShadowMask, isShadowMask);//"SHADOWS_SHADOWMASK"
+                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MixedLightingSubtractive, isSubtractive);// Backward compatibility // Backward compatibility
                 }
 
                 context.ExecuteCommandBuffer(cmd);
@@ -812,9 +812,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             // Disable any global keywords setup in SetupLights().
             CoreUtils.SetKeyword(cmd, ShaderKeywordStrings._GBUFFER_NORMALS_OCT, false);
 
-            CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.LightmapShadowMixing, false);
-            CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.ShadowsShadowMask, false);
-            CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MixedLightingSubtractive, false); // Backward compatibility
+            CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.LightmapShadowMixing, false);//"LIGHTMAP_SHADOW_MIXING"
+            CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.ShadowsShadowMask, false);//"SHADOWS_SHADOWMASK"
+            CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MixedLightingSubtractive, false);// Backward compatibility // Backward compatibility
 
             for (int tilerIndex = 0; tilerIndex < m_Tilers.Length; ++tilerIndex)
             {
@@ -1570,7 +1570,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 }
 
                 bool hasSoftShadow = hasDeferredShadows && renderingData.shadowData.supportsSoftShadows && vl.light.shadows == LightShadows.Soft;
-                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.SoftShadows, hasSoftShadow);
+                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.SoftShadows, hasSoftShadow);//"_SHADOWS_SOFT"
 
                 cmd.SetGlobalVector(ShaderConstants._LightColor, lightColor); // VisibleLight.finalColor already returns color in active color space
                 cmd.SetGlobalVector(ShaderConstants._LightDirection, lightDir);
@@ -1582,7 +1582,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             }
 
             cmd.DisableShaderKeyword(ShaderKeywordStrings._DEFERRED_ADDITIONAL_LIGHT_SHADOWS);
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.SoftShadows);
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.SoftShadows);//"_SHADOWS_SOFT"
             cmd.DisableShaderKeyword(ShaderKeywordStrings._DIRECTIONAL);
         }
 
@@ -1618,7 +1618,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 bool hasSoftShadow = hasDeferredAdditionalLightShadows && renderingData.shadowData.supportsSoftShadows && vl.light.shadows == LightShadows.Soft;
 
                 CoreUtils.SetKeyword(cmd, ShaderKeywordStrings._DEFERRED_ADDITIONAL_LIGHT_SHADOWS, hasDeferredAdditionalLightShadows);
-                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.SoftShadows, hasSoftShadow);
+                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.SoftShadows, hasSoftShadow);//"_SHADOWS_SOFT"
 
                 cmd.SetGlobalVector(ShaderConstants._LightPosWS, lightPos);
                 cmd.SetGlobalVector(ShaderConstants._LightColor, lightColor);
@@ -1636,7 +1636,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             }
 
             cmd.DisableShaderKeyword(ShaderKeywordStrings._DEFERRED_ADDITIONAL_LIGHT_SHADOWS);
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.SoftShadows);
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.SoftShadows);//"_SHADOWS_SOFT"
             cmd.DisableShaderKeyword(ShaderKeywordStrings._POINT);
         }
 
@@ -1670,7 +1670,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 bool hasSoftShadow = hasDeferredAdditionalLightShadows && renderingData.shadowData.supportsSoftShadows && vl.light.shadows == LightShadows.Soft;
 
                 CoreUtils.SetKeyword(cmd, ShaderKeywordStrings._DEFERRED_ADDITIONAL_LIGHT_SHADOWS, hasDeferredAdditionalLightShadows);
-                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.SoftShadows, hasSoftShadow);
+                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.SoftShadows, hasSoftShadow);//"_SHADOWS_SOFT"
 
                 cmd.SetGlobalVector(ShaderConstants._SpotLightScale, new Vector4(sinAlpha, sinAlpha, 1.0f - cosAlpha, vl.range));
                 cmd.SetGlobalVector(ShaderConstants._SpotLightBias, new Vector4(0.0f, 0.0f, cosAlpha, 0.0f));
@@ -1692,7 +1692,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             }
 
             cmd.DisableShaderKeyword(ShaderKeywordStrings._DEFERRED_ADDITIONAL_LIGHT_SHADOWS);
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.SoftShadows);
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.SoftShadows);//"_SHADOWS_SOFT"
             cmd.DisableShaderKeyword(ShaderKeywordStrings._SPOT);
         }
 

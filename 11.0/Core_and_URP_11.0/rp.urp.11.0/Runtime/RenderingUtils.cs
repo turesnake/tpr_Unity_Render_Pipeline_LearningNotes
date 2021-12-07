@@ -66,7 +66,7 @@ namespace UnityEngine.Rendering.Universal
         }
 
 
-
+        // 即便到 12.1, 此值仍为 false
         internal static bool useStructuredBuffer
         {
             // There are some performance issues with StructuredBuffers in some platforms.

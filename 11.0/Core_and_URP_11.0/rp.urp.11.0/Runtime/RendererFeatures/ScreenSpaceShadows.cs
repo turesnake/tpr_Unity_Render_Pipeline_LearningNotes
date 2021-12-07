@@ -162,9 +162,9 @@ namespace UnityEngine.Rendering.Universal
                         */
                     }
 
-                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadows, false);
-                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadowCascades, false);
-                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadowScreen, true);
+                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadows, false);//"_MAIN_LIGHT_SHADOWS"
+                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadowCascades, false);//"_MAIN_LIGHT_SHADOWS_CASCADE"
+                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadowScreen, true);//"_MAIN_LIGHT_SHADOWS_SCREEN"
                 }
 
                 context.ExecuteCommandBuffer(cmd);
@@ -200,18 +200,19 @@ namespace UnityEngine.Rendering.Universal
                 using (new ProfilingScope(cmd, m_ProfilingSampler))
                 {
                     ShadowData shadowData = renderingData.shadowData;
-                    int cascadesCount = shadowData.mainLightShadowCascadesCount;
+
+                    int cascadesCount = shadowData.mainLightShadowCascadesCount;// cascade 有几层, 区间[1,4]; (比如: 4个重叠的球体) 
 
                     bool mainLightShadows = renderingData.shadowData.supportsMainLightShadows;
                     bool receiveShadowsNoCascade = mainLightShadows && cascadesCount == 1;
                     bool receiveShadowsCascades = mainLightShadows && cascadesCount > 1;
 
                     // Before transparent object pass, force screen space shadow for main light to disable
-                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadowScreen, false);
+                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadowScreen, false);//"_MAIN_LIGHT_SHADOWS_SCREEN"
 
                     // then enable main light shadows with or without cascades
-                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadows, receiveShadowsNoCascade);
-                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadowCascades, receiveShadowsCascades);
+                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadows, receiveShadowsNoCascade);//"_MAIN_LIGHT_SHADOWS"
+                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadowCascades, receiveShadowsCascades);//"_MAIN_LIGHT_SHADOWS_CASCADE"
                 }
 
                 context.ExecuteCommandBuffer(cmd);

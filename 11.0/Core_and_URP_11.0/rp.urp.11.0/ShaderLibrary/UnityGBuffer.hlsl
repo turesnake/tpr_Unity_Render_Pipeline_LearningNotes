@@ -6,14 +6,27 @@
 
 // inspired from [builtin_shaders]/CGIncludes/UnityGBuffer.cginc
 
+
+/*
+    "LIGHTMAP_SHADOW_MIXING":
+        满足其一即可:
+            -1- {Baked Indirect, ShadowMask, Subtractive} 中选择了 Subtractive;
+            -2- {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask,
+                ( 同时在次一级的 { Shadowmask, DistanceShadowmask } 中选择了 Shadowmask;
+    
+    "SHADOWS_SHADOWMASK":
+        {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask; 
+        同时在次一级的 { Shadowmask, DistanceShadowmask } 中, 选择任意一项皆可;
+*/
 // Non-static meshes with real-time lighting need to write shadow mask, which in that case stores per-object occlusion probe values.
 #if !defined(LIGHTMAP_ON) && defined(LIGHTMAP_SHADOW_MIXING) && !defined(SHADOWS_SHADOWMASK)
-#define OUTPUT_SHADOWMASK 1 // subtractive
+    #define OUTPUT_SHADOWMASK 1 // subtractive
 #elif defined(SHADOWS_SHADOWMASK)
-#define OUTPUT_SHADOWMASK 2 // shadow mask
+    #define OUTPUT_SHADOWMASK 2 // shadow mask
 #else
-#define OUTPUT_SHADOWMASK 0
+    #define OUTPUT_SHADOWMASK 0
 #endif
+
 
 #define kLightingInvalid  -1  // No dynamic lighting: can aliase any other material type as they are skipped using stencil
 #define kLightingLit       1  // lit shader
@@ -120,6 +133,10 @@ FragmentOutput SurfaceDataToGbuffer(SurfaceData surfaceData, InputData inputData
     materialFlags |= kMaterialFlagReceiveShadowsOff;
 #endif
 
+/*
+    "_MIXED_LIGHTING_SUBTRACTIVE":
+        {Baked Indirect, ShadowMask, Subtractive} 中选择了 Subtractive;
+*/
 #if defined(LIGHTMAP_ON) && defined(_MIXED_LIGHTING_SUBTRACTIVE)
     materialFlags |= kMaterialFlagSubtractiveMixedLighting;
 #endif
@@ -178,6 +195,10 @@ FragmentOutput BRDFDataToGbuffer(BRDFData brdfData, InputData inputData, half sm
     specular = 0.0.xxx;
 #endif
 
+/*
+    "_MIXED_LIGHTING_SUBTRACTIVE":
+        {Baked Indirect, ShadowMask, Subtractive} 中选择了 Subtractive;
+*/
 #if defined(LIGHTMAP_ON) && defined(_MIXED_LIGHTING_SUBTRACTIVE)
     materialFlags |= kMaterialFlagSubtractiveMixedLighting;
 #endif

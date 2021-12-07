@@ -861,16 +861,16 @@ namespace UnityEngine.Rendering.Universal
             using var profScope = new ProfilingScope(cmd, Profiling.clearRenderingState);
 
             // Reset per-camera shader keywords. They are enabled depending on which render passes are executed.
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.MainLightShadows);
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.MainLightShadowCascades);
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.MainLightShadowScreen);
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.MainLightShadows);//"_MAIN_LIGHT_SHADOWS"
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.MainLightShadowCascades);//"_MAIN_LIGHT_SHADOWS_CASCADE"
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.MainLightShadowScreen);//"_MAIN_LIGHT_SHADOWS_SCREEN"
             cmd.DisableShaderKeyword(ShaderKeywordStrings.AdditionalLightsVertex);
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.AdditionalLightsPixel);
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.AdditionalLightShadows);
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.SoftShadows);
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.MixedLightingSubtractive); // Backward compatibility
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.LightmapShadowMixing);
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.ShadowsShadowMask);
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.AdditionalLightsPixel);//"_ADDITIONAL_LIGHTS"
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.AdditionalLightShadows);//"_ADDITIONAL_LIGHT_SHADOWS"
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.SoftShadows);//"_SHADOWS_SOFT"
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.MixedLightingSubtractive); //"_MIXED_LIGHTING_SUBTRACTIVE" // Backward compatibility
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.LightmapShadowMixing);//"LIGHTMAP_SHADOW_MIXING"
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.ShadowsShadowMask);//"SHADOWS_SHADOWMASK"
             cmd.DisableShaderKeyword(ShaderKeywordStrings.LinearToSRGBConversion);
         }
 

@@ -3,8 +3,11 @@ using System.Reflection;
 
 namespace UnityEngine.Rendering.Universal
 {
+    /*
+        Rendering modes for Universal renderer.
 
-    /// Rendering modes for Universal renderer.
+        enum: Forward, Deferred;
+    */
     public enum RenderingMode//RenderingMode__
     {
         /*
@@ -111,7 +114,7 @@ namespace UnityEngine.Rendering.Universal
 
         ForwardLights m_ForwardLights;
         DeferredLights m_DeferredLights;
-        RenderingMode m_RenderingMode;
+        RenderingMode m_RenderingMode; // 初始值 Forward
         StencilState m_DefaultStencilState;// 直接源自 Forward Renderer inspector 中设置的 stencil 部分 的数据;
 
         // Materials used in URP Scriptable Render Passes
@@ -161,13 +164,16 @@ namespace UnityEngine.Rendering.Universal
 
 
             m_ForwardLights = new ForwardLights();
-            //m_DeferredLights.LightCulling = data.lightCulling;
-            this.m_RenderingMode = data.renderingMode;
+
+            //m_DeferredLights.LightCulling = data.lightCulling;   urp 自己注释掉的
+
+            this.m_RenderingMode = data.renderingMode; // Forward
 
             // Note: Since all custom render passes inject first and we have stable sort,
             // we inject the builtin passes in the before events.
             m_MainLightShadowCasterPass = new MainLightShadowCasterPass(RenderPassEvent.BeforeRenderingShadows);
             m_AdditionalLightsShadowCasterPass = new AdditionalLightsShadowCasterPass(RenderPassEvent.BeforeRenderingShadows);
+
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             m_XROcclusionMeshPass = new XROcclusionMeshPass(RenderPassEvent.BeforeRenderingOpaques);
@@ -412,6 +418,7 @@ namespace UnityEngine.Rendering.Universal
                                         this.actualRenderingMode == RenderingMode.Deferred;
 
             bool mainLightShadows = m_MainLightShadowCasterPass.Setup(ref renderingData);
+            
             bool additionalLightShadows = m_AdditionalLightsShadowCasterPass.Setup(ref renderingData);
             bool transparentsNeedSettingsPass = m_TransparentSettingsPass.Setup(ref renderingData);
 
@@ -741,6 +748,8 @@ namespace UnityEngine.Rendering.Universal
                 // ( cullingParameters.maximumVisibleLights )  visible additional lights.
                 // i.e "ScriptableRenderContext.Cull()" might return  
                 // ( UniversalRenderPipeline.maxVisibleAdditionalLights + 1 ) visible additional lights !
+                // --------
+                // (16, 32, or 256) + 1;
                 cullingParameters.maximumVisibleLights = UniversalRenderPipeline.maxVisibleAdditionalLights + 1;
             }
             cullingParameters.shadowDistance = cameraData.maxShadowDistance;

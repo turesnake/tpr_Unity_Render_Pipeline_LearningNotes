@@ -159,7 +159,12 @@ CBUFFER_START(UnityPerDraw)
     // ----- Light Indices block feature -----
     // These are set internally by the engine 
     // upon request by RendererConfiguration.
+
+    /*
+        y: 光源数量 (?)
+    */
     real4 unity_LightData;
+
     real4 unity_LightIndices[2];
 
     float4 unity_ProbesOcclusion;

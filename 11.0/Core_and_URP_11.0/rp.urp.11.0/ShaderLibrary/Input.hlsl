@@ -10,6 +10,7 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ShaderTypes.cs.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Deprecated.hlsl"
 
+// 16, 32, or 256
 #if defined(SHADER_API_MOBILE) && (defined(SHADER_API_GLES) || defined(SHADER_API_GLES30))
     #define MAX_VISIBLE_LIGHTS 16
 #elif defined(SHADER_API_MOBILE) || (defined(SHADER_API_GLCORE) && !defined(SHADER_API_SWITCH)) || defined(SHADER_API_GLES) || defined(SHADER_API_GLES3) // Workaround for bug on Nintendo Switch where SHADER_API_GLCORE is mistakenly defined
@@ -17,6 +18,7 @@
 #else
     #define MAX_VISIBLE_LIGHTS 256
 #endif
+
 
 struct InputData
 {
@@ -56,25 +58,34 @@ half4 _MainLightOcclusionProbes;
 // w: directLightStrength
 half4 _AmbientOcclusionParam;
 
+/*
+    x: "逐物体 add light" 个数的上限值;  
+        并不代表 "IndexMap 中 "非-1" 的元素的个数" (visibleLights 中实际存在的 "合格add light" 的个数 )
+*/
 half4 _AdditionalLightsCount;
 
+
 #if USE_STRUCTURED_BUFFER_FOR_LIGHT_DATA
-StructuredBuffer<LightData> _AdditionalLightsBuffer;
-StructuredBuffer<int> _AdditionalLightsIndices;
+    StructuredBuffer<LightData> _AdditionalLightsBuffer;
+    StructuredBuffer<int> _AdditionalLightsIndices;
 #else
-// GLES3 causes a performance regression in some devices when using CBUFFER.
-#ifndef SHADER_API_GLES3
-CBUFFER_START(AdditionalLights)
+    // GLES3 causes a performance regression in some devices when using CBUFFER.
+    // 使用 CBUFFER 时, GLES3 会导致某些设备的性能下降。
+    #ifndef SHADER_API_GLES3
+    CBUFFER_START(AdditionalLights)
+    #endif
+        // 16, 32, or 256 个元素
+        float4 _AdditionalLightsPosition[MAX_VISIBLE_LIGHTS];
+        half4 _AdditionalLightsColor[MAX_VISIBLE_LIGHTS];
+        half4 _AdditionalLightsAttenuation[MAX_VISIBLE_LIGHTS];
+        half4 _AdditionalLightsSpotDir[MAX_VISIBLE_LIGHTS];
+        half4 _AdditionalLightsOcclusionProbes[MAX_VISIBLE_LIGHTS];
+    #ifndef SHADER_API_GLES3
+    CBUFFER_END
+    #endif
+
 #endif
-float4 _AdditionalLightsPosition[MAX_VISIBLE_LIGHTS];
-half4 _AdditionalLightsColor[MAX_VISIBLE_LIGHTS];
-half4 _AdditionalLightsAttenuation[MAX_VISIBLE_LIGHTS];
-half4 _AdditionalLightsSpotDir[MAX_VISIBLE_LIGHTS];
-half4 _AdditionalLightsOcclusionProbes[MAX_VISIBLE_LIGHTS];
-#ifndef SHADER_API_GLES3
-CBUFFER_END
-#endif
-#endif
+
 
 #define UNITY_MATRIX_M     unity_ObjectToWorld
 #define UNITY_MATRIX_I_M   unity_WorldToObject

@@ -138,7 +138,19 @@ Shader "Universal Render Pipeline/Lit"
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
+
+            /*
+                满足其一即可:
+                -1- {Baked Indirect, ShadowMask, Subtractive} 中选择了 Subtractive;
+                -2- {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask,
+                    ( 同时在次一级的 { Shadowmask, DistanceShadowmask } 中选择了 Shadowmask;
+            */
             #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
+            /*
+                "SHADOWS_SHADOWMASK":
+                    {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask; 
+                    同时在次一级的 { Shadowmask, DistanceShadowmask } 中, 选择任意一项皆可;
+            */
             #pragma multi_compile _ SHADOWS_SHADOWMASK
 
             // -------------------------------------
@@ -237,7 +249,20 @@ Shader "Universal Render Pipeline/Lit"
             //#pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             //#pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile _ _SHADOWS_SOFT
+
+            /*
+                满足其一即可:
+                -1- {Baked Indirect, ShadowMask, Subtractive} 中选择了 Subtractive;
+                -2- {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask,
+                    ( 同时在次一级的 { Shadowmask, DistanceShadowmask } 中选择了 Shadowmask;
+            */
             #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
+
+            /*
+                "SHADOWS_SHADOWMASK":
+                    {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask; 
+                    同时在次一级的 { Shadowmask, DistanceShadowmask } 中, 选择任意一项皆可;
+            */
             #pragma multi_compile _ SHADOWS_SHADOWMASK
 
             // -------------------------------------
@@ -427,7 +452,20 @@ Shader "Universal Render Pipeline/Lit"
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
+
+            /*
+                满足其一即可:
+                -1- {Baked Indirect, ShadowMask, Subtractive} 中选择了 Subtractive;
+                -2- {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask,
+                    ( 同时在次一级的 { Shadowmask, DistanceShadowmask } 中选择了 Shadowmask;
+            */
             #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
+
+            /*
+                "SHADOWS_SHADOWMASK":
+                    {Baked Indirect, ShadowMask, Subtractive} 中选择了 ShadowMask; 
+                    同时在次一级的 { Shadowmask, DistanceShadowmask } 中, 选择任意一项皆可;
+            */
             #pragma multi_compile _ SHADOWS_SHADOWMASK
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
 

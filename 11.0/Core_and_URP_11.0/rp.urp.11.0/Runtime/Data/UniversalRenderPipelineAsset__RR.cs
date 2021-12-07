@@ -633,6 +633,8 @@ namespace UnityEngine.Rendering.Universal
         }
 
         // 支持的 add 光 的最大数量
+        // 对应 asset inspector 中: Lighting - Additional lights - "Per Object Limit"
+        // 可设置的区间 [0,8], 默认值为 4;
         public int maxAdditionalLightsCount
         {
             get { return m_AdditionalLightsPerObjectLimit; }
@@ -712,9 +714,10 @@ namespace UnityEngine.Rendering.Universal
             set { m_ShadowDistance = Mathf.Max(0.0f, value); }
         }
 
-        /// <summary>
-        /// Returns the number of shadow cascades.
-        /// </summary>
+        /*
+            Returns the number of shadow cascades.
+            cascade 有几层, 区间[1,4]; (比如: 4个重叠的球体) 
+        */
         public int shadowCascadeCount
         {
             get { return m_ShadowCascadeCount; }
@@ -727,6 +730,7 @@ namespace UnityEngine.Rendering.Universal
                 m_ShadowCascadeCount = value;
             }
         }
+
 
         /// <summary>
         /// Returns the split value.
@@ -790,6 +794,7 @@ namespace UnityEngine.Rendering.Universal
         }
 
         // 是否支持 Mixed mode 的光;
+        // asset inspector 中可设置
         public bool supportsMixedLighting
         {
             get { return m_MixedLightingSupported; }

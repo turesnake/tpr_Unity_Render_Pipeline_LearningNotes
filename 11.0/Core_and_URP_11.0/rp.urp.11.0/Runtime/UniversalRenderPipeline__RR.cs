@@ -153,7 +153,7 @@ namespace UnityEngine.Rendering.Universal
         internal const int k_MaxVisibleAdditionalLightsNonMobile = 256;
 
 
-        // 16, 32, 256
+        // 16, 32, or 256
         public static int maxVisibleAdditionalLights
         {
             get
@@ -1263,6 +1263,7 @@ namespace UnityEngine.Rendering.Universal
             shadowData.requiresScreenSpaceShadowResolve = false;
 #pragma warning restore 0618
 
+            // cascade 有几层, 区间[1,4]; (比如: 4个重叠的球体) 
             shadowData.mainLightShadowCascadesCount = settings.shadowCascadeCount;
             shadowData.mainLightShadowmapWidth = settings.mainLightShadowmapResolution;
             shadowData.mainLightShadowmapHeight = settings.mainLightShadowmapResolution;
@@ -1323,8 +1324,8 @@ namespace UnityEngine.Rendering.Universal
         ){
             using var profScope = new ProfilingScope(null, Profiling.Pipeline.initializeLightData);
 
-            int maxPerObjectAdditionalLights = UniversalRenderPipeline.maxPerObjectLights;
-            int maxVisibleAdditionalLights = UniversalRenderPipeline.maxVisibleAdditionalLights;
+            int maxPerObjectAdditionalLights = UniversalRenderPipeline.maxPerObjectLights;// 4 or 8
+            int maxVisibleAdditionalLights = UniversalRenderPipeline.maxVisibleAdditionalLights;// 16, 32, or 256
 
             lightData.mainLightIndex = mainLightIndex;
 
@@ -1332,9 +1333,13 @@ namespace UnityEngine.Rendering.Universal
             {// mode: PerVertex or PerPixel
                 lightData.additionalLightsCount = Math.Min(   
                     (mainLightIndex!=-1) ? visibleLights.Length-1 : visibleLights.Length,
-                    maxVisibleAdditionalLights 
+                    maxVisibleAdditionalLights // 16, 32, or 256
                 );
-                lightData.maxPerObjectAdditionalLightsCount = Math.Min( settings.maxAdditionalLightsCount, maxPerObjectAdditionalLights );
+
+                lightData.maxPerObjectAdditionalLightsCount = Math.Min( 
+                    settings.maxAdditionalLightsCount, // [0,8], 默认为4
+                    maxPerObjectAdditionalLights       // 4 or 8
+                );
             }
             else
             {// mode: Disabled
@@ -1371,7 +1376,7 @@ namespace UnityEngine.Rendering.Universal
                 // In this case we also need per-object indices (unity_LightIndices)
                 //  "per-object light indices" 是一个 unity 自带系统, 可在笔记中搜索此关键词;
                 //  catlike: 此系统存在问题, 最好别用;
-                if (!RenderingUtils.useStructuredBuffer)
+                if (!RenderingUtils.useStructuredBuffer) // 成立
                     configuration |= PerObjectData.LightIndices;
             }
 
@@ -1535,6 +1540,8 @@ namespace UnityEngine.Rendering.Universal
             renderingData.shadowData.mainLightShadowmapHeight = (int)(renderingData.shadowData.mainLightShadowmapHeight * MainLightShadowmapResolutionMultiplier);
 
             var MainLightShadowCascadesCountBias = AdaptivePerformance.AdaptivePerformanceRenderSettings.MainLightShadowCascadesCountBias;
+            
+            // cascade 有几层, 区间[1,4]; (比如: 4个重叠的球体) 
             renderingData.shadowData.mainLightShadowCascadesCount = Mathf.Clamp(renderingData.shadowData.mainLightShadowCascadesCount - MainLightShadowCascadesCountBias, 0, 4);
 
             var shadowQualityIndex = AdaptivePerformance.AdaptivePerformanceRenderSettings.ShadowQualityBias;

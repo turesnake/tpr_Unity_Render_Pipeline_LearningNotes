@@ -72,28 +72,66 @@ SAMPLER_CMP(sampler_MainLightShadowmapTexture);
 TEXTURE2D_SHADOW(_AdditionalLightsShadowmapTexture);
 SAMPLER_CMP(sampler_AdditionalLightsShadowmapTexture);
 
+
 // GLES3 causes a performance regression in some devices when using CBUFFER.
 #ifndef SHADER_API_GLES3
 CBUFFER_START(MainLightShadows)
 #endif
-// Last cascade is initialized with a no-op matrix. It always transforms
-// shadow coord to half3(0, 0, NEAR_PLANE). We use this trick to avoid
-// branching since ComputeCascadeIndex can return cascade index = MAX_SHADOW_CASCADES
-float4x4    _MainLightWorldToShadow[MAX_SHADOW_CASCADES + 1];
-float4      _CascadeShadowSplitSpheres0;
-float4      _CascadeShadowSplitSpheres1;
-float4      _CascadeShadowSplitSpheres2;
-float4      _CascadeShadowSplitSpheres3;
-float4      _CascadeShadowSplitSphereRadii;
-half4       _MainLightShadowOffset0;
-half4       _MainLightShadowOffset1;
-half4       _MainLightShadowOffset2;
-half4       _MainLightShadowOffset3;
-half4       _MainLightShadowParams;  // (x: shadowStrength, y: 1.0 if soft shadows, 0.0 otherwise, z: oneOverFadeDist, w: minusStartFade) - xy are used by MainLight only, yz are used by MainLight AND AdditionalLights
-float4      _MainLightShadowmapSize; // (xy: 1/width and 1/height, zw: width and height)
+    /*
+        Last cascade is initialized with a no-op matrix. It always transforms "shadow coord" to half3(0, 0, NEAR_PLANE). 
+        We use this trick to avoid branching since "ComputeCascadeIndex()"" can return cascade index = MAX_SHADOW_CASCADES
+        --------
+
+    前面 cascade count 个矩阵:
+        转换矩阵 posWS -> posSTS (shadow texture: tile):
+        传入一个 顶点/fragment 的 posWS (camera 视角), 经由此矩阵转换, 可得到对应的 shadowmap 中的 uv值;
+
+    尾部的所有矩阵:
+            0,   0,   0,   0
+            0,   0,   0,   0
+            0,   0, 1/0,   0
+            0,   0,   0,   0
+
+        m22 元素 是 近平面的 depth 值;
+    */
+    float4x4    _MainLightWorldToShadow[MAX_SHADOW_CASCADES + 1];// 共 5 个
+
+    float4      _CascadeShadowSplitSpheres0;
+    float4      _CascadeShadowSplitSpheres1;
+    float4      _CascadeShadowSplitSpheres2;
+    float4      _CascadeShadowSplitSpheres3;
+    float4      _CascadeShadowSplitSphereRadii;
+    half4       _MainLightShadowOffset0;
+    half4       _MainLightShadowOffset1;
+    half4       _MainLightShadowOffset2;
+    half4       _MainLightShadowOffset3;
+
+
+    /*
+        xy are used by MainLight only, yz are used by MainLight AND AdditionalLights;
+        ------------------
+        -- main light 使用 xyzw 4个数据;
+        -- add light 只是用 zw 分量数据;
+
+            x: shadowStrength; 阴影的强度, [0,1], 为 0 时阴影完全消失, 为 1 时阴影最强烈;
+            y: 1:支持 soft shadow, 0: 不支持
+            z: 计算 阴影衰减 的组件: oneOverFadeDist
+            w: 计算 阴影衰减 的组件: minusStartFade
+    */
+    half4       _MainLightShadowParams;
+    
+    
+    /*
+        x: 1/width
+        y: 1/height
+        z: width
+        w: height
+    */
+    float4      _MainLightShadowmapSize;
 #ifndef SHADER_API_GLES3
 CBUFFER_END
 #endif
+
 
 #if USE_STRUCTURED_BUFFER_FOR_LIGHT_DATA
 
@@ -110,15 +148,25 @@ float4      _AdditionalShadowmapSize; // (xy: 1/width and 1/height, zw: width an
 
 
 #if defined(SHADER_API_MOBILE) || (defined(SHADER_API_GLCORE) && !defined(SHADER_API_SWITCH)) || defined(SHADER_API_GLES) || defined(SHADER_API_GLES3) // Workaround for bug on Nintendo Switch where SHADER_API_GLCORE is mistakenly defined
-// Point lights can use 6 shadow slices, but on some mobile GPUs performance decrease drastically with uniform blocks bigger than 8kb. This number ensures size of buffer AdditionalLightShadows stays reasonable.
-// It also avoids shader compilation errors on SHADER_API_GLES30 devices where max number of uniforms per shader GL_MAX_FRAGMENT_UNIFORM_VECTORS is low (224)
-// Keep in sync with MAX_PUNCTUAL_LIGHT_SHADOW_SLICES_IN_UBO in AdditionalLightsShadowCasterPass.cs
-#define MAX_PUNCTUAL_LIGHT_SHADOW_SLICES_IN_UBO (MAX_VISIBLE_LIGHTS)
+    /*
+        Point lights can use 6 shadow slices, but on some mobile GPUs 
+        performance decrease drastically(剧烈) with uniform blocks bigger than 8kb. 
+        This number ensures size of buffer AdditionalLightShadows stays reasonable.
+        It also avoids shader compilation errors on SHADER_API_GLES30 devices 
+        where max number of uniforms per shader GL_MAX_FRAGMENT_UNIFORM_VECTORS is low (224)
+        Keep in sync with "MAX_PUNCTUAL_LIGHT_SHADOW_SLICES_IN_UBO" in AdditionalLightsShadowCasterPass.cs
+    */
+    #define MAX_PUNCTUAL_LIGHT_SHADOW_SLICES_IN_UBO (MAX_VISIBLE_LIGHTS)
 #else
-// Point lights can use 6 shadow slices, but on some platforms max uniform block size is 64kb. This number ensures size of buffer AdditionalLightShadows does not exceed this 64kb limit.
-// Keep in sync with MAX_PUNCTUAL_LIGHT_SHADOW_SLICES_IN_UBO in AdditionalLightsShadowCasterPass.cs
-#define MAX_PUNCTUAL_LIGHT_SHADOW_SLICES_IN_UBO 545
+    /*
+        Point lights can use 6 shadow slices, but on some platforms max uniform block size is 64kb. 
+        This number ensures size of buffer AdditionalLightShadows does not exceed this 64kb limit.
+        Keep in sync with "MAX_PUNCTUAL_LIGHT_SHADOW_SLICES_IN_UBO" in AdditionalLightsShadowCasterPass.cs
+    */
+    #define MAX_PUNCTUAL_LIGHT_SHADOW_SLICES_IN_UBO 545
 #endif
+
+
 
 // GLES3 causes a performance regression in some devices when using CBUFFER.
 #ifndef SHADER_API_GLES3
@@ -287,6 +335,8 @@ real SampleShadowmap(TEXTURE2D_SHADOW_PARAM(ShadowMap, sampler_ShadowMap), float
     return BEYOND_SHADOW_FAR(shadowCoord) ? 1.0 : attenuation;
 }
 
+
+
 half ComputeCascadeIndex(float3 positionWS)
 {
     float3 fromCenter0 = positionWS - _CascadeShadowSplitSpheres0.xyz;
@@ -301,11 +351,16 @@ half ComputeCascadeIndex(float3 positionWS)
     return 4 - dot(weights, half4(4, 3, 2, 1));
 }
 
+
+
+
 float4 TransformWorldToShadowCoord(float3 positionWS)
 {
 #ifdef _MAIN_LIGHT_SHADOWS_CASCADE
+    // 有 多级 cascade 
     half cascadeIndex = ComputeCascadeIndex(positionWS);
 #else
+    // 没有 cascade, 只有单块 shadowmap
     half cascadeIndex = 0;
 #endif
 
@@ -313,6 +368,7 @@ float4 TransformWorldToShadowCoord(float3 positionWS)
 
     return float4(shadowCoord.xyz, cascadeIndex);
 }
+
 
 half MainLightRealtimeShadow(float4 shadowCoord)
 {

@@ -65,7 +65,10 @@ Varyings BuildVaryings(Attributes input)
 #endif
 
 #if (SHADERPASS == SHADERPASS_SHADOWCASTER)
-    // Define shadow pass specific clip position for Universal
+    /*  
+        Define shadow pass specific clip position for Universal
+        
+    */
     #if _CASTING_PUNCTUAL_LIGHT_SHADOW
         float3 lightDirectionWS = normalize(_LightPosition - positionWS);
     #else

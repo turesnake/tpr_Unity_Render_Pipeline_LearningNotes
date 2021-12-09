@@ -5,7 +5,7 @@ namespace UnityEngine.Rendering.Universal.Internal
     /// <summary>
     /// Renders a shadow map for the main Light.
     /// </summary>
-    public class MainLightShadowCasterPass //MainLightShadowCasterPass__RR
+    public class MainLightShadowCasterPass //MainLightShadowCasterPass__
         : ScriptableRenderPass
     {
         private static class MainLightShadowConstantBuffer
@@ -23,19 +23,42 @@ namespace UnityEngine.Rendering.Universal.Internal
             public static int _ShadowmapSize;//"_MainLightShadowmapSize"
         }
 
-        const int k_MaxCascades = 4;
-        const int k_ShadowmapBufferBits = 16;
+        const int k_MaxCascades = 4; // cascade 最多能分成几层
+        const int k_ShadowmapBufferBits = 16; // texel 存储精度 16-bits
+
+        
+        /*
+            计算 shadow 相关的数据: 强度, 距离, 衰减计算组件 (需要被传入 shader 中)
+            -- main light 使用 xyzw 4个数据;
+            -- add light 只是用 zw 分量数据;
+
+                x: 阴影的强度, [0,1], 为 0 时阴影完全消失, 为 1 时阴影最强烈;
+                y: 1:支持 soft shadow, 0: 不支持
+                z: 计算 阴影衰减 的组件: oneOverFadeDist
+                w: 计算 阴影衰减 的组件: minusStartFade
+        */
         Vector4 m_MainLightShadowParams;
+
+        /*
+            shadowmap atlas 分辨率(pix)
+                举例: shadowmap resolution = 4096, 
+                当 cascade count = 2时,  一定会分配一张: 4096x2048 的矩形 map, 竖着切一刀分为左右两个 tiles;
+                当 cascade count = 1/3/4 时, 最终会分配一张 4096x4096 的 map, 然后在内部分割;
+        */
         int m_ShadowmapWidth;
         int m_ShadowmapHeight;
+
         int m_ShadowCasterCascadesCount;// cascade 有几层, 区间[1,4]; (比如: 4个重叠的球体) 
-        bool m_SupportsBoxFilterForShadows;
+        bool m_SupportsBoxFilterForShadows;// "移动平台 和 switch" 设为 true, 
 
-        RenderTargetHandle m_MainLightShadowmap;
-        RenderTexture m_MainLightShadowmapTexture;
+        RenderTargetHandle m_MainLightShadowmap;// "_MainLightShadowmapTexture", 只是个 handle
+        RenderTexture m_MainLightShadowmapTexture; // rt本体
 
-        Matrix4x4[] m_MainLightShadowMatrices;
-        ShadowSliceData[] m_CascadeSlices;// "_MainLightShadowmapTexture"
+
+        // 前面填 cascade count 个 转换矩阵 posWS -> posSTS (shadow texture: tile):
+        // 尾部矩阵全写 no-op matrix;
+        Matrix4x4[] m_MainLightShadowMatrices;// 共5个元素
+        ShadowSliceData[] m_CascadeSlices;
         Vector4[] m_CascadeSplitDistances;// xyz: cull sphere posWS;  w: sphere radius
 
         ProfilingSampler m_ProfilingSetupSampler = new ProfilingSampler("Setup Main Shadowmap");
@@ -66,15 +89,15 @@ namespace UnityEngine.Rendering.Universal.Internal
             MainLightShadowConstantBuffer._ShadowmapSize = Shader.PropertyToID("_MainLightShadowmapSize");
 
             m_MainLightShadowmap.Init("_MainLightShadowmapTexture");
+
             m_SupportsBoxFilterForShadows = Application.isMobilePlatform || SystemInfo.graphicsDeviceType==GraphicsDeviceType.Switch;
         }//  函数完__
 
 
-        /*
-        */
+        
         /// <param name="renderingData"></param>
         /// <returns> main light 是否支持 shadow </returns>
-        public bool Setup(ref RenderingData renderingData)
+        public bool Setup(ref RenderingData renderingData)//   读完__
         {
             using var profScope = new ProfilingScope(null, m_ProfilingSetupSampler);
 
@@ -99,7 +122,6 @@ namespace UnityEngine.Rendering.Universal.Internal
                 Debug.LogWarning("Only directional lights are supported as main light.");
             }
 
-            
             // 在 shadow distance 范围内, 光源可能没有遇见任何 shadow caster.
             // 此函数将 检测到的 shadow casters 装入一个 AABB 盒, 从参数 bounds 输出 (此处我们不会用到)
             // 同时,  若参数 b 不为空, 本函数返回 true. (表示本光源 确实投射出了投影)
@@ -113,7 +135,6 @@ namespace UnityEngine.Rendering.Universal.Internal
             // cascade 有几层, 区间[1,4]; (比如: 4个重叠的球体) 
             m_ShadowCasterCascadesCount = renderingData.shadowData.mainLightShadowCascadesCount;
 
-
             // shadowmap tile 的分辨率; (边长,pix)
             int shadowResolution = ShadowUtils.GetMaxTileResolutionInAtlas(
                 renderingData.shadowData.mainLightShadowmapWidth,  // 其实就是 shadow resolution
@@ -121,12 +142,12 @@ namespace UnityEngine.Rendering.Universal.Internal
                 m_ShadowCasterCascadesCount   // 也表达: 将 shadowmap atlas 分成几块 tiles, (不是切割几刀); 区间[1,4]
             );
 
-            m_ShadowmapWidth = renderingData.shadowData.mainLightShadowmapWidth;
             /*
                 举例: shadowmap resolution = 4096, 
                 当 cascade count = 2时,  一定会分配一张: 4096x2048 的矩形 map, 竖着切一刀分为左右两个 tiles;
                 当 cascade count = 1/3/4 时, 最终会分配一张 4096x4096 的 map, 然后在内部分割;
             */
+            m_ShadowmapWidth = renderingData.shadowData.mainLightShadowmapWidth;
             m_ShadowmapHeight = (m_ShadowCasterCascadesCount == 2) ?
                 renderingData.shadowData.mainLightShadowmapHeight >> 1 :
                 renderingData.shadowData.mainLightShadowmapHeight;
@@ -150,6 +171,16 @@ namespace UnityEngine.Rendering.Universal.Internal
                     return false;
             }
 
+            /*
+                计算 shadow 相关的数据: 强度, 距离, 衰减计算组件 (需要被传入 shader 中)
+                -- main light 使用 xyzw 4个数据;
+                -- add light 只是用 zw 分量数据;
+
+                    x: 阴影的强度, [0,1], 为 0 时阴影完全消失, 为 1 时阴影最强烈;
+                    y: 1:支持 soft shadow, 0: 不支持
+                    z: 计算 阴影衰减 的组件: oneOverFadeDist
+                    w: 计算 阴影衰减 的组件: minusStartFade
+            */
             m_MainLightShadowParams = ShadowUtils.GetMainLightShadowParams(ref renderingData);
 
             return true;
@@ -157,24 +188,30 @@ namespace UnityEngine.Rendering.Universal.Internal
 
 
 
-        public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
+        public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)// 读完__
         {
-            m_MainLightShadowmapTexture = ShadowUtils.GetTemporaryShadowTexture(m_ShadowmapWidth,
-                m_ShadowmapHeight, k_ShadowmapBufferBits);
-            ConfigureTarget(new RenderTargetIdentifier(m_MainLightShadowmapTexture));
+            m_MainLightShadowmapTexture = ShadowUtils.GetTemporaryShadowTexture(
+                m_ShadowmapWidth,
+                m_ShadowmapHeight, 
+                k_ShadowmapBufferBits// 16-bits
+            );
+            ConfigureTarget(new RenderTargetIdentifier(m_MainLightShadowmapTexture));// colorAttachment
             ConfigureClear(ClearFlag.All, Color.black);
         }
 
 
+
         /// <inheritdoc/>
-        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)//   读完__
         {
-            RenderMainLightCascadeShadowmap(ref context, ref renderingData.cullResults, ref renderingData.lightData, ref renderingData.shadowData);
+            RenderMainLightCascadeShadowmap(
+                ref context, ref renderingData.cullResults, ref renderingData.lightData, ref renderingData.shadowData
+            );
         }
 
 
         /// <inheritdoc/>
-        public override void OnCameraCleanup(CommandBuffer cmd)
+        public override void OnCameraCleanup(CommandBuffer cmd) //   读完__
         {
             if (cmd == null)
                 throw new ArgumentNullException("cmd");
@@ -202,8 +239,13 @@ namespace UnityEngine.Rendering.Universal.Internal
         }
 
 
-        void RenderMainLightCascadeShadowmap(ref ScriptableRenderContext context, ref CullingResults cullResults, ref LightData lightData, ref ShadowData shadowData)
-        {
+
+        void RenderMainLightCascadeShadowmap( //   读完__
+                                            ref ScriptableRenderContext context, 
+                                            ref CullingResults cullResults, 
+                                            ref LightData lightData, 
+                                            ref ShadowData shadowData
+        ){
             int shadowLightIndex = lightData.mainLightIndex;
             if (shadowLightIndex == -1)
                 return;
@@ -221,17 +263,45 @@ namespace UnityEngine.Rendering.Universal.Internal
                 {
                     settings.splitData = m_CascadeSlices[cascadeIndex].splitData;
 
-                    Vector4 shadowBias = ShadowUtils.GetShadowBias(ref shadowLight, shadowLightIndex, ref shadowData, m_CascadeSlices[cascadeIndex].projectionMatrix, m_CascadeSlices[cascadeIndex].resolution);
+                    // 得到 ( depthBias, normalBias, 0, 0 )
+                    Vector4 shadowBias = ShadowUtils.GetShadowBias(
+                        ref shadowLight, 
+                        shadowLightIndex, 
+                        ref shadowData, 
+                        m_CascadeSlices[cascadeIndex].projectionMatrix, 
+                        m_CascadeSlices[cascadeIndex].resolution
+                    );
+
+                    // 向 shader 写入: "_ShadowBias", "_LightDirection", "_LightPosition";
                     ShadowUtils.SetupShadowCasterConstantBuffer(cmd, ref shadowLight, shadowBias);
-                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.CastingPunctualLightShadow, false);//CastingPunctualLightShadow
-                    ShadowUtils.RenderShadowSlice(cmd, ref context, ref m_CascadeSlices[cascadeIndex],
-                        ref settings, m_CascadeSlices[cascadeIndex].projectionMatrix, m_CascadeSlices[cascadeIndex].viewMatrix);
+
+                    CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.CastingPunctualLightShadow, false);//"_CASTING_PUNCTUAL_LIGHT_SHADOW"
+
+                    // 针对单个 shadow tile, 
+                    // 设置 "Const Depth Bias", "Slope Bias", viewport, proj矩阵, view矩阵, 
+                    // 然后执行真正的 "context.DrawShadows()";
+                    ShadowUtils.RenderShadowSlice(
+                        cmd, 
+                        ref context, 
+                        ref m_CascadeSlices[cascadeIndex],
+                        ref settings, 
+                        m_CascadeSlices[cascadeIndex].projectionMatrix, 
+                        m_CascadeSlices[cascadeIndex].viewMatrix
+                    );
                 }
 
-                bool softShadows = shadowLight.light.shadows == LightShadows.Soft && shadowData.supportsSoftShadows;
-                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadows, shadowData.mainLightShadowCascadesCount == 1);//"_MAIN_LIGHT_SHADOWS"
-                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadowCascades, shadowData.mainLightShadowCascadesCount > 1);//"_MAIN_LIGHT_SHADOWS_CASCADE"
-                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.SoftShadows, softShadows);//"_SHADOWS_SOFT"
+                bool softShadows = shadowLight.light.shadows==LightShadows.Soft && shadowData.supportsSoftShadows;
+
+                // main light shadowmap 无 cascade
+                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadows,//"_MAIN_LIGHT_SHADOWS"
+                        shadowData.mainLightShadowCascadesCount == 1);
+
+                // main light shadowmap 多级 cascade
+                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadowCascades, //"_MAIN_LIGHT_SHADOWS_CASCADE"
+                        shadowData.mainLightShadowCascadesCount > 1);
+
+                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.SoftShadows, //"_SHADOWS_SOFT"
+                        softShadows);
 
                 SetupMainLightShadowReceiverConstants(cmd, shadowLight, shadowData.supportsSoftShadows);
             }
@@ -241,17 +311,31 @@ namespace UnityEngine.Rendering.Universal.Internal
         }//  函数完__
 
 
-        void SetupMainLightShadowReceiverConstants(CommandBuffer cmd, VisibleLight shadowLight, bool supportsSoftShadows)
-        {
+
+        void SetupMainLightShadowReceiverConstants( //    读完__
+                                                    CommandBuffer cmd, 
+                                                    VisibleLight shadowLight, 
+                                                    bool supportsSoftShadows
+        ){
             int cascadeCount = m_ShadowCasterCascadesCount;// cascade 有几层, 区间[1,4]; (比如: 4个重叠的球体) 
             for (int i = 0; i < cascadeCount; ++i)
-                m_MainLightShadowMatrices[i] = m_CascadeSlices[i].shadowTransform;
+                m_MainLightShadowMatrices[i] = m_CascadeSlices[i].shadowTransform; // posWS -> posSTS 那个
 
-            // We setup and additional a no-op WorldToShadow matrix in the last index
-            // because the ComputeCascadeIndex function in Shadows.hlsl can return an index
-            // out of bounds. (position not inside any cascade) and we want to avoid branching
+            /*
+                We setup and additional a no-op WorldToShadow matrix in the last index
+                because the "ComputeCascadeIndex()" function in Shadows.hlsl can return an index
+                out of bounds. (position not inside any cascade) and we want to avoid branching
+                ---
+                为了避免 hlsl 代码中出现 分支语句, 做的设置;
+
+                        0,   0,   0,   0
+                        0,   0,   0,   0
+                        0,   0, 1/0,   0
+                        0,   0,   0,   0
+            */
             Matrix4x4 noOpShadowMatrix = Matrix4x4.zero;
-            noOpShadowMatrix.m22 = (SystemInfo.usesReversedZBuffer) ? 1.0f : 0.0f;
+            noOpShadowMatrix.m22 = (SystemInfo.usesReversedZBuffer) ? 1.0f : 0.0f;//设置的是 近平面的 depth;
+            // 尾部都填这个矩阵
             for (int i = cascadeCount; i <= k_MaxCascades; ++i)
                 m_MainLightShadowMatrices[i] = noOpShadowMatrix;
 
@@ -260,25 +344,35 @@ namespace UnityEngine.Rendering.Universal.Internal
             float invHalfShadowAtlasWidth = 0.5f * invShadowAtlasWidth;
             float invHalfShadowAtlasHeight = 0.5f * invShadowAtlasHeight;
 
-            cmd.SetGlobalTexture(m_MainLightShadowmap.id, m_MainLightShadowmapTexture);
-            cmd.SetGlobalMatrixArray(MainLightShadowConstantBuffer._WorldToShadow, m_MainLightShadowMatrices);
-            ShadowUtils.SetupShadowReceiverConstantBuffer(cmd, m_MainLightShadowParams);
+            cmd.SetGlobalTexture(m_MainLightShadowmap.id, m_MainLightShadowmapTexture);// "_MainLightShadowmapTexture"
+
+            cmd.SetGlobalMatrixArray(MainLightShadowConstantBuffer._WorldToShadow, //"_MainLightWorldToShadow"
+                        m_MainLightShadowMatrices);
+
+            ShadowUtils.SetupShadowReceiverConstantBuffer(cmd, m_MainLightShadowParams);// "_MainLightShadowParams"
+
 
             if (m_ShadowCasterCascadesCount > 1)// cascade 有几层, 区间[1,4]; (比如: 4个重叠的球体) 
             {
-                cmd.SetGlobalVector(MainLightShadowConstantBuffer._CascadeShadowSplitSpheres0,
+                // xyz: sphere posWS;  w: sphere radius
+
+                cmd.SetGlobalVector(MainLightShadowConstantBuffer._CascadeShadowSplitSpheres0,//"_CascadeShadowSplitSpheres0"
                     m_CascadeSplitDistances[0]);
-                cmd.SetGlobalVector(MainLightShadowConstantBuffer._CascadeShadowSplitSpheres1,
+                cmd.SetGlobalVector(MainLightShadowConstantBuffer._CascadeShadowSplitSpheres1,//"_CascadeShadowSplitSpheres1"
                     m_CascadeSplitDistances[1]);
-                cmd.SetGlobalVector(MainLightShadowConstantBuffer._CascadeShadowSplitSpheres2,
+                cmd.SetGlobalVector(MainLightShadowConstantBuffer._CascadeShadowSplitSpheres2,//"_CascadeShadowSplitSpheres2"
                     m_CascadeSplitDistances[2]);
-                cmd.SetGlobalVector(MainLightShadowConstantBuffer._CascadeShadowSplitSpheres3,
+                cmd.SetGlobalVector(MainLightShadowConstantBuffer._CascadeShadowSplitSpheres3,//"_CascadeShadowSplitSpheres3"
                     m_CascadeSplitDistances[3]);
-                cmd.SetGlobalVector(MainLightShadowConstantBuffer._CascadeShadowSplitSphereRadii, new Vector4(
-                    m_CascadeSplitDistances[0].w * m_CascadeSplitDistances[0].w,
-                    m_CascadeSplitDistances[1].w * m_CascadeSplitDistances[1].w,
-                    m_CascadeSplitDistances[2].w * m_CascadeSplitDistances[2].w,
-                    m_CascadeSplitDistances[3].w * m_CascadeSplitDistances[3].w));
+
+                // radius^2
+                cmd.SetGlobalVector(MainLightShadowConstantBuffer._CascadeShadowSplitSphereRadii,//"_CascadeShadowSplitSphereRadii"
+                    new Vector4(
+                        m_CascadeSplitDistances[0].w * m_CascadeSplitDistances[0].w,
+                        m_CascadeSplitDistances[1].w * m_CascadeSplitDistances[1].w,
+                        m_CascadeSplitDistances[2].w * m_CascadeSplitDistances[2].w,
+                        m_CascadeSplitDistances[3].w * m_CascadeSplitDistances[3].w)
+                );
             }
 
             /*
@@ -292,23 +386,35 @@ namespace UnityEngine.Rendering.Universal.Internal
             */
             if (supportsSoftShadows)
             {
-                if (m_SupportsBoxFilterForShadows)
+                if (m_SupportsBoxFilterForShadows)// "移动平台 和 switch" 设为 true, 
                 {
-                    cmd.SetGlobalVector(MainLightShadowConstantBuffer._ShadowOffset0,
+                    cmd.SetGlobalVector(MainLightShadowConstantBuffer._ShadowOffset0,//"_MainLightShadowOffset0"
                         new Vector4(-invHalfShadowAtlasWidth, -invHalfShadowAtlasHeight, 0.0f, 0.0f));
-                    cmd.SetGlobalVector(MainLightShadowConstantBuffer._ShadowOffset1,
+
+                    cmd.SetGlobalVector(MainLightShadowConstantBuffer._ShadowOffset1,//"_MainLightShadowOffset1"
                         new Vector4(invHalfShadowAtlasWidth, -invHalfShadowAtlasHeight, 0.0f, 0.0f));
-                    cmd.SetGlobalVector(MainLightShadowConstantBuffer._ShadowOffset2,
+
+                    cmd.SetGlobalVector(MainLightShadowConstantBuffer._ShadowOffset2,//"_MainLightShadowOffset2"
                         new Vector4(-invHalfShadowAtlasWidth, invHalfShadowAtlasHeight, 0.0f, 0.0f));
-                    cmd.SetGlobalVector(MainLightShadowConstantBuffer._ShadowOffset3,
+
+                    cmd.SetGlobalVector(MainLightShadowConstantBuffer._ShadowOffset3,//"_MainLightShadowOffset3"
                         new Vector4(invHalfShadowAtlasWidth, invHalfShadowAtlasHeight, 0.0f, 0.0f));
                 }
 
-                // Currently only used when !SHADER_API_MOBILE but risky to not set them as it's generic
-                // enough so custom shaders might use it.
-                cmd.SetGlobalVector(MainLightShadowConstantBuffer._ShadowmapSize, new Vector4(invShadowAtlasWidth,
-                    invShadowAtlasHeight,
-                    m_ShadowmapWidth, m_ShadowmapHeight));
+                /*
+                    Currently only used when !SHADER_API_MOBILE 
+                    but risky to not set them as it's generic enough so custom shaders might use it.
+                    ---
+                    目前仅被用于 !SHADER_API_MOBILE 时, 但不设置它们存在风险, 因为这个数据比较通用, castom shaders 可能用到它;
+                */
+                cmd.SetGlobalVector(MainLightShadowConstantBuffer._ShadowmapSize, //"_MainLightShadowmapSize"
+                    new Vector4(
+                        invShadowAtlasWidth,
+                        invShadowAtlasHeight,
+                        m_ShadowmapWidth, 
+                        m_ShadowmapHeight
+                    )
+                );
             }
         }//  函数完__
     };

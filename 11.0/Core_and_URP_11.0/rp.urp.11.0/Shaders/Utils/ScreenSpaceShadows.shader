@@ -28,6 +28,8 @@ Shader "Hidden/Universal Render Pipeline/ScreenSpaceShadows"
             /*UNITY_VERTEX_OUTPUT_STEREO   tpr  */
         };
 
+
+
         Varyings Vertex(Attributes input)
         {
             Varyings output;
@@ -45,6 +47,8 @@ Shader "Hidden/Universal Render Pipeline/ScreenSpaceShadows"
 
             return output;
         }
+
+
 
         half4 Fragment(Varyings input) : SV_Target
         {

@@ -271,24 +271,31 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-        // Caches render texture format support. SystemInfo.SupportsRenderTextureFormat and IsFormatSupported allocate memory due to boxing.
-        static Dictionary<RenderTextureFormat, bool> m_RenderTextureFormatSupport = new Dictionary<RenderTextureFormat, bool>();
-        static Dictionary<GraphicsFormat, Dictionary<FormatUsage, bool>> m_GraphicsFormatSupport = new Dictionary<GraphicsFormat, Dictionary<FormatUsage, bool>>();
 
-        internal static void ClearSystemInfoCache()
+        /*
+            Caches render texture format support. 
+            "SystemInfo.SupportsRenderTextureFormat()" and "IsFormatSupported()" allocate memory due to boxing.
+            ---
+            将当前平台对 "各种 render texture formats" 的支持信息 缓存下来, 以便第二次查询时直接得到现成结果;
+        */
+        static Dictionary<RenderTextureFormat, bool> m_RenderTextureFormatSupport 
+                = new Dictionary<RenderTextureFormat, bool>();
+        static Dictionary<GraphicsFormat, Dictionary<FormatUsage, bool>> m_GraphicsFormatSupport 
+                = new Dictionary<GraphicsFormat, Dictionary<FormatUsage, bool>>();
+
+        internal static void ClearSystemInfoCache()//  读完__
         {
             m_RenderTextureFormatSupport.Clear();
             m_GraphicsFormatSupport.Clear();
         }// 函数完__
 
 
-        /// <summary>
-        /// Checks if a render texture format is supported by the run-time system.
-        /// Similar to <see cref="SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat)"/>, but doesn't allocate memory.
-        /// </summary>
+        /*
+            Checks if a render texture format is supported by the run-time system.
+        */
         /// <param name="format">The format to look up.</param>
         /// <returns>Returns true if the graphics card supports the given <c>RenderTextureFormat</c></returns>
-        public static bool SupportsRenderTextureFormat(RenderTextureFormat format)
+        public static bool SupportsRenderTextureFormat(RenderTextureFormat format)// 读完__
         {
             if (!m_RenderTextureFormatSupport.TryGetValue(format, out var support))
             {
@@ -298,6 +305,7 @@ namespace UnityEngine.Rendering.Universal
 
             return support;
         }// 函数完__
+
 
 
         /*
@@ -315,7 +323,7 @@ namespace UnityEngine.Rendering.Universal
         /// <param name="format">The format to look up.</param>
         /// <param name="usage">The format usage to look up.</param>
         /// <returns>Returns true if the graphics card supports the given <c>GraphicsFormat</c></returns>
-        public static bool SupportsGraphicsFormat(GraphicsFormat format, FormatUsage usage)
+        public static bool SupportsGraphicsFormat(GraphicsFormat format, FormatUsage usage)// 读完__
         {
             bool support = false;
             if (!m_GraphicsFormatSupport.TryGetValue(format, out var uses))

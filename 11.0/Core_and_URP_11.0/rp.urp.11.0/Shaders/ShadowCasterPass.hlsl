@@ -29,6 +29,7 @@ float4 GetShadowPositionHClip(Attributes input)
     float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
     float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
 
+// 当前是 精确光
 #if _CASTING_PUNCTUAL_LIGHT_SHADOW
     float3 lightDirectionWS = normalize(_LightPosition - positionWS);
 #else

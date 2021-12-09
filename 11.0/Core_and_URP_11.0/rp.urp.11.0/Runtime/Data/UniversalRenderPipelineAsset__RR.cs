@@ -118,6 +118,8 @@ namespace UnityEngine.Rendering.Universal
     /*
         =================================================================================================================:
         全 urp 唯一一个 RenderPipelineAsset 派生类;
+
+        它的 界面由 UniversalRenderPipelineAssetEditor class 控制
     */
     [ExcludeFromPreset]
     public partial class UniversalRenderPipelineAsset //UniversalRenderPipelineAsset__RR
@@ -129,6 +131,9 @@ namespace UnityEngine.Rendering.Universal
         // 就是 inspector 中的 "Renderer List", 通常放入一个 "Forward Renderer" 实例;
         ScriptableRenderer[] m_Renderers = new ScriptableRenderer[1];
 
+
+        // ============================================================================================:
+
         // Default values set when a new UniversalRenderPipeline asset is created
         // 版本管理用, 
         [SerializeField] int k_AssetVersion = 9;
@@ -136,6 +141,8 @@ namespace UnityEngine.Rendering.Universal
 
         // Deprecated settings for upgrading sakes 已弃用的升级设置
         [SerializeField] RendererType m_RendererType = RendererType.ForwardRenderer;
+
+        
         [EditorBrowsable(EditorBrowsableState.Never)]
         [SerializeField] internal ScriptableRendererData m_RendererData = null;
 
@@ -175,9 +182,12 @@ namespace UnityEngine.Rendering.Universal
         [SerializeField] bool m_AdditionalLightShadowsSupported = false;
         [SerializeField] ShadowResolution m_AdditionalLightsShadowmapResolution = ShadowResolution._2048;
 
-        [SerializeField] int m_AdditionalLightsShadowResolutionTierLow = AdditionalLightsDefaultShadowResolutionTierLow;
-        [SerializeField] int m_AdditionalLightsShadowResolutionTierMedium = AdditionalLightsDefaultShadowResolutionTierMedium;
-        [SerializeField] int m_AdditionalLightsShadowResolutionTierHigh = AdditionalLightsDefaultShadowResolutionTierHigh;
+        // 下面这组值就是 asset inspector 中 "Shadow Resolution Low: Medium: High" 所设置的三个值;
+        // 虽然它们的默认值为: 256, 512, 1024;  但在 inspector 中的默认值为: 512, 1024, 4096;
+        // 还是应该以 inspector 中的为准;
+        [SerializeField] int m_AdditionalLightsShadowResolutionTierLow = AdditionalLightsDefaultShadowResolutionTierLow;//256
+        [SerializeField] int m_AdditionalLightsShadowResolutionTierMedium = AdditionalLightsDefaultShadowResolutionTierMedium;//512
+        [SerializeField] int m_AdditionalLightsShadowResolutionTierHigh = AdditionalLightsDefaultShadowResolutionTierHigh;//1024
 
         // ----- Shadows Settings -----:
         [SerializeField] float m_ShadowDistance = 50.0f;
@@ -218,6 +228,9 @@ namespace UnityEngine.Rendering.Universal
         */
 
         [SerializeField] ShaderVariantLogLevel m_ShaderVariantLogLevel = ShaderVariantLogLevel.Disabled;
+
+
+        // ============================================================================================:
         
 
         // Note: A lut size of 16^3 is barely usable with the HDR grading mode. 32 should be the
@@ -231,7 +244,7 @@ namespace UnityEngine.Rendering.Universal
         internal const int k_ShadowCascadeMaxCount = 4;
 
 
-        // add light 的 default shadow tier 分辨率
+        // add light 的 default shadow 分辨率
         public static readonly int AdditionalLightsDefaultShadowResolutionTierLow = 256;
         public static readonly int AdditionalLightsDefaultShadowResolutionTierMedium = 512;
         public static readonly int AdditionalLightsDefaultShadowResolutionTierHigh = 1024;
@@ -652,42 +665,28 @@ namespace UnityEngine.Rendering.Universal
         }
 
        
-        /*
-            Returns the additional light shadow resolution defined for tier "Low" in the UniversalRenderPipeline asset.
 
-            Low 档配置中 shadow resolution 值;  默认: 512
+        /*
+            Returns the additional light shadow resolution defined for tier "Low/Medium/High" 
+            in the UniversalRenderPipeline asset.
+            ---
+            专用于 add light 的, Low/Medium/High 档配置中 shadow resolution 值;
+            由 asset inspector 配置, inspector 中默认值为: 512/1024/4096
         */
-        public int additionalLightsShadowResolutionTierLow
-        {
+        public int additionalLightsShadowResolutionTierLow{
             get { return (int)m_AdditionalLightsShadowResolutionTierLow; }
         }
-
-        
-        /*
-            Returns the additional light shadow resolution defined for tier "Medium" in the UniversalRenderPipeline asset.
-
-            Medium 档配置中 shadow resolution 值;   默认: 1024
-        */
-        public int additionalLightsShadowResolutionTierMedium
-        {
+        public int additionalLightsShadowResolutionTierMedium{
             get { return (int)m_AdditionalLightsShadowResolutionTierMedium; }
         }
-
-        
-        /*
-            Returns the additional light shadow resolution defined for tier "High" in the UniversalRenderPipeline asset.
-
-            High 档配置中 shadow resolution 值;  默认: 2048
-        */
-        public int additionalLightsShadowResolutionTierHigh
-        {
+        public int additionalLightsShadowResolutionTierHigh{
             get { return (int)m_AdditionalLightsShadowResolutionTierHigh; }
         }
 
-
         /*
-            获得 shadow resolution 值(像素为单位)
-            参数 是 不同的 配置档次的 (tier), 比如 低档配置:512, 中档配置:1024, 高档配置:2048
+            获得 单张 add light 的 shadow tile(slice) 分辨率上限 (pix)
+            分三个档次: Low/Medium/High;
+            至于具体选哪一档, 全看 point光 / spot光 light 界面配置;
         */
         internal int GetAdditionalLightsShadowResolution( int additionalLightsShadowResolutionTier )// 读完__
         {

@@ -7,7 +7,9 @@ using UnityEditorInternal;
 namespace UnityEditor.Rendering.Universal
 {
     [CustomEditor(typeof(UniversalRenderPipelineAsset))]
-    [MovedFrom("UnityEditor.Rendering.LWRP")] public class UniversalRenderPipelineAssetEditor : Editor
+    [MovedFrom("UnityEditor.Rendering.LWRP")] 
+    public class UniversalRenderPipelineAssetEditor//UniversalRenderPipelineAssetEditor__RR
+    : Editor
     {
         internal class Styles
         {
@@ -86,7 +88,7 @@ namespace UnityEditor.Rendering.Universal
                     "Removal of the Default Renderer is not allowed. To remove, set another Renderer to be the new Default and then remove.");
 
             public static GUIContent rendererMissingDefaultMessage =
-                EditorGUIUtility.TrTextContent("Missing Default Renderer\nThere is no default renderer assigned, so Unity can’t perform any rendering. Set another renderer to be the new Default, or assign a renderer to the Default slot.");
+                EditorGUIUtility.TrTextContent("Missing Default Renderer\nThere is no default renderer assigned, so Unity can't perform any rendering. Set another renderer to be the new Default, or assign a renderer to the Default slot.");
             public static GUIContent rendererMissingMessage =
                 EditorGUIUtility.TrTextContent("Missing Renderer(s)\nOne or more renderers are either missing or unassigned.  Switching to these renderers at runtime can cause issues.");
             public static GUIContent rendererUnsupportedAPIMessage =

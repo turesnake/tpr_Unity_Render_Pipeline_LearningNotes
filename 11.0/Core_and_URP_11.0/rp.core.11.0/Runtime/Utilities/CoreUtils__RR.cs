@@ -969,7 +969,7 @@ namespace UnityEngine.Rendering
         /// <param name="material">Material on which to set the keyword.</param>
         /// <param name="keyword">Keyword to set on the material.</param>
         /// <param name="state">Value of the keyword to set on the material.</param>
-        public static void SetKeyword(Material material, string keyword, bool state)
+        public static void SetKeyword(Material material, string keyword, bool state)//   读完__
         {
             if (state)
                 material.EnableKeyword(keyword);
@@ -983,7 +983,7 @@ namespace UnityEngine.Rendering
         /// <param name="cs">Compute Shader on which to set the keyword.</param>
         /// <param name="keyword">Keyword to be set.</param>
         /// <param name="state">Value of the keyword to be set.</param>
-        public static void SetKeyword(ComputeShader cs, string keyword, bool state)
+        public static void SetKeyword(ComputeShader cs, string keyword, bool state)//   读完__
         {
             if (state)
                 cs.EnableKeyword(keyword);

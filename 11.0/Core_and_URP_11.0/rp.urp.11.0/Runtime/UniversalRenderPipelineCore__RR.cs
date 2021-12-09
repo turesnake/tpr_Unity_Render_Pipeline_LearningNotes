@@ -375,7 +375,14 @@ namespace UnityEngine.Rendering.Universal
         public bool supportsAdditionalLightShadows;
         public int additionalLightsShadowmapWidth; // 其实就是 shadow resolution
         public int additionalLightsShadowmapHeight; // 其实就是 shadow resolution
+
+        // 同时满足:
+        // -1- asset inspector 用户勾选了: supportsSoftShadows
+        // -2- main/add light 任意一种支持渲染 shadow 时
+        //  本变量就为 true;
         public bool supportsSoftShadows;
+
+        
         public int shadowmapDepthBufferBits; // 比如 16: 一个texl 存储消耗 16-bits
 
         /*
@@ -388,10 +395,16 @@ namespace UnityEngine.Rendering.Universal
         */
         public List<Vector4> bias;
 
+
         /*
-            visibleLights 中, 每个光的 ShadowRe solution 值(像素为档位.)
-            不同的 配置档次的(tier), 得到的值不同, 比如 低档配置:512, 中档配置:1024, 高档配置:2048
-            可以是设置在 asset 中的值, 也可以是设置在 light 中的值;
+            (本数据仅被 add light 使用)
+
+            visibleLights 中, 每个 add light 的 shadow tile(slice) 的最大分辨率(pix)
+            
+            分三个档次: Low/Medium/High; 每个档次对应的值 记录在 asset inspector 中;
+            值通常为: 512 / 1024 / 4096;
+
+            至于具体选哪一档, 全看 point光 / spot光 light inspector 中的选择;
         */
         public List<int> resolution;
     }
@@ -500,7 +513,15 @@ namespace UnityEngine.Rendering.Universal
         public static readonly string MainLightShadows = "_MAIN_LIGHT_SHADOWS";
         public static readonly string MainLightShadowCascades = "_MAIN_LIGHT_SHADOWS_CASCADE";
         public static readonly string MainLightShadowScreen = "_MAIN_LIGHT_SHADOWS_SCREEN";
-        public static readonly string CastingPunctualLightShadow = "_CASTING_PUNCTUAL_LIGHT_SHADOW"; // This is used during shadow map generation to differentiate between directional and punctual light shadows, as they use different formulas to apply Normal Bias
+
+        /*
+            This is used during shadow map generation to differentiate between directional and punctual light shadows, 
+            as they use different formulas to apply Normal Bias
+            ---
+            在 shadowmap caster shader 中, 使用此 keyword 来区分 平行光 和 精确光,
+            因为它们使用 Normal Bias 的方式不一样
+        */
+        public static readonly string CastingPunctualLightShadow = "_CASTING_PUNCTUAL_LIGHT_SHADOW"; 
         public static readonly string AdditionalLightsVertex = "_ADDITIONAL_LIGHTS_VERTEX";
         public static readonly string AdditionalLightsPixel = "_ADDITIONAL_LIGHTS";
         public static readonly string AdditionalLightShadows = "_ADDITIONAL_LIGHT_SHADOWS";
@@ -600,9 +621,14 @@ namespace UnityEngine.Rendering.Universal
         static List<Vector4> m_ShadowBiasData = new List<Vector4>();
 
         /*
-            visibleLights 中, 每个光的 ShadowRe solution 值(像素为档位.)
-            不同的 配置档次的(tier), 得到的值不同, 比如 低档配置:512, 中档配置:1024, 高档配置:2048
-            可以是设置在 asset 中的值, 也可以是设置在 light 中的值;
+            (本数据仅被 add light 使用)
+
+            visibleLights 中, 每个 add light 的 shadow tile(slice) 的最大分辨率(pix)
+            
+            分三个档次: Low/Medium/High; 每个档次对应的值 记录在 asset inspector 中;
+            值通常为: 512 / 1024 / 4096;
+
+            至于具体选哪一档, 全看 point光 / spot光 light inspector 中的选择;
         */
         static List<int> m_ShadowResolutionData = new List<int>(); 
 

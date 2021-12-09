@@ -1038,7 +1038,8 @@ namespace UnityEngine.Rendering.Universal
 
             bool anyShadowsEnabled = settings.supportsMainLightShadows || settings.supportsAdditionalLightShadows;
             cameraData.maxShadowDistance = Mathf.Min(settings.shadowDistance, camera.farClipPlane);
-            cameraData.maxShadowDistance = (anyShadowsEnabled && cameraData.maxShadowDistance >= camera.nearClipPlane) ? cameraData.maxShadowDistance : 0.0f;
+            cameraData.maxShadowDistance = (anyShadowsEnabled && cameraData.maxShadowDistance >= camera.nearClipPlane) 
+                                            ? cameraData.maxShadowDistance : 0.0f;
 
             // Getting the background color from preferences to add to the preview camera
 #if UNITY_EDITOR
@@ -1201,7 +1202,7 @@ namespace UnityEngine.Rendering.Universal
 
 
         // 初始化 "参数 shadowData" 中的全部数据, ( 它其实是 renderingData.shadowData )
-        static void InitializeShadowData( // 读完__
+        static void InitializeShadowData(      //    读完__
                                     UniversalRenderPipelineAsset settings, 
                                     NativeArray<VisibleLight> visibleLights, 
                                     bool mainLightCastShadows, 
@@ -1234,8 +1235,10 @@ namespace UnityEngine.Rendering.Universal
 
 
                 if( data && (data.additionalLightsShadowResolutionTier==UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierCustom))
-                {
-                    m_ShadowResolutionData.Add((int)light.shadowResolution); // native code does not clamp light.shadowResolution between -1 and 3
+                {   
+                    // native code does not clamp light.shadowResolution between -1 and 3
+                    // 很奇怪, 原值是个 enum, 怎么没有转换为 pix 为单位的
+                    m_ShadowResolutionData.Add((int)light.shadowResolution); 
                 }
                 else if( data && (data.additionalLightsShadowResolutionTier!=UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierCustom))
                 {
@@ -1244,10 +1247,12 @@ namespace UnityEngine.Rendering.Universal
                         UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow, //0
                         UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierHigh //2
                     );
+                    // 此处写入的是分辨率, 以 pix 为单位
                     m_ShadowResolutionData.Add(settings.GetAdditionalLightsShadowResolution(resolutionTier));
                 }
                 else
                 {
+                    // 此处写入的是分辨率, 以 pix 为单位
                     m_ShadowResolutionData.Add(settings.GetAdditionalLightsShadowResolution(UniversalAdditionalLightData.AdditionalLightsShadowDefaultResolutionTier));
                 }
             }

@@ -169,9 +169,14 @@ namespace UnityEngine.Rendering.Universal
 
             this.m_RenderingMode = data.renderingMode; // Forward
 
-            // Note: Since all custom render passes inject first and we have stable sort,
-            // we inject the builtin passes in the before events.
+            /*
+                Note: Since all custom render passes inject first and we have stable sort, 
+                we inject the builtin passes in the before events.
+                ---
+                鉴于所有 custom render passes 首先注入, 且我们有稳定的排序, 所有我们将 内置paasses 注入 "before events"
+            */
             m_MainLightShadowCasterPass = new MainLightShadowCasterPass(RenderPassEvent.BeforeRenderingShadows);
+
             m_AdditionalLightsShadowCasterPass = new AdditionalLightsShadowCasterPass(RenderPassEvent.BeforeRenderingShadows);
 
 /*   tpr

@@ -55,14 +55,15 @@ namespace UnityEngine.Rendering.Universal
         public static readonly int AdditionalLightsShadowDefaultCustomResolution = 128;
         public static readonly int AdditionalLightsShadowMinimumResolution       = 128;
 
+        
         [Tooltip("Controls if light shadow resolution uses pipeline settings.")]
-        [SerializeField] int m_AdditionalLightsShadowResolutionTier   = AdditionalLightsShadowDefaultResolutionTier;
+        [SerializeField] 
+        int m_AdditionalLightsShadowResolutionTier   = AdditionalLightsShadowDefaultResolutionTier;
 
 
         /*
             此值可能等于 上面那串 "AdditionalLightsShadow..." 中的一种;
-
-        
+            很奇怪, 此值是 只读的, 不知道设置口在哪
 
         */
         public int additionalLightsShadowResolutionTier

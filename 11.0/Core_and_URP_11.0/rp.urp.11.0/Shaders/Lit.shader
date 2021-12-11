@@ -90,7 +90,7 @@ Shader "Universal Render Pipeline/Lit"
             "RenderPipeline"        = "UniversalPipeline" 
             "UniversalMaterialType" = "Lit" 
             "IgnoreProjector"       = "True" 
-            "ShaderModel"           ="4.5"
+            "ShaderModel"           = "4.5"
         }
         LOD 300
 
@@ -119,6 +119,7 @@ Shader "Universal Render Pipeline/Lit"
             #pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local_fragment _EMISSION
             #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
             #pragma shader_feature_local_fragment _OCCLUSIONMAP
             #pragma shader_feature_local _PARALLAXMAP
@@ -190,6 +191,7 @@ Shader "Universal Render Pipeline/Lit"
             // -------------------------------------
             // Material Keywords
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
 
             //--------------------------------------
@@ -233,6 +235,7 @@ Shader "Universal Render Pipeline/Lit"
             //#pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local_fragment _EMISSION
             #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
             #pragma shader_feature_local_fragment _OCCLUSIONMAP
             #pragma shader_feature_local _PARALLAXMAP
@@ -284,7 +287,11 @@ Shader "Universal Render Pipeline/Lit"
             ENDHLSL
         }
 
-        Pass
+
+        /*
+            以 camera 为视角, 计算每个 fragment 的 depth 值, 写入 render texture: "_CameraDepthTexture";
+        */
+        Pass // 读完__
         {
             Name "DepthOnly"
             Tags{"LightMode" = "DepthOnly"}
@@ -297,12 +304,13 @@ Shader "Universal Render Pipeline/Lit"
             #pragma exclude_renderers gles gles3 glcore
             #pragma target 4.5
 
-            #pragma vertex DepthOnlyVertex
-            #pragma fragment DepthOnlyFragment
+            #pragma vertex      DepthOnlyVertex
+            #pragma fragment    DepthOnlyFragment
 
             // -------------------------------------
             // Material Keywords
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
 
             //--------------------------------------
@@ -315,7 +323,14 @@ Shader "Universal Render Pipeline/Lit"
             ENDHLSL
         }
 
-        // This pass is used when drawing to a _CameraNormalsTexture texture
+
+        /*
+            This pass is used when drawing to a _CameraNormalsTexture texture
+            ---
+            以 camera 为视角, 计算每个 fragment 的 depth 值 和 normal 值,
+            -- depth 值写入 render texture:  "_CameraDepthTexture"
+            -- normal 值写入 render texture: "_CameraNormalsTexture" {R:16bits, G:16bits}
+        */
         Pass
         {
             Name "DepthNormals"
@@ -335,6 +350,7 @@ Shader "Universal Render Pipeline/Lit"
             // Material Keywords
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
 
             //--------------------------------------
@@ -366,6 +382,7 @@ Shader "Universal Render Pipeline/Lit"
             #pragma shader_feature_local_fragment _EMISSION
             #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #pragma shader_feature_local_fragment _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
             #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
 
@@ -405,7 +422,13 @@ Shader "Universal Render Pipeline/Lit"
         // Universal Pipeline tag is required. If Universal render pipeline is not set in the graphics settings
         // this Subshader will fail. One can add a subshader below or fallback to Standard built-in to make this
         // material work with both Universal Render Pipeline and Builtin Unity Pipeline
-        Tags{"RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "UniversalMaterialType" = "Lit" "IgnoreProjector" = "True" "ShaderModel"="2.0"}
+        Tags{
+            "RenderType"            = "Opaque" 
+            "RenderPipeline"        = "UniversalPipeline" 
+            "UniversalMaterialType" = "Lit" 
+            "IgnoreProjector"       = "True" 
+            "ShaderModel"           = "2.0"
+        }
         LOD 300
 
         // ------------------------------------------------------------------
@@ -436,6 +459,7 @@ Shader "Universal Render Pipeline/Lit"
             #pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local_fragment _EMISSION
             #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
             #pragma shader_feature_local_fragment _OCCLUSIONMAP
             #pragma shader_feature_local _PARALLAXMAP
@@ -504,6 +528,7 @@ Shader "Universal Render Pipeline/Lit"
             // -------------------------------------
             // Material Keywords
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
 
             // -------------------------------------
@@ -543,6 +568,7 @@ Shader "Universal Render Pipeline/Lit"
             // -------------------------------------
             // Material Keywords
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
@@ -570,6 +596,7 @@ Shader "Universal Render Pipeline/Lit"
             // Material Keywords
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
 
             //--------------------------------------
@@ -600,6 +627,7 @@ Shader "Universal Render Pipeline/Lit"
             #pragma shader_feature_local_fragment _EMISSION
             #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #pragma shader_feature_local_fragment _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
             #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
 

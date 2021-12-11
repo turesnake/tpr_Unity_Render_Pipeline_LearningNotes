@@ -67,6 +67,8 @@ Shader "Hidden/TerrainEngine/Details/UniversalPipeline/BillboardWavingDoublePass
             // -------------------------------------
             // Material Keywords
             #define _ALPHATEST_ON
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
 
             //--------------------------------------
@@ -95,6 +97,8 @@ Shader "Hidden/TerrainEngine/Details/UniversalPipeline/BillboardWavingDoublePass
             // -------------------------------------
             // Material Keywords
             #define _ALPHATEST_ON
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
 
             //--------------------------------------

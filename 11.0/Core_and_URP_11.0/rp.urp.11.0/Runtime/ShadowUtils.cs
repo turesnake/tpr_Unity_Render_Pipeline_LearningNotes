@@ -192,7 +192,7 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-        public static bool ExtractPointLightMatrix(
+        public static bool ExtractPointLightMatrix(  //   读完__
                                                 ref CullingResults cullResults, 
                                                 ref ShadowData shadowData, 
                                                 int shadowLightIndex, 
@@ -205,29 +205,40 @@ namespace UnityEngine.Rendering.Universal
         ){
             bool success = cullResults.ComputePointShadowMatricesAndCullingPrimitives(
                 shadowLightIndex, 
-                cubemapFace, 
-                fovBias, 
+                cubemapFace,        // cubemap face index
+                fovBias,            // field of view Bias
                 out viewMatrix, 
                 out projMatrix, 
                 out splitData
             ); // returns false if input parameters are incorrect (rare)
 
             /*
-                In native API CullingResults.ComputeSpotShadowMatricesAndCullingPrimitives() there is code 
-                that inverts the 3rd component of shadow-casting spot light's "world-to-local" matrix 
+                In native API "CullingResults.ComputeSpotShadowMatricesAndCullingPrimitives()", 
+                there is code that inverts the 3rd component of shadow-casting spot light's "world-to-local" matrix 
                 (it was so since its original addition to the code base):
                 https://github.cds.internal.unity3d.com/unity/unity/commit/34813e063526c4be0ef0448dfaae3a911dd8be58#diff-cf0b417fc6bd8ee2356770797e628cd4R331
                 (the same transformation has also always been used in the Built-In Render Pipeline)
             
-                However native API CullingResults.ComputePointShadowMatricesAndCullingPrimitives() does not contain this transformation.
+                However native API "CullingResults.ComputePointShadowMatricesAndCullingPrimitives()" does not contain this transformation.
                 As a result, the view matrices returned for a point light shadow face, 
                 and for a spot light with same direction as that face, have opposite 3rd component.
             
                 This causes normalBias to be incorrectly applied to shadow caster vertices during the point light shadow pass.
                 To counter this effect, we invert the point light shadow view matrix component here:
+                -----------
+                上文中, 为何指向 矩阵的 "3rd component" ??? 
+                -------
+                unity 绘制 点光源的 shadow tile(slice), 是上下颠倒的, 这个颠倒导致了 三角形顶点顺序的颠倒;
+                进而导致 正向面 和 背向面 两者关系的反转; 这么一来, 我们只能渲染 原来的背向面了; 
+                
+                这导致了 点光源的shadowmap, 就算不施加 bias, 也是几乎没有 "自投影"; 
+                但缺点是 容易漏光, 尤其是当 shadow caster 和 receiver 很近时. 
+                (若物体设置为 Two Sided 渲染, 则不受此问题困扰)
+                ---
+                所以要反转 view矩阵的 第二行, 使得 posWS 与 view矩阵相乘后, y值反转;
             */
             {
-                viewMatrix.m10 = -viewMatrix.m10;
+                viewMatrix.m10 = -viewMatrix.m10; // 其实值为 0, catlike 选择忽略此行
                 viewMatrix.m11 = -viewMatrix.m11;
                 viewMatrix.m12 = -viewMatrix.m12;
                 viewMatrix.m13 = -viewMatrix.m13;
@@ -282,11 +293,20 @@ namespace UnityEngine.Rendering.Universal
         }//  读完__
 
 
-        public static void RenderShadowSlice(CommandBuffer cmd, ref ScriptableRenderContext context,
-            ref ShadowSliceData shadowSliceData, ref ShadowDrawingSettings settings)
+        public static void RenderShadowSlice(
+                                            CommandBuffer cmd, 
+                                            ref ScriptableRenderContext context,
+                                            ref ShadowSliceData shadowSliceData, 
+                                            ref ShadowDrawingSettings settings)
         {
-            RenderShadowSlice(cmd, ref context, ref shadowSliceData, ref settings,
-                shadowSliceData.projectionMatrix, shadowSliceData.viewMatrix);
+            RenderShadowSlice(
+                cmd, 
+                ref context, 
+                ref shadowSliceData, 
+                ref settings,
+                shadowSliceData.projectionMatrix, 
+                shadowSliceData.viewMatrix
+            );
         }
 
 
@@ -371,41 +391,72 @@ namespace UnityEngine.Rendering.Universal
 
                     首先, 平行光的 投影矩阵 是个正交矩阵;
                     投影矩阵.m00 内容为: 1/(Aspect*Size);
+                    其中:
                         -- Aspect = w/h
                         -- Size: frustum.height/2; (米为单位)
                     
-                    所以, frustumSize = Aspect * frustum.height = frustum.width;
+                    所以, frustumSize = Aspect * frustum.height = "frustum.width";
                 */
                 frustumSize = 2.0f / lightProjectionMatrix.m00;
             }
             else if (shadowLight.lightType == LightType.Spot)
             {  
-                // 还没看
+                /*
+                    For perspective projections, shadow texel size varies with depth;
+                    It will only work well if done in "receiver side in the pixel shader". 
+                    Currently urp do bias on caster side in vertex shader. 
+                    When we add shader quality tiers we can properly handle this. 
+                    For now, as a poor approximation we do a constant bias and compute the size of the frustum 
+                    as if it was orthogonal considering the size at mid point between near and far planes.
+                    Depending on how big the light range is, it will be good enough with some tweaks in bias
+                    ---
+                    在透视空间中, shadow texel 的尺寸随 depth 的变化而变化; 只有在 "shadow 接收端的 frag-shader" 中才能正确处理此问题;
+                    但是目前 urp 选择在 "shadow cast 端的 vertex-shader" 中来施加 bias 影响;
+                    等我们以后添加了 "shader quality tiers", 我们就能正确地解决此问题了;
+                    对于目前来说, 我们用一个简陋的办法: 使用一个 constant bias, 
+                    同时根据 near 和 far 的中点的大小 来计算 frustum 的 size, 就好像这个 frustum 是个正交透视一样;
+                    最后根据 light range 的大小, 稍微调整一下 bias 就能获得不错的效果;
+                */
 
-                // For perspective projections, shadow texel size varies with depth
-                // It will only work well if done in "receiver side in the pixel shader". Currently UniversalRP
-                // do bias on caster side in vertex shader. When we add shader quality tiers we can properly
-                // handle this. For now, as a poor approximation we do a constant bias and compute the size of
-                // the frustum as if it was orthogonal considering the size at mid point between near and far planes.
-                // Depending on how big the light range is, it will be good enough with some tweaks in bias
-                frustumSize = Mathf.Tan(shadowLight.spotAngle * 0.5f * Mathf.Deg2Rad) * shadowLight.range; // half-width (in world-space units) of shadow frustum's "far plane"
+                // half-width (in world-space units) of shadow frustum's "far plane"
+                // 计算结果为: spot frustum 远平面的 half-width;
+                frustumSize = Mathf.Tan(shadowLight.spotAngle * 0.5f * Mathf.Deg2Rad) * shadowLight.range; 
+                
             }
             else if (shadowLight.lightType == LightType.Point)
             {
-                // 还没看
+                /*
+                    [Copied from above case:]
+                        For perspective projections, shadow texel size varies with depth;
+                        It will only work well if done in "receiver side in the pixel shader". 
+                        Currently urp do bias on caster side in vertex shader. 
+                        When we add shader quality tiers we can properly handle this. 
+                        For now, as a poor approximation we do a constant bias and compute the size of the frustum 
+                        as if it was orthogonal considering the size at mid point between near and far planes.
+                        Depending on how big the light range is, it will be good enough with some tweaks in bias
+                        ---
+                        在透视空间中, shadow texel 的尺寸随 depth 的变化而变化; 只有在 "shadow 接收端的 frag-shader" 中才能正确处理此问题;
+                        但是目前 urp 选择在 "shadow cast 端的 vertex-shader" 中来施加 bias 影响;
+                        等我们以后添加了 "shader quality tiers", 我们就能正确地解决此问题了;
+                        对于目前来说, 我们用一个简陋的办法: 使用一个 constant bias, 
+                        同时根据 near 和 far 的中点的大小 来计算 frustum 的 size, 就好像这个 frustum 是个正交透视一样;
+                        最后根据 light range 的大小, 稍微调整一下 bias 就能获得不错的效果;
+                        ---
+                    Note: HDRP uses normalBias both in "HDShadowUtils.CalcGuardAnglePerspective" 
+                    and "HDShadowAlgorithms/EvalShadow_NormalBias" (receiver bias)
+                */
 
-                // [Copied from above case:]
-                // "For perspective projections, shadow texel size varies with depth
-                //  It will only work well if done in "receiver side in the pixel shader". Currently UniversalRP
-                //  do bias on caster side in vertex shader. When we add shader quality tiers we can properly
-                //  handle this. For now, as a poor approximation we do a constant bias and compute the size of
-                //  the frustum as if it was orthogonal considering the size at mid point between near and far planes.
-                //  Depending on how big the light range is, it will be good enough with some tweaks in bias"
-                // Note: HDRP uses normalBias both in HDShadowUtils.CalcGuardAnglePerspective and HDShadowAlgorithms/EvalShadow_NormalBias (receiver bias)
-                float fovBias = Internal.AdditionalLightsShadowCasterPass.GetPointLightShadowFrustumFovBiasInDegrees((int)shadowResolution, (shadowLight.light.shadows == LightShadows.Soft));
-                // Note: the same fovBias was also used to compute ShadowUtils.ExtractPointLightMatrix
+                float fovBias = Internal.AdditionalLightsShadowCasterPass.GetPointLightShadowFrustumFovBiasInDegrees(
+                    (int)shadowResolution, 
+                    (shadowLight.light.shadows == LightShadows.Soft)
+                );
+                
+                // Note: the same fovBias was also used to compute "ShadowUtils.ExtractPointLightMatrix()"
                 float cubeFaceAngle = 90 + fovBias;
-                frustumSize = Mathf.Tan(cubeFaceAngle * 0.5f * Mathf.Deg2Rad) * shadowLight.range; // half-width (in world-space units) of shadow frustum's "far plane"
+                // half-width (in world-space units) of shadow frustum's "far plane"
+                // 计算结果为: point frustum 远平面的 half-width;
+                frustumSize = Mathf.Tan(cubeFaceAngle * 0.5f * Mathf.Deg2Rad) * shadowLight.range; 
+                
             }
             else
             {
@@ -420,7 +471,7 @@ namespace UnityEngine.Rendering.Universal
             float normalBias = -shadowData.bias[shadowLightIndex].y * texelSize;
 
             /*
-                The current implementation of NormalBias in Universal RP is the same as in Unity Built-In RP
+                The current implementation of NormalBias in urp is the same as in Unity Built-In RP
                 (i.e moving shadow caster vertices along normals when projecting them to the shadow map).
                 This does not work well with Point Lights, which is why NormalBias value is hard-coded to 0.0 in Built-In RP 
                 (see value of unity_LightShadowBias.z in FrameDebugger, 
@@ -447,6 +498,9 @@ namespace UnityEngine.Rendering.Universal
 
             return new Vector4(depthBias, normalBias, 0.0f, 0.0f);
         }//   函数完__
+
+
+
 
 
         // 向 shader 写入: "_ShadowBias", "_LightDirection", "_LightPosition";

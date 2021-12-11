@@ -16,7 +16,9 @@ half4 frag(PackedVaryings packedInput) : SV_TARGET
     SurfaceDescriptionInputs surfaceDescriptionInputs = BuildSurfaceDescriptionInputs(unpacked);
     SurfaceDescription surfaceDescription = SurfaceDescriptionFunction(surfaceDescriptionInputs);
 
-    half crossSign = (unpacked.tangentWS.w > 0.0 ? 1.0 : -1.0) * GetOddNegativeScale();
+    half crossSign = (unpacked.tangentWS.w > 0.0 ? 1.0 : -1.0) * 
+                    GetOddNegativeScale();// 此函数返回 1 or -1; 若返回 -1, 你需要将 binormal 翻转;
+
     half3 bitangent = crossSign * cross(unpacked.normalWS.xyz, unpacked.tangentWS.xyz);
 
 #ifdef UNIVERSAL_USELEGACYSPRITEBLOCKS

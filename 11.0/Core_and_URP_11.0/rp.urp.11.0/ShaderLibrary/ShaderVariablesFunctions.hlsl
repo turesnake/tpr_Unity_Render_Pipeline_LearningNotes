@@ -8,7 +8,7 @@
     一口气生成 vertex 需要的所有 pos: WS, VS, HCS, NDS
     在 vert shader 中: 使用 GetVertexPositionInputs(posOS).positionNDC 来代替 已废弃的 "ComputeScreenPos()"" 函数
 */
-VertexPositionInputs GetVertexPositionInputs(float3 positionOS)
+VertexPositionInputs GetVertexPositionInputs(float3 positionOS)//  读完__
 {
     VertexPositionInputs input;
     input.positionWS = TransformObjectToWorld(positionOS);
@@ -25,8 +25,8 @@ VertexPositionInputs GetVertexPositionInputs(float3 positionOS)
 }
 
 
-
-VertexNormalInputs GetVertexNormalInputs(float3 normalOS)
+// 初始化并返回一个 VertexNormalInputs 默认值版实例
+VertexNormalInputs GetVertexNormalInputs(float3 normalOS)// 读完__
 {
     VertexNormalInputs tbn;
     tbn.tangentWS = real3(1.0, 0.0, 0.0);
@@ -35,17 +35,26 @@ VertexNormalInputs GetVertexNormalInputs(float3 normalOS)
     return tbn;
 }
 
+
+// 本函数专门初始化并返回一个 VertexNormalInputs 实例;
 VertexNormalInputs GetVertexNormalInputs(float3 normalOS, float4 tangentOS)
 {
     VertexNormalInputs tbn;
-
     // mikkts space compliant. only normalize when extracting normal at frag.
-    real sign = tangentOS.w * GetOddNegativeScale();
+    // 兼容 mikkts space, 在 fs 中提取 normal 时, 需要手动对齐归一化;
+
+    // 大部分 tangentOS.w 都为 -1, 某些 mesh 左右对称, 另一侧数据通过 镜像而得, 它们的 w值为 1;
+    // 至于为什么是 -1, 查阅笔记: "tangent.w 为何大部分时候为 -1, 偶尔则为 1"
+    real sign = tangentOS.w * 
+                GetOddNegativeScale();// 此函数此函数返回 1 or -1; 若返回 -1, 你需要将 binormal 翻转;
+
     tbn.normalWS = TransformObjectToWorldNormal(normalOS);
     tbn.tangentWS = TransformObjectToWorldDir(tangentOS.xyz);
     tbn.bitangentWS = cross(tbn.normalWS, tbn.tangentWS) * sign;
     return tbn;
 }
+
+
 
 float4 GetScaledScreenParams()
 {

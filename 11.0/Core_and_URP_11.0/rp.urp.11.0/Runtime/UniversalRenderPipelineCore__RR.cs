@@ -155,7 +155,13 @@ namespace UnityEngine.Rendering.Universal
 
         public RenderTexture targetTexture; // = Camera's; [- stack 中所有 camera 的值都相同 -]
 
+
+        // 此 struct 包含用来创建 RenderTexture 所需的一切信息。
+        // 关于这个 变量:
+        // -- 要么根据 context 当场新建一个
+        // -- 要么沿用 camera.targetTexture 中的数据, 并做适当调整
         public RenderTextureDescriptor cameraTargetDescriptor;
+        
 
         // ---------------------------------------------------:
         // 下面这组 viewport 相关值, 都直接源自 base camera 的数据, 

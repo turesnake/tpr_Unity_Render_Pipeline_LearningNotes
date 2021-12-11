@@ -5,7 +5,9 @@ void BuildInputData(Varyings input, SurfaceDescription surfaceDescription, out I
 
         #if _NORMAL_DROPOFF_TS
             // IMPORTANT! If we ever support Flip on double sided materials ensure bitangent and tangent are NOT flipped.
-            float crossSign = (input.tangentWS.w > 0.0 ? 1.0 : -1.0) * GetOddNegativeScale();
+            float crossSign = (input.tangentWS.w > 0.0 ? 1.0 : -1.0) * 
+                            GetOddNegativeScale();// 此函数返回 1 or -1; 若返回 -1, 你需要将 binormal 翻转;
+
             float3 bitangent = crossSign * cross(input.normalWS.xyz, input.tangentWS.xyz);
             inputData.normalWS = TransformTangentToWorld(surfaceDescription.NormalTS, half3x3(input.tangentWS.xyz, bitangent, input.normalWS.xyz));
         #elif _NORMAL_DROPOFF_OS

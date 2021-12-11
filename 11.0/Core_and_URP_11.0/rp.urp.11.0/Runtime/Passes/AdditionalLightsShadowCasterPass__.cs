@@ -9,7 +9,7 @@ namespace UnityEngine.Rendering.Universal.Internal
     /*
         Renders a shadow map atlas for additional shadow-casting Lights.
     */ 
-    public partial class AdditionalLightsShadowCasterPass //AdditionalLightsShadowCasterPass__RR
+    public partial class AdditionalLightsShadowCasterPass //AdditionalLightsShadowCasterPass__
         : ScriptableRenderPass
     {
         private static class AdditionalShadowsConstantBuffer
@@ -127,14 +127,19 @@ namespace UnityEngine.Rendering.Universal.Internal
                 x: shadowStrength; shadow强度, 1表示光线全通过, 
                 y: soft 为 1, hard 为 0;
                 z: spot光 为 0, point光 为 1;
-                w: 每个 light 的第一个 shadow tile 的 idx
+                w: 每个 light 的第一个 shadow tile 的 idx; 
+                    若为 -1, 表示这个元素是空的, 不参与渲染; (仅在 c# 脚本端有效)
         */
         Vector4[] m_AdditionalLightIndexToShadowParams = null;                          
         
-
-        // per-shadow-slice info passed to the lighting shader
-        // 下标: global Shadow Slice Index
-        // 元素: shadowTransform 矩阵; (posWS -> posSTS 的那个)
+        /*
+            per-shadow-slice info passed to the lighting shader
+            下标: global Shadow Slice Index
+            元素: shadowTransform 矩阵; (posWS -> posSTS 的那个)
+                在 "Setup()" 函数的尾部, 此矩阵还叠加了一层 scale+ofset 功能
+                此后, 直接用这个矩阵去乘一个 posWS, 可得到 它在 shadow atlas 中对应的的 uv值 [0,1]
+                而且能指在 当前 light 对应的 tile(slice) 区域内;
+        */
         Matrix4x4[] m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix = null;       
         
         /*
@@ -265,18 +270,24 @@ namespace UnityEngine.Rendering.Universal.Internal
         private const float LightTypeIdentifierInShadowParams_Spot = 0;
         private const float LightTypeIdentifierInShadowParams_Point = 1;
 
+
+
         /*
             Returns the guard angle that must be added to a frustum angle covering a projection map of resolution sliceResolutionInTexels,
             in order to also cover a guard band of size guardBandSizeInTexels around the projection map.
             Formula illustrated in https://i.ibb.co/wpW5Mnf/Calc-Guard-Angle.png
+            ---
+            见笔记参考图: "urp point light shadow fovBias guard angle-1.jpg"
+            ---
+            返回 guard angle, 角度制; 将这个角度 加上 90度, 得到新得 cubemap shadow tile(slice) 的 frustum 的 fov值; 
         */
-        internal static float CalcGuardAngle(
-                                        float frustumAngleInDegrees, 
-                                        float guardBandSizeInTexels, 
-                                        float sliceResolutionInTexels
+        internal static float CalcGuardAngle(   //    读完__
+                                        float frustumAngleInDegrees, // fov值, 90
+                                        float guardBandSizeInTexels, // soft: 5; hard: 1; 分辨率(pix), 
+                                        float sliceResolutionInTexels // shadow tile(slice) 分辨率(pix)
         ){
-            float frustumAngle = frustumAngleInDegrees * Mathf.Deg2Rad;
-            float halfFrustumAngle = frustumAngle / 2;
+            float frustumAngle = frustumAngleInDegrees * Mathf.Deg2Rad;// radian
+            float halfFrustumAngle = frustumAngle / 2; // 45度的 弧度
             float tanHalfFrustumAngle = Mathf.Tan(halfFrustumAngle);
 
             float halfSliceResolution = sliceResolutionInTexels / 2;
@@ -313,30 +324,50 @@ namespace UnityEngine.Rendering.Universal.Internal
         static bool m_IssuedMessageAboutPointLightHardShadowResolutionTooSmall = false;// debug
         static bool m_IssuedMessageAboutPointLightSoftShadowResolutionTooSmall = false;// debug
 
-        // Returns the guard angle that must be added to a point light shadow face frustum angle
-        // in order to avoid shadows missing at the boundaries between cube faces.
-        internal static float GetPointLightShadowFrustumFovBiasInDegrees(int shadowSliceResolution, bool shadowFiltering)
-        {
-            // Commented-out code below uses the theoretical formula to compute the required guard angle based on the number of additional
-            // texels that the projection should cover. It is close to HDRP's HDShadowUtils.CalcGuardAnglePerspective method.
-            // However, due to precision issues or other filterings performed at lighting for example, this formula also still requires a fudge factor.
-            // Since we only handle a fixed number of resolutions, we use empirical values instead.
+        /*
+            Returns the guard angle that must be added to a point light shadow face frustum angle
+            in order to avoid shadows missing at the boundaries between cube faces.
+            ---
+            返回值: guard angle, 需要累加到 shadow tile(slice) resolution 上, 以消除 cubemap 接缝处的视觉错误;
+        */
+        internal static float GetPointLightShadowFrustumFovBiasInDegrees(//   读完__
+                                                                int shadowSliceResolution, 
+                                                                bool shadowFiltering // soft shadow 时为 true
+        ){
+            /*
+                Commented-out code below(下方注释掉的代码) uses the theoretical formula to compute 
+                the required guard angle based on the number of additional texels that the projection should cover. 
+                它和 HDRP's "HDShadowUtils.CalcGuardAnglePerspective()" 很相似;
+               
+                However, due to precision issues or other filterings performed at lighting for example, 
+                this formula also still requires a fudge factor.
+                Since we only handle a fixed number of resolutions, we use empirical values instead.
+                -------
+                然而，由于精度问题 或 在照明时执行的其他过滤，这个公式仍然需要一个模糊因素。
+                我们选择改用 经验值;
+            */
 #if false
             float fudgeFactor = 1.5f;
-            return fudgeFactor * CalcGuardAngle(90, shadowFiltering ? 5 : 1, shadowSliceResolution);
+            return fudgeFactor * CalcGuardAngle( 90, shadowFiltering ? 5 : 1, shadowSliceResolution );
 #endif
-
+            // ---------------------------------------------------------:
+            // 下方方法选择 直接设置 经验值, 
+            // 参见笔记图: "urp point light shadow fovBias guard angle-2.jpg"
 
             float fovBias = 4.00f;
 
-            // Empirical value found to remove gaps between point light shadow faces in test scenes.
-            // We can see that the guard angle is roughly proportional to the inverse of resolution https://docs.google.com/spreadsheets/d/1QrIZJn18LxVKq2-K1XS4EFRZcZdZOJTTKKhDN8Z1b_s
+            /*
+                Empirical value(经验值) found to remove gaps between point light shadow faces in test scenes.
+                We can see that the guard angle is roughly proportional to the inverse of resolution 
+                https://docs.google.com/spreadsheets/d/1QrIZJn18LxVKq2-K1XS4EFRZcZdZOJTTKKhDN8Z1b_s
+            */
             if (shadowSliceResolution <= kMinimumPunctualLightHardShadowResolution)
             {
                 if (!m_IssuedMessageAboutPointLightHardShadowResolutionTooSmall)
                 {
                     Debug.LogWarning("Too many additional punctual lights shadows, increase shadow atlas size or remove some shadowed lights");
-                    m_IssuedMessageAboutPointLightHardShadowResolutionTooSmall = true; // Only output this once per shadow requests configuration
+                    // Only output this once per shadow requests configuration
+                    m_IssuedMessageAboutPointLightHardShadowResolutionTooSmall = true; 
                 }
             }
             else if (shadowSliceResolution <= 16)
@@ -362,28 +393,31 @@ namespace UnityEngine.Rendering.Universal.Internal
                     {
                         Debug.LogWarning("Too many additional punctual lights shadows to use Soft Shadows. Increase shadow atlas size, remove some shadowed lights or use Hard Shadows.");
                         // With such small resolutions no fovBias can give good visual results
-                        m_IssuedMessageAboutPointLightSoftShadowResolutionTooSmall = true; // Only output this once per shadow requests configuration
+                        // Only output this once per shadow requests configuration
+                        m_IssuedMessageAboutPointLightSoftShadowResolutionTooSmall = true; 
                     }
                 }
                 else if (shadowSliceResolution <= 32)
-                    fovBias += 9.35f;
+                    fovBias += 9.35f;// 27.9
                 else if (shadowSliceResolution <= 64)
-                    fovBias += 4.07f;
+                    fovBias += 4.07f;// 12.7
                 else if (shadowSliceResolution <= 128)
-                    fovBias += 1.77f;
+                    fovBias += 1.77f;// 5.9
                 else if (shadowSliceResolution <= 256)
-                    fovBias += 0.85f;
+                    fovBias += 0.85f;// 2.88
                 else if (shadowSliceResolution <= 512)
-                    fovBias += 0.39f;
+                    fovBias += 0.39f;// 1.39
                 else if (shadowSliceResolution <= 1024)
-                    fovBias += 0.17f;
+                    fovBias += 0.17f;// 0.67
 
-                // These values were verified to work on platforms for which m_SupportsBoxFilterForShadows is true (Mobile, Switch).
+                // These values were verified to work on platforms for which "m_SupportsBoxFilterForShadows" is true (Mobile, Switch).
                 // TODO: Investigate finer-tuned values for those platforms. Soft shadows are implemented differently for them.
             }
 
             return fovBias;
         }//  函数完__
+
+
 
 
 
@@ -697,7 +731,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
 
 
-        public bool Setup(ref RenderingData renderingData)
+        public bool Setup(ref RenderingData renderingData) //    读完__
         {
             using var profScope = new ProfilingScope(null, m_ProfilingSetupSampler);
 
@@ -943,7 +977,8 @@ namespace UnityEngine.Rendering.Universal.Internal
                                     // 这函数没找到, 可能变名了
                 0, 
                 0, 
-                -1 // perLightFirstShadowSliceIndex; used in Lighting shader to find if Additional light casts shadows
+                -1  // perLightFirstShadowSliceIndex; used in Lighting shader to find if Additional light casts shadows
+                    // 用 -1 来表示, 这个值没有被 改写过;
             );
             
             for (int i = 0; i < visibleLights.Length; ++i)
@@ -1075,7 +1110,12 @@ namespace UnityEngine.Rendering.Universal.Internal
                                     var light = shadowLight.light;
                                     float shadowStrength = light.shadowStrength;
                                     float softShadows = (supportsSoftShadows && light.shadows == LightShadows.Soft) ? 1.0f : 0.0f;
-                                    Vector4 shadowParams = new Vector4(shadowStrength, softShadows, LightTypeIdentifierInShadowParams_Point, perLightFirstShadowSliceIndex);
+                                    Vector4 shadowParams = new Vector4(
+                                        shadowStrength,                         // shadow强度, 1表示光线全通过, 
+                                        softShadows,                            // soft 为 1, hard 为 0;
+                                        LightTypeIdentifierInShadowParams_Point,// spot光 为 0, point光 为 1;
+                                        perLightFirstShadowSliceIndex           // 每个 light 的第一个 shadow tile 的 idx
+                                    );
                                     m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix[globalShadowSliceIndex] = shadowTransform;
                                     m_AdditionalLightIndexToShadowParams[additionalLightIndex] = shadowParams;
                                     isValidShadowCastingLight = true;
@@ -1096,6 +1136,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             int shadowCastingLightsBufferCount = m_ShadowSliceToAdditionalLightIndex.Count;
 
             // Trim shadow atlas dimensions if possible (to avoid allocating texture space that will not be used)
+            // 修建 shadow atlas, 去点边角部分;
             int atlasMaxX = 0;
             int atlasMaxY = 0;
             for (int sortedShadowResolutionRequestIndex = 0; sortedShadowResolutionRequestIndex < totalShadowSlicesCount; ++sortedShadowResolutionRequestIndex)
@@ -1105,6 +1146,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 atlasMaxY = Mathf.Max(atlasMaxY, shadowResolutionRequest.offsetY + shadowResolutionRequest.allocatedResolution);
             }
             // ...but make sure we still use power-of-two dimensions (might perform better on some hardware)
+            // 返回 大于等于 参数 的 2^x 值;
             m_ShadowmapWidth = Mathf.NextPowerOfTwo(atlasMaxX);
             m_ShadowmapHeight = Mathf.NextPowerOfTwo(atlasMaxY);
 
@@ -1117,9 +1159,12 @@ namespace UnityEngine.Rendering.Universal.Internal
                 additionalLightIndex = m_ShadowSliceToAdditionalLightIndex[globalShadowSliceIndex];
 
                 // We can skip the slice if strength is zero.
-                if (Mathf.Approximately(m_AdditionalLightIndexToShadowParams[additionalLightIndex].x, 0.0f)  || Mathf.Approximately(m_AdditionalLightIndexToShadowParams[additionalLightIndex].w, -1.0f))
+                if (Mathf.Approximately(m_AdditionalLightIndexToShadowParams[additionalLightIndex].x, 0.0f)  || 
+                    // .w == -1 表示这个元素是空的, 它不参与渲染;
+                    Mathf.Approximately(m_AdditionalLightIndexToShadowParams[additionalLightIndex].w, -1.0f))
                     continue;
 
+                // 各种 idx
                 int visibleLightIndex = m_AdditionalLightIndexToVisibleLightIndex[additionalLightIndex];
                 int sortedShadowResolutionRequestFirstSliceIndex = m_VisibleLightIndexToSortedShadowResolutionRequestsFirstSliceIndex[visibleLightIndex];
                 int perLightSliceIndex = m_GlobalShadowSliceIndexToPerLightShadowSliceIndex[globalShadowSliceIndex];
@@ -1127,6 +1172,8 @@ namespace UnityEngine.Rendering.Universal.Internal
                 int sliceResolution = shadowResolutionRequest.allocatedResolution;
 
                 sliceTransform = Matrix4x4.identity;
+
+                // xy 分量 缩放因子, 从整张 atlas 缩小到具体的 tile(slice) 尺寸;
                 sliceTransform.m00 = sliceResolution * oneOverAtlasWidth;
                 sliceTransform.m11 = sliceResolution * oneOverAtlasHeight;
 
@@ -1134,12 +1181,14 @@ namespace UnityEngine.Rendering.Universal.Internal
                 m_AdditionalLightsShadowSlices[globalShadowSliceIndex].offsetY = shadowResolutionRequest.offsetY;
                 m_AdditionalLightsShadowSlices[globalShadowSliceIndex].resolution = sliceResolution;
 
+                // xy 分量的偏移值, [0,1] 区间
                 sliceTransform.m03 = m_AdditionalLightsShadowSlices[globalShadowSliceIndex].offsetX * oneOverAtlasWidth;
                 sliceTransform.m13 = m_AdditionalLightsShadowSlices[globalShadowSliceIndex].offsetY * oneOverAtlasHeight;
 
                 // We bake scale and bias to each shadow map in the atlas in the matrix.
                 // saves some instructions in shader.
-                m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix[globalShadowSliceIndex] = sliceTransform * m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix[globalShadowSliceIndex];
+                m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix[globalShadowSliceIndex] 
+                    = sliceTransform * m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix[globalShadowSliceIndex];
             }
 
             return true;
@@ -1148,21 +1197,31 @@ namespace UnityEngine.Rendering.Universal.Internal
 
 
 
-        public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
+        public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)//  读完__
         {
-            m_AdditionalLightsShadowmapTexture = ShadowUtils.GetTemporaryShadowTexture(m_ShadowmapWidth, m_ShadowmapHeight, k_ShadowmapBufferBits);
-            ConfigureTarget(new RenderTargetIdentifier(m_AdditionalLightsShadowmapTexture));
+            m_AdditionalLightsShadowmapTexture = ShadowUtils.GetTemporaryShadowTexture(
+                m_ShadowmapWidth,     // shadow atlas 最终分辨率: w
+                m_ShadowmapHeight,    // shadow atlas 最终分辨率: h
+                k_ShadowmapBufferBits // texel 存储精度 16-bits
+            );
+            ConfigureTarget(new RenderTargetIdentifier(m_AdditionalLightsShadowmapTexture));// colorAttachment
             ConfigureClear(ClearFlag.All, Color.black);
         }
 
+
+
         /// <inheritdoc/>
-        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)//  读完__
         {
             if (renderingData.shadowData.supportsAdditionalLightShadows)
-                RenderAdditionalShadowmapAtlas(ref context, ref renderingData.cullResults, ref renderingData.lightData, ref renderingData.shadowData);
+                RenderAdditionalShadowmapAtlas(
+                    ref context, ref renderingData.cullResults, ref renderingData.lightData, ref renderingData.shadowData
+                );
         }
 
-        public override void OnCameraCleanup(CommandBuffer cmd)
+
+
+        public override void OnCameraCleanup(CommandBuffer cmd)//  读完__
         {
             if (cmd == null)
                 throw new ArgumentNullException("cmd");
@@ -1174,15 +1233,16 @@ namespace UnityEngine.Rendering.Universal.Internal
             }
         }
 
-        // Get the "additional light index" (used to index arrays _AdditionalLightsPosition, _AdditionalShadowParams, ...) from the "global" visible light index
-        // Function called by Deferred Renderer
-        public int GetShadowLightIndexFromLightIndex(int visibleLightIndex)
+        // Get the "additional light index" (used to index arrays _AdditionalLightsPosition, _AdditionalShadowParams, ...) 
+        // from the "global" visible light index Function called by Deferred Renderer
+        public int GetShadowLightIndexFromLightIndex(int visibleLightIndex)//   读完__
         {
             if (visibleLightIndex < 0 || visibleLightIndex >= m_VisibleLightIndexToAdditionalLightIndex.Length)
                 return -1;
 
             return m_VisibleLightIndexToAdditionalLightIndex[visibleLightIndex];
         }
+
 
         void Clear()// 读完__
         {
@@ -1191,7 +1251,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_AdditionalLightsShadowmapTexture = null;
         }
 
-        void RenderAdditionalShadowmapAtlas(
+
+
+        void RenderAdditionalShadowmapAtlas( //  读完__
                                 ref ScriptableRenderContext context, 
                                 ref CullingResults cullResults, 
                                 ref LightData lightData, 
@@ -1213,7 +1275,9 @@ namespace UnityEngine.Rendering.Universal.Internal
 
                     // we do the shadow strength check here again here because we might have zero strength for non-shadow-casting lights.
                     // In that case we need the shadow data buffer but we can skip rendering them to shadowmap.
-                    if (Mathf.Approximately(m_AdditionalLightIndexToShadowParams[additionalLightIndex].x, 0.0f)  || Mathf.Approximately(m_AdditionalLightIndexToShadowParams[additionalLightIndex].w, -1.0f))
+                    if (Mathf.Approximately(m_AdditionalLightIndexToShadowParams[additionalLightIndex].x, 0.0f)  || 
+                        // .w == -1 表示这个元素是空的, 它不参与渲染;
+                        Mathf.Approximately(m_AdditionalLightIndexToShadowParams[additionalLightIndex].w, -1.0f))
                         continue;
 
                     int visibleLightIndex = m_AdditionalLightIndexToVisibleLightIndex[additionalLightIndex];
@@ -1224,11 +1288,31 @@ namespace UnityEngine.Rendering.Universal.Internal
 
                     var settings = new ShadowDrawingSettings(cullResults, visibleLightIndex);
                     settings.splitData = shadowSliceData.splitData;
-                    Vector4 shadowBias = ShadowUtils.GetShadowBias(ref shadowLight, visibleLightIndex,
-                        ref shadowData, shadowSliceData.projectionMatrix, shadowSliceData.resolution);
+
+                    // 得到 ( depthBias, normalBias, 0, 0 )
+                    Vector4 shadowBias = ShadowUtils.GetShadowBias(
+                        ref shadowLight, 
+                        visibleLightIndex,
+                        ref shadowData, 
+                        shadowSliceData.projectionMatrix, 
+                        shadowSliceData.resolution
+                    );
+
+                    // 向 shader 写入: "_ShadowBias", "_LightDirection", "_LightPosition";
                     ShadowUtils.SetupShadowCasterConstantBuffer(cmd, ref shadowLight, shadowBias);
+
                     CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.CastingPunctualLightShadow, true);//"_CASTING_PUNCTUAL_LIGHT_SHADOW"
-                    ShadowUtils.RenderShadowSlice(cmd, ref context, ref shadowSliceData, ref settings);
+
+                    // 针对单个 shadow tile, 
+                    // 设置 "Const Depth Bias", "Slope Bias", viewport, proj矩阵, view矩阵, 
+                    // 然后执行真正的 "context.DrawShadows()";
+                    ShadowUtils.RenderShadowSlice(
+                        cmd, 
+                        ref context, 
+                        ref shadowSliceData, 
+                        ref settings
+                    );
+
                     additionalLightHasSoftShadows |= shadowLight.light.shadows == LightShadows.Soft;
                     anyShadowSliceRenderer = true;
                 }
@@ -1237,13 +1321,12 @@ namespace UnityEngine.Rendering.Universal.Internal
                 // So we check here if pipeline supports soft shadows and either main light or any additional light has soft shadows
                 // to enable the keyword.
                 // TODO: In PC and Consoles we can upload shadow data per light and branch on shader. That will be more likely way faster.
-                bool mainLightHasSoftShadows = shadowData.supportsMainLightShadows &&
-                    lightData.mainLightIndex != -1 &&
-                    visibleLights[lightData.mainLightIndex].light.shadows ==
-                    LightShadows.Soft;
+                bool mainLightHasSoftShadows =  shadowData.supportsMainLightShadows &&
+                                                lightData.mainLightIndex != -1 &&
+                                                visibleLights[lightData.mainLightIndex].light.shadows == LightShadows.Soft;
 
-                bool softShadows = shadowData.supportsSoftShadows &&
-                    (mainLightHasSoftShadows || additionalLightHasSoftShadows);
+                bool softShadows =  shadowData.supportsSoftShadows &&
+                                    (mainLightHasSoftShadows || additionalLightHasSoftShadows);
 
                 CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.AdditionalLightShadows, anyShadowSliceRenderer);//"_ADDITIONAL_LIGHT_SHADOWS"
                 CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.SoftShadows, softShadows);//"_SHADOWS_SOFT"
@@ -1258,10 +1341,16 @@ namespace UnityEngine.Rendering.Universal.Internal
 
 
 
-
-        // Set constant buffer data that will be used during the lighting/shadowing pass
-        void SetupAdditionalLightsShadowReceiverConstants(CommandBuffer cmd, ref ShadowData shadowData, bool softShadows)
-        {
+        /*
+            Set constant buffer data that will be used during the lighting/shadowing pass    
+            --
+            设置: shadow receiver 中使用的 const 数据;
+        */
+        void SetupAdditionalLightsShadowReceiverConstants( //   读完__
+                                                        CommandBuffer cmd, 
+                                                        ref ShadowData shadowData, 
+                                                        bool softShadows
+        ){
             float invShadowAtlasWidth = 1.0f / shadowData.additionalLightsShadowmapWidth;
             float invShadowAtlasHeight = 1.0f / shadowData.additionalLightsShadowmapHeight;
             float invHalfShadowAtlasWidth = 0.5f * invShadowAtlasWidth;
@@ -1271,7 +1360,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                                 m_AdditionalLightsShadowmapTexture);
 
             // set shadow fade (shadow distance) parameters
-            ShadowUtils.SetupShadowReceiverConstantBuffer(cmd, m_MainLightShadowParams);
+            ShadowUtils.SetupShadowReceiverConstantBuffer(cmd, m_MainLightShadowParams);// "_MainLightShadowParams"
 
             if (m_UseStructuredBuffer)// 暂为 false
             {   
@@ -1291,13 +1380,14 @@ namespace UnityEngine.Rendering.Universal.Internal
             {
                 cmd.SetGlobalVectorArray(AdditionalShadowsConstantBuffer._AdditionalShadowParams, //"_AdditionalShadowParams"
                     m_AdditionalLightIndexToShadowParams); // per-light data
+
                 cmd.SetGlobalMatrixArray(AdditionalShadowsConstantBuffer._AdditionalLightsWorldToShadow, //"_AdditionalLightsWorldToShadow"
                         m_AdditionalLightShadowSliceIndexTo_WorldShadowMatrix); // per-shadow-slice data
             }
 
             if (softShadows)
             {
-                if (m_SupportsBoxFilterForShadows)
+                if (m_SupportsBoxFilterForShadows)// "移动平台 和 switch" 设为 true,
                 {
                     cmd.SetGlobalVector(AdditionalShadowsConstantBuffer._AdditionalShadowOffset0,//"_AdditionalShadowOffset0"
                         new Vector4(-invHalfShadowAtlasWidth, -invHalfShadowAtlasHeight, 0.0f, 0.0f));
@@ -1311,9 +1401,13 @@ namespace UnityEngine.Rendering.Universal.Internal
                     cmd.SetGlobalVector(AdditionalShadowsConstantBuffer._AdditionalShadowOffset3,//"_AdditionalShadowOffset3"
                         new Vector4(invHalfShadowAtlasWidth, invHalfShadowAtlasHeight, 0.0f, 0.0f));
                 }
-
-                // Currently only used when !SHADER_API_MOBILE but risky to not set them as it's generic
-                // enough so custom shaders might use it.
+                
+                /*
+                    Currently only used when !SHADER_API_MOBILE but risky to not set them as it's generic
+                    enough so custom shaders might use it.
+                    ---
+                    目前仅被用于 !SHADER_API_MOBILE 时, 但不设置它们存在风险, 因为这个数据比较通用, castom shaders 可能用到它;
+                */
                 cmd.SetGlobalVector(AdditionalShadowsConstantBuffer._AdditionalShadowmapSize, //"_AdditionalShadowmapSize"
                     new Vector4(
                         invShadowAtlasWidth, 

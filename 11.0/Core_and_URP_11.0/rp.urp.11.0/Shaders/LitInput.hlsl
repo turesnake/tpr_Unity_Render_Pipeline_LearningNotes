@@ -88,6 +88,7 @@ half4 SampleMetallicSpecGloss(float2 uv, half albedoAlpha)
 
 #ifdef _METALLICSPECGLOSSMAP
     specGloss = SAMPLE_METALLICSPECULAR(uv);
+    // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
     #ifdef _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
         specGloss.a = albedoAlpha * _Smoothness;
     #else
@@ -100,6 +101,7 @@ half4 SampleMetallicSpecGloss(float2 uv, half albedoAlpha)
         specGloss.rgb = _Metallic.rrr;
     #endif
 
+    // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
     #ifdef _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
         specGloss.a = albedoAlpha * _Smoothness;
     #else

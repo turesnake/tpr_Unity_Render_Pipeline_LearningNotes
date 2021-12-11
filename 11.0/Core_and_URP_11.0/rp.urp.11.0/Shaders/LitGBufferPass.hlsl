@@ -124,7 +124,8 @@ Varyings LitGBufferPassVertex(Attributes input)
     output.normalWS = normalInput.normalWS;
     output.viewDirWS = viewDirWS;
 #if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR) || defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
-    real sign = input.tangentOS.w * GetOddNegativeScale();
+    real sign = input.tangentOS.w * 
+                GetOddNegativeScale();//此函数返回 1 or -1; 若返回 -1, 你需要将 binormal 翻转;
     half4 tangentWS = half4(normalInput.tangentWS.xyz, sign);
 #endif
 #if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR)

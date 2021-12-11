@@ -2,7 +2,8 @@
 #define UNITY_PACKING_INCLUDED
 
 #if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3
-#pragma warning (disable : 3205) // conversion of larger type to smaller
+    // conversion of larger type to smaller
+    #pragma warning (disable : 3205) 
 #endif
 
 //-----------------------------------------------------------------------------
@@ -19,30 +20,60 @@ real3 UnpackNormalMaxComponent(real3 n)
     return normalize(n * 2.0 - 1.0);
 }
 
-// Ref: http://www.vis.uni-stuttgart.de/~engelhts/paper/vmvOctaMaps.pdf "Octahedron Environment Maps"
-// Encode with Oct, this function work with any size of output
-// return real between [-1, 1]
-real2 PackNormalOctRectEncode(real3 n)
+
+/*
+    Ref: http://www.vis.uni-stuttgart.de/~engelhts/paper/vmvOctaMaps.pdf "Octahedron(八面体) Environment Maps"
+    Encode with Oct, this function work with any size of output
+    return real between [-1, 1]
+    ---
+    参数 n 是个 归一化的法线向量, 本函数 按照 八面体压缩法, 将其压缩为一个 real2 数据; (每个分量是个区间为 [-1,1] 的实数 )
+    (可用下方的 "UnpackNormalOctRectEncode()" 解压数据;)
+    ---
+    参考笔记图: "八面体 压缩 归一化向量.jpg"
+*/
+real2 PackNormalOctRectEncode(real3 n)//  读完__
 {
-    // Perform planar projection.
+    /*
+        -1-:
+        将 "归一化法线" 代表的球形 变换为一个 八面体, (原点在八面体中心)
+        细节:
+            dot(abs(n), 1.0): 就是将 n 的每个分量的绝对值, 累加起来; 即 "曼哈顿距离"
+            rcp(): 得到倒数; 此处应该是 "曼哈顿距离" 的倒数;
+            这个倒数施加于 n 的每个分量上, 使其实现特殊的 "归一化";
+            这么一计算, 任何方向的 法线, 都会落到 八面体 的面上;
+    */
     real3 p = n * rcp(dot(abs(n), 1.0));
     real  x = p.x, y = p.y, z = p.z;
 
-    // Unfold the octahedron.
-    // Also correct the aspect ratio from 2:1 to 1:1.
-    real r = saturate(0.5 - 0.5 * x + 0.5 * y);
+    /*
+        -2-:
+        Unfold the octahedron. 展开八面体
+        Also correct the aspect ratio from 2:1 to 1:1. 还将纵横比从 2:1 校正为 1:1。
+        ---
+        将 +z 半球 和 -z 半球的 两瓣 八面体分开, 分别处理: 
+        r,g 是 两个新的坐标轴, r指向 135度角, g指向 45度角;
+        而且 r 轴被压缩了;
+        r,g 值 就是本函数的最终 返回值: [-1,1]
+    */
+    real r = saturate(0.5 - 0.5*x + 0.5*y); // clamp to [0,1]
     real g = x + y;
 
-    // Negative hemisphere on the left, positive on the right.
+    /*
+        Negative hemisphere on the left, positive on the right.
+        ---
+        补上 -z 半球的;
+    */
     return real2(CopySign(r, z), g);
 }
 
+
+// 解压缩, 暂时没细看, 就是上面压缩算法的 逆向;
 real3 UnpackNormalOctRectEncode(real2 f)
 {
     real r = f.r, g = f.g;
 
     // Solve for {x, y, z} given {r, g}.
-    real x = 0.5 + 0.5 * g - abs(r);
+    real x = 0.5 + 0.5*g - abs(r);
     real y = g - x;
     real z = max(1.0 - abs(x) - abs(y), REAL_EPS); // EPS is absolutely crucial for anisotropy
 
@@ -50,6 +81,8 @@ real3 UnpackNormalOctRectEncode(real2 f)
 
     return normalize(p);
 }
+
+
 
 // Ref: http://jcgt.org/published/0003/02/01/paper.pdf "A Survey of Efficient Representations for Independent Unit Vectors"
 // Encode with Oct, this function work with any size of output

@@ -47,6 +47,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         bool m_UseStructuredBuffer;// 暂为 false
 
+        // 构造函数
         public ForwardLights()// 读完__
         {
             m_UseStructuredBuffer = RenderingUtils.useStructuredBuffer;// 暂为 false
@@ -81,6 +82,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         }// 函数完__
 
 
+        // 设置一组 global shader keywords
         public void Setup(ScriptableRenderContext context, ref RenderingData renderingData)//   读完__
         {
             int additionalLightsCount = renderingData.lightData.additionalLightsCount;

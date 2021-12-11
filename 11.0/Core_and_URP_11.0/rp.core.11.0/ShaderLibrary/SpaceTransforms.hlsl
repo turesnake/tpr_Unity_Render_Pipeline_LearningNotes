@@ -53,13 +53,25 @@ float3 GetCameraRelativePositionWS(float3 positionWS)
     return positionWS;
 }
 
-real GetOddNegativeScale()
+
+// 获得 "奇-负 缩放" 值, -1 or 1;
+// 若返回 -1, 你需要将 binormal 翻转;
+real GetOddNegativeScale() // 读完__
 {
-    // FIXME: We should be able to just return unity_WorldTransformParams.w, but it is not
-    // properly set at the moment, when doing ray-tracing; once this has been fixed in cpp,
-    // we can revert back to the former implementation.
+    /*
+        FIXME: We should be able to just return "unity_WorldTransformParams.w", 
+        but it is not properly set at the moment, when doing ray-tracing; 
+        once this has been fixed in cpp, we can revert back to the former implementation.
+        ---
+        此处应该直接返回: unity_WorldTransformParams.w;
+        但目前在运算 光追 时, 没有得到很好的设置, 等待此问题的修复;
+        ---
+        w is usually 1.0, or -1.0; for odd-negative scale transforms; (奇-负 缩放变换)
+    */
     return unity_WorldTransformParams.w >= 0.0 ? 1.0 : -1.0;
 }
+
+
 
 float3 TransformObjectToWorld(float3 positionOS)
 {
@@ -133,8 +145,10 @@ float3 TransformWorldToObjectDir(float3 dirWS, bool doNormalize = true)
     return dirOS;
 }
 
-// Tranforms vector from world space to view space
-real3 TransformWorldToViewDir(real3 dirWS, bool doNormalize = false)
+
+
+// Tranforms vector from world-space to view-space
+real3 TransformWorldToViewDir(real3 dirWS, bool doNormalize = false)//  读完__
 {
     float3 dirVS = mul((real3x3)GetWorldToViewMatrix(), dirWS).xyz;
     if (doNormalize)
@@ -142,6 +156,8 @@ real3 TransformWorldToViewDir(real3 dirWS, bool doNormalize = false)
 
     return dirVS;
 }
+
+
 
 // Tranforms vector from world space to homogenous space
 real3 TransformWorldToHClipDir(real3 directionWS, bool doNormalize = false)

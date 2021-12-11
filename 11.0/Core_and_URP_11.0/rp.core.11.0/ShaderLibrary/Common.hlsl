@@ -91,78 +91,80 @@
 // precision is suitable for its needs.  The shader
 // API (for now) can indicate whether half is possible.
 #if defined(SHADER_API_MOBILE) || defined(SHADER_API_SWITCH)
-#define HAS_HALF 1
+    #define HAS_HALF 1
 #else
-#define HAS_HALF 0
+    #define HAS_HALF 0
 #endif
 
 #ifndef PREFER_HALF
-#define PREFER_HALF 1
+    #define PREFER_HALF 1
 #endif
 
+
 #if HAS_HALF && PREFER_HALF
-#define REAL_IS_HALF 1
+    #define REAL_IS_HALF 1
 #else
-#define REAL_IS_HALF 0
+    #define REAL_IS_HALF 0
 #endif // Do we have half?
 
+
 #if REAL_IS_HALF
-#define real half
-#define real2 half2
-#define real3 half3
-#define real4 half4
+    #define real half
+    #define real2 half2
+    #define real3 half3
+    #define real4 half4
 
-#define real2x2 half2x2
-#define real2x3 half2x3
-#define real2x4 half2x4
-#define real3x2 half3x2
-#define real3x3 half3x3
-#define real3x4 half3x4
-#define real4x3 half4x3
-#define real4x4 half4x4
+    #define real2x2 half2x2
+    #define real2x3 half2x3
+    #define real2x4 half2x4
+    #define real3x2 half3x2
+    #define real3x3 half3x3
+    #define real3x4 half3x4
+    #define real4x3 half4x3
+    #define real4x4 half4x4
 
-#define half min16float
-#define half2 min16float2
-#define half3 min16float3
-#define half4 min16float4
+    #define half min16float
+    #define half2 min16float2
+    #define half3 min16float3
+    #define half4 min16float4
 
-#define half2x2 min16float2x2
-#define half2x3 min16float2x3
-#define half3x2 min16float3x2
-#define half3x3 min16float3x3
-#define half3x4 min16float3x4
-#define half4x3 min16float4x3
-#define half4x4 min16float4x4
+    #define half2x2 min16float2x2
+    #define half2x3 min16float2x3
+    #define half3x2 min16float3x2
+    #define half3x3 min16float3x3
+    #define half3x4 min16float3x4
+    #define half4x3 min16float4x3
+    #define half4x4 min16float4x4
 
-#define REAL_MIN HALF_MIN
-#define REAL_MAX HALF_MAX
-#define REAL_EPS HALF_EPS
-#define TEMPLATE_1_REAL TEMPLATE_1_HALF
-#define TEMPLATE_2_REAL TEMPLATE_2_HALF
-#define TEMPLATE_3_REAL TEMPLATE_3_HALF
+    #define REAL_MIN HALF_MIN
+    #define REAL_MAX HALF_MAX
+    #define REAL_EPS HALF_EPS
+    #define TEMPLATE_1_REAL TEMPLATE_1_HALF
+    #define TEMPLATE_2_REAL TEMPLATE_2_HALF
+    #define TEMPLATE_3_REAL TEMPLATE_3_HALF
 
 #else
 
-#define real float
-#define real2 float2
-#define real3 float3
-#define real4 float4
+    #define real float
+    #define real2 float2
+    #define real3 float3
+    #define real4 float4
 
-#define real2x2 float2x2
-#define real2x3 float2x3
-#define real2x4 float2x4
-#define real3x2 float3x2
-#define real3x3 float3x3
-#define real3x4 float3x4
-#define real4x3 float4x3
-#define real4x4 float4x4
+    #define real2x2 float2x2
+    #define real2x3 float2x3
+    #define real2x4 float2x4
+    #define real3x2 float3x2
+    #define real3x3 float3x3
+    #define real3x4 float3x4
+    #define real4x3 float4x3
+    #define real4x4 float4x4
 
-#define REAL_MIN FLT_MIN
-#define REAL_MAX FLT_MAX
-#define REAL_EPS FLT_EPS
-#define TEMPLATE_1_REAL TEMPLATE_1_FLT
-#define TEMPLATE_2_REAL TEMPLATE_2_FLT
-#define TEMPLATE_3_REAL TEMPLATE_3_FLT
+    #define REAL_MIN FLT_MIN
+    #define REAL_MAX FLT_MAX
+    #define REAL_EPS FLT_EPS
+    #define TEMPLATE_1_REAL TEMPLATE_1_FLT
+    #define TEMPLATE_2_REAL TEMPLATE_2_FLT
+    #define TEMPLATE_3_REAL TEMPLATE_3_FLT
 
 #endif // REAL_IS_HALF
 
@@ -284,11 +286,19 @@ int BitFieldExtractSignExtend(int data, uint offset, uint numBits)
 #endif // INTRINSIC_BITFIELD_EXTRACT_SIGN_EXTEND
 
 #ifndef INTRINSIC_BITFIELD_INSERT
-// Inserts the bits indicated by 'mask' from 'src' into 'dst'.
+
+
+/*
+    Inserts the bits indicated by 'mask' from 'src' into 'dst'.
+    ---
+    将 dst 中, mask 标记的那几位, 覆写为 src 上对应的位的值;  
+*/
 uint BitFieldInsert(uint mask, uint src, uint dst)
 {
     return (src & mask) | (dst & ~mask);
 }
+
+
 #endif // INTRINSIC_BITFIELD_INSERT
 
 bool IsBitSet(uint data, uint offset)
@@ -620,9 +630,22 @@ half Min_half() { return HALF_MIN; }
 half Max_half() { return HALF_MAX; }
 
 
-// Composes a floating point value with the magnitude of 'x' and the sign of 's'.
-// See the comment about FastSign() below.
-float CopySign(float x, float s, bool ignoreNegZero = true)
+
+
+/*
+    Composes a floating point value with the magnitude of 'x' and the sign of 's'.
+    See the comment about FastSign() below.
+    -----
+    用 “x” 的模长 和 “s” 的符号 组成一个浮点值; 并返回之;
+    
+    参数 ignoreNegZero: 
+        是否将 -0 +0 看作同一个值;
+        如果不看作同一个值 (false), 查看下方 "FastSign()" 中的注释;
+        ---
+        ( 主要是为了解决: 当参数 s = -0, 或 +0 时, 本函数该怎么响应 的问题; )
+        ( 这种用例很少见 )
+*/
+float CopySign(float x, float s, bool ignoreNegZero = true)//   读完__
 {
 #if !defined(SHADER_API_GLES)
     if (ignoreNegZero)
@@ -630,27 +653,55 @@ float CopySign(float x, float s, bool ignoreNegZero = true)
         return (s >= 0) ? abs(x) : -abs(x);
     }
     else
-    {
-        uint negZero = 0x80000000u;
+    {   
+        /*
+            使用一种完全不同的方式来实现本函数, 
+            当 s 非0时, 此处实现 和 ignoreNegZero==true 时完全一致;
+            当 s = -0 时, 本函数返回 -abs(x);
+            当 s = +0 时, 本函数返回 +abs(x);
+        */
+        uint negZero = 0x80000000u;// 32-bits, 最高位=1, 剩余皆为0; 等于 int 中的 -0;
+        // 对两个值的最高位进行 & 运算, 只有当两者的最高位皆为1, 才能得到 0x80000000u, 否则一律得到 0;
         uint signBit = negZero & asuint(s);
-        return asfloat(BitFieldInsert(negZero, signBit, asuint(x)));
+        // 只改写参数 x 的符号位;
+        return asfloat(BitFieldInsert(
+                            negZero,    // mask: 只有最高位为 1, 只改写 dst 的这一位; (也就是符号位)
+                            signBit,    // src:
+                            asuint(x)   // dst:
+        ));
     }
 #else
+    // gles 平台
     return (s >= 0) ? abs(x) : -abs(x);
 #endif
 }
 
-// Returns -1 for negative numbers and 1 for positive numbers.
-// 0 can be handled in 2 different ways.
-// The IEEE floating point standard defines 0 as signed: +0 and -0.
-// However, mathematics typically treats 0 as unsigned.
-// Therefore, we treat -0 as +0 by default: FastSign(+0) = FastSign(-0) = 1.
-// If (ignoreNegZero = false), FastSign(-0, false) = -1.
-// Note that the sign() function in HLSL implements signum, which returns 0 for 0.
-float FastSign(float s, bool ignoreNegZero = true)
+
+
+
+/*
+    Returns -1 for negative numbers and 1 for positive numbers.
+    ----
+    0 can be handled in 2 different ways.
+    "The IEEE floating point standard" defines 0 as signed: +0 and -0.
+    However, mathematics typically treats 0 as unsigned.
+    Therefore, we treat -0 as +0 by default: FastSign(+0) = FastSign(-0) = 1.
+    If (ignoreNegZero = false), FastSign(-0, false) = -1.
+    Note that the sign() function in HLSL implements signum, which returns 0 for 0.
+    ----
+    参数 ignoreNegZero 用来解决: "当 s = -0 或 +0 时, 函数该怎么响应" 这个问题:
+
+    IEEE 标准将 +0, -0 看作两个值, 但在数学上, 它们被当成一个值;
+        FastSign(-0, true)  =  1;
+        FastSign(-0, false) = -1;
+
+    作为区别: hlsl 自带函数 sign(0) 返回 0;
+*/
+float FastSign(float s, bool ignoreNegZero = true) //   读完__
 {
     return CopySign(1.0, s, ignoreNegZero);
 }
+
 
 // Orthonormalizes the tangent frame using the Gram-Schmidt process.
 // We assume that the normal is normalized and that the two vectors

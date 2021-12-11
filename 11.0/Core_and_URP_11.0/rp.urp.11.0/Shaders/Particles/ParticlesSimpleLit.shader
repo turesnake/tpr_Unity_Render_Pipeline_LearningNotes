@@ -94,6 +94,8 @@ Shader "Universal Render Pipeline/Particles/Simple Lit"
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local_fragment _EMISSION
             #pragma shader_feature_local_fragment _ _SPECGLOSSMAP _SPECULAR_COLOR
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
             #pragma shader_feature_local _RECEIVE_SHADOWS_OFF
 
@@ -149,6 +151,8 @@ Shader "Universal Render Pipeline/Particles/Simple Lit"
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local_fragment _EMISSION
             #pragma shader_feature_local_fragment _ _SPECGLOSSMAP _SPECULAR_COLOR
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
             #pragma shader_feature_local _RECEIVE_SHADOWS_OFF
 

@@ -113,7 +113,8 @@ Shader "Universal Render Pipeline/Baked Lit"
                 VertexNormalInputs normalInput = GetVertexNormalInputs(input.normalOS, input.tangentOS);
                 output.normalWS = normalInput.normalWS;
     #if defined(_NORMALMAP)
-                real sign = input.tangentOS.w * GetOddNegativeScale();
+                real sign = input.tangentOS.w * 
+                            GetOddNegativeScale();// 此函数返回 1 or -1; 若返回 -1, 你需要将 binormal 翻转;
                 output.tangentWS = half4(normalInput.tangentWS.xyz, sign);
     #endif
                 OUTPUT_LIGHTMAP_UV(input.lightmapUV, unity_LightmapST, output.lightmapUV);
@@ -355,7 +356,8 @@ Shader "Universal Render Pipeline/Baked Lit"
                 VertexNormalInputs normalInput = GetVertexNormalInputs(input.normalOS, input.tangentOS);
                 output.normalWS = normalInput.normalWS;
     #if defined(_NORMALMAP)
-                real sign = input.tangentOS.w * GetOddNegativeScale();
+                real sign = input.tangentOS.w * 
+                            GetOddNegativeScale();// 此函数返回 1 or -1; 若返回 -1, 你需要将 binormal 翻转;
                 output.tangentWS = half4(normalInput.tangentWS.xyz, sign);
     #endif
                 OUTPUT_LIGHTMAP_UV(input.lightmapUV, unity_LightmapST, output.lightmapUV);

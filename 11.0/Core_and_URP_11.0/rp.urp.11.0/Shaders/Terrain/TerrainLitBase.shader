@@ -34,6 +34,7 @@ Shader "Hidden/Universal Render Pipeline/Terrain/Lit (Base Pass)"
             // -------------------------------------
             // Material Keywords
             #define _METALLICSPECGLOSSMAP 1
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #define _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A 1
 
             // -------------------------------------
@@ -103,6 +104,7 @@ Shader "Hidden/Universal Render Pipeline/Terrain/Lit (Base Pass)"
             // -------------------------------------
             // Material Keywords
             #define _METALLICSPECGLOSSMAP 1
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #define _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A 1
 
             // -------------------------------------
@@ -192,6 +194,7 @@ Shader "Hidden/Universal Render Pipeline/Terrain/Lit (Base Pass)"
             #pragma fragment TerrainFragmentMeta
 
             #define _METALLICSPECGLOSSMAP 1
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #define _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A 1
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/Terrain/TerrainLitInput.hlsl"

@@ -16,11 +16,13 @@ namespace UnityEditor.Rendering.Universal.ShaderGUI
             Metallic
         }
 
-        public enum SmoothnessMapChannel
+
+        public enum SmoothnessMapChannel//SmoothnessMapChannel__
         {
-            SpecularMetallicAlpha,
-            AlbedoAlpha,
+            SpecularMetallicAlpha, // Smoothness 信息, 存储在 SpecularMetallic texture 的 alpha 通道
+            AlbedoAlpha, // Smoothness 信息, 存储在 albedo texture 的 alpha 通道
         }
+
 
         public static class Styles
         {
@@ -248,8 +250,11 @@ namespace UnityEditor.Rendering.Universal.ShaderGUI
                 EditorGUI.showMixedValue = properties.smoothnessMapChannel.hasMixedValue;
                 var smoothnessSource = (int)properties.smoothnessMapChannel.floatValue;
                 if (opaque)
-                    smoothnessSource = EditorGUILayout.Popup(Styles.smoothnessMapChannelText, smoothnessSource,
-                        smoothnessChannelNames);
+                    smoothnessSource = EditorGUILayout.Popup(
+                        Styles.smoothnessMapChannelText, 
+                        smoothnessSource,
+                        smoothnessChannelNames
+                    );
                 else
                     EditorGUILayout.Popup(Styles.smoothnessMapChannelText, 0, smoothnessChannelNames);
                 if (EditorGUI.EndChangeCheck())

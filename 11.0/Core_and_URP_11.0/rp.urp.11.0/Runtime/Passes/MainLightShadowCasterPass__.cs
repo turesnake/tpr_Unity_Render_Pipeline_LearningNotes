@@ -311,7 +311,9 @@ namespace UnityEngine.Rendering.Universal.Internal
         }//  函数完__
 
 
-
+        /*
+            设置: shadow receiver 中使用的 const 数据;
+        */
         void SetupMainLightShadowReceiverConstants( //    读完__
                                                     CommandBuffer cmd, 
                                                     VisibleLight shadowLight, 

@@ -61,6 +61,7 @@ Shader "Universal Render Pipeline/Terrain/Lit"
             #pragma fragment SplatmapFragment
 
             #define _METALLICSPECGLOSSMAP 1
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #define _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A 1
 
             // -------------------------------------
@@ -132,6 +133,7 @@ Shader "Universal Render Pipeline/Terrain/Lit"
             #pragma fragment SplatmapFragment
 
             #define _METALLICSPECGLOSSMAP 1
+            // Smoothness 信息, 存储在 albedo texture 的 alpha 通道中, 而不是在 SpecularMetallic texture 的 alpha 通道中;
             #define _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A 1
 
             // -------------------------------------

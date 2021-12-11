@@ -151,9 +151,15 @@ CBUFFER_START(UnityPerDraw)
     //   注意方向, 从右向左,表示相机从远及近. 
     // y is x quantized into 16 levels
     float4   unity_LODFade;       
-
-    // w is usually 1.0, or -1.0 
-    // for odd-negative scale transforms  
+    
+    /*
+        w: is usually 1.0, or -1.0; (for odd-negative scale transforms)
+        ---
+        catlike: 如果此值为 -1, 你需要将 binormal 翻转;
+        (搜索笔记此变量)
+        还可看此文:
+        https://forum.unity.com/threads/what-is-tangent-w-how-to-know-whether-its-1-or-1-tangent-w-vs-unity_worldtransformparams-w.468395/
+    */
     real4    unity_WorldTransformParams; 
 
     // ----- Light Indices block feature -----

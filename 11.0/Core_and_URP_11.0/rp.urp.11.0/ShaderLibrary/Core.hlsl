@@ -10,6 +10,7 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Version.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Input.hlsl"
 
+
 #if !defined(SHADER_HINT_NICE_QUALITY)
     #if defined(SHADER_API_MOBILE) || defined(SHADER_API_SWITCH)
         #define SHADER_HINT_NICE_QUALITY 0
@@ -138,13 +139,18 @@ struct VertexPositionInputs//VertexPositionInputs__
 };
 
 
-
-struct VertexNormalInputs
+/*
+    为了计算 每个fragment 的 normal 值, 而需要在 vs 中准备好的数据;
+    使用 "GetVertexNormalInputs()"" 来创建此类实例;
+*/
+struct VertexNormalInputs//VertexNormalInputs__
 {
-    real3 tangentWS;
-    real3 bitangentWS;
-    float3 normalWS;
+    real3   tangentWS;
+    real3   bitangentWS;
+    float3  normalWS;
 };
+
+
 
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ShaderVariablesFunctions.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Deprecated.hlsl"

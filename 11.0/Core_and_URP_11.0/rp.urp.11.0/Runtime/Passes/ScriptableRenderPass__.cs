@@ -54,6 +54,7 @@ namespace UnityEngine.Rendering.Universal
             Executes a "ScriptableRenderPass" before rendering shadowmaps.
             --
             此时, camera矩阵 和 "stereo rendering" 并未被设置; 
+            (毕竟渲染 shadow 信息只需要 light 矩阵...)
         */
         BeforeRenderingShadows = 50,
 
@@ -61,6 +62,7 @@ namespace UnityEngine.Rendering.Universal
             Executes a "ScriptableRenderPass" after rendering shadowmaps.
             --
             此时, camera矩阵 和 "stereo rendering" 并未被设置; 
+            (毕竟渲染 shadow 信息只需要 light 矩阵...)
         */
         AfterRenderingShadows = 100,
 
@@ -69,6 +71,11 @@ namespace UnityEngine.Rendering.Universal
             --
             在 渲染 prepasses (预备pass) 之前, 比如, 在渲染 depth prepass 之前 
             此时, camera矩阵 和 "stereo rendering" 已经被设置 !!! 
+            (毕竟, 计算 depth, normal 数据都是基于 camera 视角)
+            =================
+
+            prepass:
+                DepthOnlyPass, DepthNormalOnlyPass 似乎都属于;
         */
         BeforeRenderingPrePasses = 150,
 
@@ -83,6 +90,11 @@ namespace UnityEngine.Rendering.Universal
             --
             在 渲染 prepasses (预备pass) 之后, 比如, 在渲染 depth prepass 之后 
             此时, camera矩阵 和 "stereo rendering" 已经被设置 !!! 
+            (毕竟, 计算 depth, normal 数据都是基于 camera 视角)
+            =================
+
+            prepass:
+                DepthOnlyPass, DepthNormalOnlyPass 似乎都属于;
         */
         AfterRenderingPrePasses = 200,
         
@@ -431,6 +443,7 @@ namespace UnityEngine.Rendering.Universal
         }
 
 
+
         /*
             Creates "DrawingSettings" based on current the rendering state.
         */
@@ -439,7 +452,6 @@ namespace UnityEngine.Rendering.Universal
         /// <param name="renderingData">Current rendering state.</param>
         /// <param name="sortingCriteria">Criteria to sort objects being rendered.</param>
         /// <returns></returns>
-        /// <seealso cref="DrawingSettings"/>
         public DrawingSettings CreateDrawingSettings(
                                                 ShaderTagId shaderTagId, 
                                                 ref RenderingData renderingData, 
@@ -458,7 +470,7 @@ namespace UnityEngine.Rendering.Universal
                     ---
                     如果 camera 类型为 Preview, 就关闭 GPU Instancing, 可能和某个系统错误有关;
                 */
-                enableInstancing = camera.cameraType == CameraType.Preview ? false : true,
+                enableInstancing = camera.cameraType==CameraType.Preview ? false : true,
             };
             return settings;
         }

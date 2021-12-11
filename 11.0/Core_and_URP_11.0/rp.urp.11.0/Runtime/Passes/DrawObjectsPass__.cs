@@ -15,9 +15,9 @@ namespace UnityEngine.Rendering.Universal.Internal
         如果一个物体的 material/shader 带有名为 "UniversalForward" or "SRPDefaultUnlit" 的pass,
         就能用这个 class 来渲染这个物体;
 
-
     */
-    public class DrawObjectsPass //DrawObjectsPass__RR
+
+    public class DrawObjectsPass //DrawObjectsPass__
         : ScriptableRenderPass
     {
         FilteringSettings m_FilteringSettings;

@@ -40,6 +40,8 @@ half4 SampleSpecularSmoothness(half2 uv, half alpha, half4 specColor, TEXTURE2D_
     specularSmoothness = specColor;
 #endif
 
+// SimpleLit 使用: 
+// glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
 #ifdef _GLOSSINESS_FROM_BASE_ALPHA
     specularSmoothness.a = exp2(10 * alpha + 1);
 #else

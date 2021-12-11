@@ -5,7 +5,6 @@ namespace UnityEngine.Rendering.Universal
 {
     /*
         Rendering modes for Universal renderer.
-
         enum: Forward, Deferred;
     */
     public enum RenderingMode//RenderingMode__
@@ -63,6 +62,7 @@ namespace UnityEngine.Rendering.Universal
 
 
         internal bool accurateGbufferNormals { get { return m_DeferredLights != null ? m_DeferredLights.AccurateGbufferNormals : false; } }
+
         DepthOnlyPass m_DepthPrepass;
         DepthNormalOnlyPass m_DepthNormalPrepass;
         MainLightShadowCasterPass m_MainLightShadowCasterPass;
@@ -102,15 +102,16 @@ namespace UnityEngine.Rendering.Universal
 
         RenderTargetHandle m_ActiveCameraColorAttachment;
         RenderTargetHandle m_ActiveCameraDepthAttachment;
-        RenderTargetHandle m_CameraColorAttachment;
-        RenderTargetHandle m_CameraDepthAttachment;
-        RenderTargetHandle m_DepthTexture;
-        RenderTargetHandle m_NormalsTexture;
+        RenderTargetHandle m_CameraColorAttachment;//"_CameraColorTexture"
+        RenderTargetHandle m_CameraDepthAttachment;//"_CameraDepthAttachment"
+        RenderTargetHandle m_DepthTexture;//"_CameraDepthTexture"
+        RenderTargetHandle m_NormalsTexture;//"_CameraNormalsTexture"
         RenderTargetHandle[] m_GBufferHandles;
-        RenderTargetHandle m_OpaqueColor;
+        RenderTargetHandle m_OpaqueColor;//"_CameraOpaqueTexture"
         // For tiled-deferred shading.
-        RenderTargetHandle m_DepthInfoTexture;
-        RenderTargetHandle m_TileDepthInfoTexture;
+        RenderTargetHandle m_DepthInfoTexture;//"_DepthInfoTexture"
+        RenderTargetHandle m_TileDepthInfoTexture;//"_TileDepthInfoTexture"
+
 
         ForwardLights m_ForwardLights;
         DeferredLights m_DeferredLights;
@@ -132,9 +133,10 @@ namespace UnityEngine.Rendering.Universal
         internal RenderTargetHandle afterPostProcessColor { get => m_PostProcessPasses.afterPostProcessColor; }
         internal RenderTargetHandle colorGradingLut { get => m_PostProcessPasses.colorGradingLut; }
 
-        /*
-            构造函数
-        */
+
+
+        
+        //    构造函数
         public ForwardRenderer(ForwardRendererData data) : base(data)
         {
 /*   tpr
@@ -176,7 +178,6 @@ namespace UnityEngine.Rendering.Universal
                 鉴于所有 custom render passes 首先注入, 且我们有稳定的排序, 所有我们将 内置paasses 注入 "before events"
             */
             m_MainLightShadowCasterPass = new MainLightShadowCasterPass(RenderPassEvent.BeforeRenderingShadows);
-
             m_AdditionalLightsShadowCasterPass = new AdditionalLightsShadowCasterPass(RenderPassEvent.BeforeRenderingShadows);
 
 /*   tpr
@@ -416,7 +417,7 @@ namespace UnityEngine.Rendering.Universal
             // TODO: We could cache and generate the LUT before rendering the stack
             bool generateColorGradingLUT = cameraData.postProcessEnabled && m_PostProcessPasses.isCreated;
 
-            bool isSceneViewCamera = cameraData.isSceneViewCamera;// 是否为 editro: scene 窗口 使用的 camera;
+            bool isSceneViewCamera = cameraData.isSceneViewCamera;// 是否为 editor: scene 窗口 使用的 camera;
 
             bool requiresDepthTexture = cameraData.requiresDepthTexture || 
                                         renderPassInputs.requiresDepthTexture || 
@@ -427,15 +428,26 @@ namespace UnityEngine.Rendering.Universal
             bool additionalLightShadows = m_AdditionalLightsShadowCasterPass.Setup(ref renderingData);
             bool transparentsNeedSettingsPass = m_TransparentSettingsPass.Setup(ref renderingData);
 
-            // Depth prepass is generated in the following cases:
-            // - If game or offscreen camera requires it we check if we can copy the depth from the rendering opaques pass and use that instead.
-            // - Scene or preview cameras always require a depth texture. We do a depth pre-pass to simplify it and it shouldn't matter much for editor.
-            // - Render passes require it
+            /*
+                "Depth prepass" is generated in the following cases:
+                    - If game or offscreen camera(离屏:渲染到一个 rt 上去) requires it 
+                        we check if we can copy the depth from the "rendering opaques pass" and use that instead.
+                    - Scene or preview cameras always require a depth texture. 
+                        We do a depth pre-pass to simplify it and it shouldn't matter much for editor.
+                    - Render passes require it
+                --------
+                以下情况时, 需要运行一个 Depth prepass:
+                    -- 如果 game camera 或 离屏camera 需要 depth 数据, 
+                        我们会尝试从 "rendering opaques pass" 中复制出 depth 数据, 并直接使用这个数据
+                    -- scene camera, preview camera 总是需要 depth texture;
+                    -- 当 Render passes 明确需要 Depth prepass 时;
+            */
             bool requiresDepthPrepass = requiresDepthTexture && !CanCopyDepth(ref renderingData.cameraData);
-            requiresDepthPrepass |= isSceneViewCamera;
-            requiresDepthPrepass |= isPreviewCamera;
+            requiresDepthPrepass |= isSceneViewCamera;// 是否为 editor: scene 窗口 使用的 camera;
+            requiresDepthPrepass |= isPreviewCamera; // 是否为 editor: 预览窗口使用的 camera;
             requiresDepthPrepass |= renderPassInputs.requiresDepthPrepass;
             requiresDepthPrepass |= renderPassInputs.requiresNormalsTexture;
+
 
             // The copying of depth should normally happen after rendering opaques.
             // But if we only require it for post processing or the "scene camera"(editor) then we do it after rendering transparent objects
@@ -528,19 +540,25 @@ namespace UnityEngine.Rendering.Universal
             if (additionalLightShadows)
                 EnqueuePass(m_AdditionalLightsShadowCasterPass);
 
+
+            // "Depth prepass" + "Normal prepass"
             if (requiresDepthPrepass)
             {
                 if (renderPassInputs.requiresNormalsTexture)
                 {
+                    // 本 render pass 在开始执行前, 同时需要计算好的 depth texture 和 normal texture
+                    // 想要在 prepass 阶段运行 DepthNormalOnlyPass, 可以在自定义 render pass 的 Setup() 中写入:
+                    //    ConfigureInput( ScriptableRenderPassInput.Normal );
                     m_DepthNormalPrepass.Setup(cameraTargetDescriptor, m_DepthTexture, m_NormalsTexture);
                     EnqueuePass(m_DepthNormalPrepass);
                 }
                 else
-                {
+                {// 本 render pass 在开始执行前, 仅需要计算好的 depth texture
                     m_DepthPrepass.Setup(cameraTargetDescriptor, m_DepthTexture);
                     EnqueuePass(m_DepthPrepass);
                 }
             }
+
 
             if (generateColorGradingLUT)
             {
@@ -829,23 +847,34 @@ namespace UnityEngine.Rendering.Universal
         }// 函数完__
 
 
-        private struct RenderPassInputSummary
+        /*
+            一个 render pass 在开始执行前, 需要一些特定的 input 数据, 这些数据需要已经被计算好;
+        */
+        private struct RenderPassInputSummary//RenderPassInputSummary__
         {
-            internal bool requiresDepthTexture;
-            internal bool requiresDepthPrepass;
-            internal bool requiresNormalsTexture;
-            internal bool requiresColorTexture;
+            internal bool requiresDepthTexture; // 本 render pass 在开始执行前, 需要计算好的 depth texture 作为输入值
+
+            // 本 render pass 需要在 "渲染 Opaques" 之前执行, (通常是 draw shadow, 或 prepass 阶段)
+            // 同时本 render pass 在开始执行前, 需要计算好的 depth texture, 和 normal texture;
+            internal bool requiresDepthPrepass; 
+            internal bool requiresNormalsTexture; // 本 render pass 在开始执行前, 需要计算好的 normal texture 作为输入值
+            internal bool requiresColorTexture; // 本 render pass 在开始执行前, 需要计算好的 color texture 作为输入值
         }
 
-        private RenderPassInputSummary GetRenderPassInputs(ref RenderingData renderingData)
+
+
+        private RenderPassInputSummary GetRenderPassInputs(ref RenderingData renderingData)// 读完__
         {
             RenderPassInputSummary inputSummary = new RenderPassInputSummary();
             for (int i = 0; i < activeRenderPassQueue.Count; ++i)
             {
                 ScriptableRenderPass pass = activeRenderPassQueue[i];
+                // 如果这个 render pass 的 input 变量中, 写明了需要某种数据, 那么就设置对应的 "need" flag;
                 bool needsDepth   = (pass.input & ScriptableRenderPassInput.Depth) != ScriptableRenderPassInput.None;
                 bool needsNormals = (pass.input & ScriptableRenderPassInput.Normal) != ScriptableRenderPassInput.None;
                 bool needsColor   = (pass.input & ScriptableRenderPassInput.Color) != ScriptableRenderPassInput.None;
+
+                // 本 render pass 需要在 "渲染 Opaques" 之前执行, (通常是 draw shadow, 或 prepass 阶段)
                 bool eventBeforeOpaque = pass.renderPassEvent <= RenderPassEvent.BeforeRenderingOpaques;
 
                 inputSummary.requiresDepthTexture   |= needsDepth;
@@ -853,13 +882,16 @@ namespace UnityEngine.Rendering.Universal
                 inputSummary.requiresNormalsTexture |= needsNormals;
                 inputSummary.requiresColorTexture   |= needsColor;
             }
-
             return inputSummary;
         }// 函数完__
 
 
-        void CreateCameraRenderTarget(ScriptableRenderContext context, ref RenderTextureDescriptor descriptor, bool createColor, bool createDepth)
-        {
+        void CreateCameraRenderTarget(
+                                    ScriptableRenderContext context, 
+                                    ref RenderTextureDescriptor descriptor, 
+                                    bool createColor, 
+                                    bool createDepth
+        ){
             CommandBuffer cmd = CommandBufferPool.Get();
             using (new ProfilingScope(cmd, Profiling.createCameraRenderTarget))
             {
@@ -893,6 +925,7 @@ namespace UnityEngine.Rendering.Universal
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
         }// 函数完__
+
 
 
         bool PlatformRequiresExplicitMsaaResolve()
@@ -958,16 +991,22 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-        bool CanCopyDepth(ref CameraData cameraData)
+        bool CanCopyDepth(ref CameraData cameraData)//  读完__
         {
             bool msaaEnabledForCamera = cameraData.cameraTargetDescriptor.msaaSamples > 1;
             bool supportsTextureCopy = SystemInfo.copyTextureSupport != CopyTextureSupport.None;
             bool supportsDepthTarget = RenderingUtils.SupportsRenderTextureFormat(RenderTextureFormat.Depth);
+            // 此 camera 不能开启 msaa
             bool supportsDepthCopy = !msaaEnabledForCamera && (supportsDepthTarget || supportsTextureCopy);
 
-            // TODO:  We don't have support to highp Texture2DMS currently and this breaks depth precision.
-            // currently disabling it until shader changes kick in.
-            //bool msaaDepthResolve = msaaEnabledForCamera && SystemInfo.supportsMultisampledTextures != 0;
+            /*
+                TODO:  We don't have support to highp Texture2DMS currently and this breaks depth precision.
+                currently disabling it until shader changes kick in.
+                bool msaaDepthResolve = msaaEnabledForCamera && SystemInfo.supportsMultisampledTextures != 0;
+                ---
+                暂时还不支持 multi-sample texture2d 来存储 depth, 这会导致 depth 精度丢失;
+                未来版本再补上;
+            */
             bool msaaDepthResolve = false;
             return supportsDepthCopy || msaaDepthResolve;
         }// 函数完__

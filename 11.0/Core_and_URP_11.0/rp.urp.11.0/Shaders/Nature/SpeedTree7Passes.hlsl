@@ -136,7 +136,8 @@ SpeedTreeVertexOutput SpeedTree7Vert(SpeedTreeVertexInput input)
     half3 viewDirWS = GetWorldSpaceViewDir(vertexInput.positionWS);
 
     #ifdef EFFECT_BUMP
-        real sign = input.tangent.w * GetOddNegativeScale();
+        real sign = input.tangent.w * 
+                GetOddNegativeScale();//此函数返回 1 or -1; 若返回 -1, 你需要将 binormal 翻转;
         output.normalWS.xyz = normalWS;
         output.tangentWS.xyz = TransformObjectToWorldDir(input.tangent.xyz);
         output.bitangentWS.xyz = cross(output.normalWS.xyz, output.tangentWS.xyz) * sign;
@@ -211,7 +212,8 @@ SpeedTreeVertexDepthNormalOutput SpeedTree7VertDepthNormal(SpeedTreeVertexInput 
     #endif
 
     #ifdef EFFECT_BUMP
-        real sign = input.tangent.w * GetOddNegativeScale();
+        real sign = input.tangent.w * 
+                    GetOddNegativeScale();//此函数返回 1 or -1; 若返回 -1, 你需要将 binormal 翻转;
         output.normalWS.xyz = normalWS;
         output.tangentWS.xyz = TransformObjectToWorldDir(input.tangent.xyz);
         output.bitangentWS.xyz = cross(output.normalWS.xyz, output.tangentWS.xyz) * sign;

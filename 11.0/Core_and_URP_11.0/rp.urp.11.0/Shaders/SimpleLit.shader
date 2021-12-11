@@ -73,6 +73,8 @@ Shader "Universal Render Pipeline/Simple Lit"
             #pragma shader_feature_local_fragment _ALPHATEST_ON
             #pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local_fragment _ _SPECGLOSSMAP _SPECULAR_COLOR
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local_fragment _EMISSION
@@ -125,6 +127,8 @@ Shader "Universal Render Pipeline/Simple Lit"
             // -------------------------------------
             // Material Keywords
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
 
             //--------------------------------------
@@ -164,6 +168,8 @@ Shader "Universal Render Pipeline/Simple Lit"
             #pragma shader_feature_local_fragment _ALPHATEST_ON
             //#pragma shader_feature _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local_fragment _ _SPECGLOSSMAP _SPECULAR_COLOR
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local_fragment _EMISSION
@@ -217,6 +223,8 @@ Shader "Universal Render Pipeline/Simple Lit"
             // -------------------------------------
             // Material Keywords
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
 
             //--------------------------------------
@@ -249,6 +257,8 @@ Shader "Universal Render Pipeline/Simple Lit"
             // Material Keywords
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
 
             //--------------------------------------
@@ -329,6 +339,8 @@ Shader "Universal Render Pipeline/Simple Lit"
             #pragma shader_feature_local_fragment _ALPHATEST_ON
             #pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local_fragment _ _SPECGLOSSMAP _SPECULAR_COLOR
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local_fragment _EMISSION
@@ -377,6 +389,8 @@ Shader "Universal Render Pipeline/Simple Lit"
             // -------------------------------------
             // Material Keywords
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
 
             // -------------------------------------
@@ -411,6 +425,8 @@ Shader "Universal Render Pipeline/Simple Lit"
 
             // Material Keywords
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
 
             #include "Packages/com.unity.render-pipelines.universal/Shaders/SimpleLitInput.hlsl"
@@ -438,6 +454,8 @@ Shader "Universal Render Pipeline/Simple Lit"
             // Material Keywords
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local_fragment _ALPHATEST_ON
+            // SimpleLit 使用: 
+            // glossiness 信息存储在 Base map 的 alpha 通道中, 而不是存储在 Specular map 的 alpha 通道中;
             #pragma shader_feature_local_fragment _GLOSSINESS_FROM_BASE_ALPHA
 
             //--------------------------------------

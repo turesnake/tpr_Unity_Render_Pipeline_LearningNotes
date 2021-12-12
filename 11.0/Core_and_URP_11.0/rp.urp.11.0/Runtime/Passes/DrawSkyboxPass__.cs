@@ -1,22 +1,26 @@
 namespace UnityEngine.Rendering.Universal
 {
-    /// <summary>
-    /// Draw the skybox into the given color buffer using the given depth buffer for depth testing.
-    ///
-    /// This pass renders the standard Unity skybox.
-    /// </summary>
-    public class DrawSkyboxPass //DrawSkyboxPass__RR
+
+    /*
+        Draw the skybox into the given color buffer using the given depth buffer for depth testing.
+        This pass renders the standard Unity skybox.
+    */
+    public class DrawSkyboxPass //DrawSkyboxPass__
         : ScriptableRenderPass
     {
-        public DrawSkyboxPass(RenderPassEvent evt)
+
+        // 构造函数
+        /// <param name="evt"> // 设置 render pass 何时执行 </param>
+        public DrawSkyboxPass(RenderPassEvent evt)//  读完__
         {
             base.profilingSampler = new ProfilingSampler(nameof(DrawSkyboxPass));
-
-            renderPassEvent = evt;
+            renderPassEvent = evt;// base class 中的;
         }
 
+
+
         /// <inheritdoc/>
-        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)// 读完__
         {
 
 /*    tpr

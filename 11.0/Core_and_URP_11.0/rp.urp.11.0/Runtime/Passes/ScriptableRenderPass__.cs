@@ -445,17 +445,13 @@ namespace UnityEngine.Rendering.Universal
 
 
         /*
+            重载-1-:
             Creates "DrawingSettings" based on current the rendering state.
         */
-        /// <param name="shaderTagId">Shader pass tag to render. 猜测就是要渲染的 pass
-        /// </param>
-        /// <param name="renderingData">Current rendering state.</param>
-        /// <param name="sortingCriteria">Criteria to sort objects being rendered.</param>
-        /// <returns></returns>
         public DrawingSettings CreateDrawingSettings(
-                                                ShaderTagId shaderTagId, 
-                                                ref RenderingData renderingData, 
-                                                SortingCriteria sortingCriteria
+                                                ShaderTagId shaderTagId,  // 要渲染的 shader pass
+                                                ref RenderingData renderingData, // Current rendering state
+                                                SortingCriteria sortingCriteria //Criteria to sort objects being rendered
         ){
             Camera camera = renderingData.cameraData.camera;
             SortingSettings sortingSettings = new SortingSettings(camera) { criteria = sortingCriteria };
@@ -479,17 +475,10 @@ namespace UnityEngine.Rendering.Universal
         /*
             重载-2-;
         */
-        /// /// <param name="shaderTagIdList">List of shader pass tag to render. 若干个要被执行的 shader pass
-        /// </param>
-        /// <param name="renderingData">Current rendering state.</param>
-        /// <param name="sortingCriteria">Criteria to sort objects being rendered.</param>
-        /// <returns></returns>
-        /// <seealso cref="DrawingSettings"/>
-        /// 
         public DrawingSettings CreateDrawingSettings(
-                                            List<ShaderTagId> shaderTagIdList,
-                                            ref RenderingData renderingData, 
-                                            SortingCriteria sortingCriteria
+                                    List<ShaderTagId> shaderTagIdList, // 要渲染的 好几个 shader passes
+                                    ref RenderingData renderingData, // Current rendering state
+                                    SortingCriteria sortingCriteria // Criteria to sort objects being rendered
         ){
             if (shaderTagIdList==null || shaderTagIdList.Count==0)
             {

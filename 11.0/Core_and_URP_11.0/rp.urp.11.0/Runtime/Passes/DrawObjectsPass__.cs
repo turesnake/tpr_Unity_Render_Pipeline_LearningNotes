@@ -8,10 +8,9 @@ namespace UnityEngine.Rendering.Universal.Internal
     /*
         Draw  objects into the given "color and depth target"
 
-        You can use this pass to render objects that have a material and/or shader
-        with the pass names UniversalForward or SRPDefaultUnlit.
+        You can use this "render pass" to render objects that have a material and/or shader
+        with the pass names "UniversalForward" or "SRPDefaultUnlit".
         ---
-
         如果一个物体的 material/shader 带有名为 "UniversalForward" or "SRPDefaultUnlit" 的pass,
         就能用这个 class 来渲染这个物体;
 
@@ -32,32 +31,27 @@ namespace UnityEngine.Rendering.Universal.Internal
         ProfilingSampler m_ProfilingSampler;
         bool m_IsOpaque;// 本 render pass 渲染的是否为 不透明物体
 
+        // 此变量已在 shader 被归类为 "Deprecated" 的了... 没人使用它;
         static readonly int s_DrawObjectPassDataPropID = Shader.PropertyToID("_DrawObjectPassData");
 
 
         /*
             构造函数
         */
-        /// <param name="profilerTag"> 代码分析块 name </param>
-        /// <param name="shaderTagIds"></param>
-        /// <param name="opaque"></param>
-        /// <param name="evt"> 设置 render pass 何时执行 </param>
         /// <param name="renderQueueRange">
-        ///    哪个物体的 Material.renderQueue 值位于此 range 范围内(包含边界), 这个物体就会被渲染; 比如 [0, 2000]
+        ///           哪个物体的 Material.renderQueue 值位于此 range 范围内(包含边界), 这个物体就会被渲染; 比如 [0, 2000]
         /// </param>
         /// <param name="layerMask"> 如果一个物体的 GameObject.layer 和这个 变量 AND 计算后不为 0, 这个物体会被渲染;
-        /// </param>
-        /// <param name="stencilState"> shader 中的 "render state": stencil test 部分 </param>
-        /// <param name="stencilReference"> stencil test 的 Ref 值 </param>
+        /// </param>     
         public DrawObjectsPass( // 读完__
-                                string profilerTag, 
+                                string profilerTag, // 代码分析块的 name
                                 ShaderTagId[] shaderTagIds, 
                                 bool opaque,
-                                RenderPassEvent evt,
+                                RenderPassEvent evt, // 设置 render pass 何时执行
                                 RenderQueueRange renderQueueRange, 
                                 LayerMask layerMask, 
-                                StencilState stencilState, 
-                                int stencilReference
+                                StencilState stencilState, // shader 中的 "render state": stencil test 部分
+                                int stencilReference // stencil test 的 Ref 值
         ){
             base.profilingSampler = new ProfilingSampler(nameof(DrawObjectsPass));
 
@@ -95,6 +89,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                                 int stencilReference
         )
             : this( profilerTag,
+                    // materials 的 pass, 如果它的 "LightMode" 值为如下之一, 这个 pass 就会被执行;
                     new ShaderTagId[] { new ShaderTagId("SRPDefaultUnlit"), 
                                         new ShaderTagId("UniversalForward"), 
                                         new ShaderTagId("UniversalForwardOnly"), 
@@ -107,6 +102,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                     stencilState, 
                     stencilReference
         ){}
+
 
         // 重载-3-:
         //  -- 用 参数 profileId 代替 参数 profilerTag
@@ -149,11 +145,17 @@ namespace UnityEngine.Rendering.Universal.Internal
             CommandBuffer cmd = CommandBufferPool.Get();
             using (new ProfilingScope(cmd, m_ProfilingSampler))
             {
-                // Global render pass data containing various settings.
-                // x,y,z are currently unused
-                // w is used for knowing whether the object is opaque(1) or alpha blended(0)
+
+                /*
+                    Global render pass data containing various settings.
+                    x,y,z are currently unused
+                    w is used for knowing whether the object is opaque(1) or alpha blended(0)
+                    ---
+                    // 此变量已在 shader 被归类为 "Deprecated" 的了... 没人使用它;
+                */
                 Vector4 drawObjectPassData = new Vector4(0.0f, 0.0f, 0.0f, (m_IsOpaque) ? 1.0f : 0.0f);
                 cmd.SetGlobalVector(s_DrawObjectPassDataPropID, drawObjectPassData);//"_DrawObjectPassData"
+
 
                 // scaleBias.x = flipSign
                 // scaleBias.y = scale
@@ -165,13 +167,15 @@ namespace UnityEngine.Rendering.Universal.Internal
                     : new Vector4(flipSign, 0.0f, 1.0f, 1.0f);
                 cmd.SetGlobalVector(ShaderPropertyId.scaleBiasRt, scaleBias);//"_ScaleBiasRt"
 
+
                 context.ExecuteCommandBuffer(cmd);
                 cmd.Clear();
+
 
                 Camera camera = renderingData.cameraData.camera;
                 var sortFlags = (m_IsOpaque) ? renderingData.cameraData.defaultOpaqueSortFlags : SortingCriteria.CommonTransparent;
                 var drawSettings = CreateDrawingSettings(m_ShaderTagIdList, ref renderingData, sortFlags);
-                var filterSettings = m_FilteringSettings; // 如果过滤 待渲染物体;
+                var filterSettings = m_FilteringSettings; // 如何过滤 待渲染物体;
 
                 #if UNITY_EDITOR
                     // When rendering the preview camera, we want the layer mask to be forced to Everything

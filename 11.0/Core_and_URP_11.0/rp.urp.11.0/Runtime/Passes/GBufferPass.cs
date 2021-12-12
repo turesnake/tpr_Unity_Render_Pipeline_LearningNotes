@@ -5,7 +5,9 @@ using Unity.Collections;
 
 namespace UnityEngine.Rendering.Universal.Internal
 {
-    // Render all tiled-based deferred lights.
+    /*
+        Render all tiled-based deferred lights.
+    */
     internal class GBufferPass //GBufferPass__RR
         : ScriptableRenderPass
     {
@@ -25,10 +27,17 @@ namespace UnityEngine.Rendering.Universal.Internal
         FilteringSettings m_FilteringSettings;
         RenderStateBlock m_RenderStateBlock;
 
-        public GBufferPass(RenderPassEvent evt, RenderQueueRange renderQueueRange, LayerMask layerMask, StencilState stencilState, int stencilReference, DeferredLights deferredLights)
-        {
+        // 构造函数
+        public GBufferPass(
+                        RenderPassEvent evt,  // render pass 在哪个时间点执行
+                        RenderQueueRange renderQueueRange, 
+                        LayerMask layerMask, 
+                        StencilState stencilState, 
+                        int stencilReference, 
+                        DeferredLights deferredLights
+        ){
             base.profilingSampler = new ProfilingSampler(nameof(GBufferPass));
-            base.renderPassEvent = evt;
+            base.renderPassEvent = evt;// base class 中的;
 
             m_DeferredLights = deferredLights;
             m_FilteringSettings = new FilteringSettings(renderQueueRange, layerMask);
@@ -39,10 +48,16 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_RenderStateBlock.mask = RenderStateMask.Stencil;
 
             m_ShaderTagValues = new ShaderTagId[4];
-            m_ShaderTagValues[0] = s_ShaderTagLit;
-            m_ShaderTagValues[1] = s_ShaderTagSimpleLit;
-            m_ShaderTagValues[2] = s_ShaderTagUnlit;
-            m_ShaderTagValues[3] = new ShaderTagId(); // Special catch all case for materials where UniversalMaterialType is not defined or the tag value doesn't match anything we know.
+            m_ShaderTagValues[0] = s_ShaderTagLit;      //"Lit"
+            m_ShaderTagValues[1] = s_ShaderTagSimpleLit;//"SimpleLit"
+            m_ShaderTagValues[2] = s_ShaderTagUnlit;    //"Unlit"
+            
+            // Special catch all case for materials where "UniversalMaterialType" is not defined or the tag value doesn't match anything we know.
+            // 如果一个 material 的 subshader 的 tag: "UniversalMaterialType" 没有被设置, 或者设置的值 不匹配已知的选项时, 就使用这个 [3] 值;
+            // "UniversalMaterialType" 长被设置为: "Lit", "SimpleLit", "Unlit", "ComplexLit" 这几个值;
+            m_ShaderTagValues[3] = new ShaderTagId(); 
+            
+
 
             m_RenderStateBlocks = new RenderStateBlock[4];
             m_RenderStateBlocks[0] = DeferredLights.OverwriteStencil(m_RenderStateBlock, (int)StencilUsage.MaterialMask, (int)StencilUsage.MaterialLit);
@@ -91,9 +106,9 @@ namespace UnityEngine.Rendering.Universal.Internal
 
                 ref CameraData cameraData = ref renderingData.cameraData;
                 Camera camera = cameraData.camera;
-                ShaderTagId lightModeTag = s_ShaderTagUniversalGBuffer;
+                ShaderTagId lightModeTag = s_ShaderTagUniversalGBuffer;//"UniversalGBuffer"
                 DrawingSettings drawingSettings = CreateDrawingSettings(lightModeTag, ref renderingData, renderingData.cameraData.defaultOpaqueSortFlags);
-                ShaderTagId universalMaterialTypeTag = s_ShaderTagUniversalMaterialType;
+                ShaderTagId universalMaterialTypeTag = s_ShaderTagUniversalMaterialType;//"UniversalMaterialType"
 
                 NativeArray<ShaderTagId> tagValues = new NativeArray<ShaderTagId>(m_ShaderTagValues, Allocator.Temp);
                 NativeArray<RenderStateBlock> stateBlocks = new NativeArray<RenderStateBlock>(m_RenderStateBlocks, Allocator.Temp);

@@ -103,6 +103,8 @@ real4 SRGBToLinear(real4 c)
     return real4(SRGBToLinear(c.rgb), c.a);
 }
 
+
+
 real LinearToSRGB(real c)
 {
     real sRGBLo = c * 12.92;

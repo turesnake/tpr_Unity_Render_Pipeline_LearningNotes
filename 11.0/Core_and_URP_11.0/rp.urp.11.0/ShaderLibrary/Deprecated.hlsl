@@ -21,11 +21,18 @@
 */
 
 
-// Previously used when rendering with DrawObjectsPass.
-// Global object render pass data containing various settings.
-// x,y,z are currently unused
-// w is used for knowing whether the object is opaque(1) or alpha blended(0)
+
+/*
+    Previously used when rendering with DrawObjectsPass.
+    Global object render pass data containing various settings.
+    x,y,z are currently unused
+    w is used for knowing whether the object is opaque(1) or alpha blended(0)
+    ---
+    没看到有人使用它;
+*/
 half4 _DrawObjectPassData;
+
+
 
 #if USE_STRUCTURED_BUFFER_FOR_LIGHT_DATA
 // _AdditionalShadowsIndices was deprecated - To get the first shadow slice index for a light, use GetAdditionalLightShadowParams(lightIndex).w [see Shadows.hlsl]

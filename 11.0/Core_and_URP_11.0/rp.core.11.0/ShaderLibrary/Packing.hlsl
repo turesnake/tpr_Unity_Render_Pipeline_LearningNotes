@@ -67,7 +67,9 @@ real2 PackNormalOctRectEncode(real3 n)//  读完__
 }
 
 
-// 解压缩, 暂时没细看, 就是上面压缩算法的 逆向;
+
+// 解压缩, 返回 归一化的方向向量;
+// 暂时没细看, 就是上面压缩算法的 逆向;
 real3 UnpackNormalOctRectEncode(real2 f)
 {
     real r = f.r, g = f.g;

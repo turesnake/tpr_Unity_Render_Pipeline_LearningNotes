@@ -203,7 +203,8 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
 
-        internal static void Blit(CommandBuffer cmd,
+        internal static void Blit(
+            CommandBuffer cmd,
             RenderTargetIdentifier source,
             RenderTargetIdentifier destination,
             Material material,

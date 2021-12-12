@@ -38,6 +38,7 @@ Shader "Hidden/Universal Render Pipeline/CameraMotionBlur"
             UNITY_SETUP_INSTANCE_ID(input);
             /*UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);   tpr */
 
+// xr 才启用
 #if _USE_DRAW_PROCEDURAL
             /*    tpr
             GetProceduralQuad(input.vertexID, output.positionCS, output.uv.xy);

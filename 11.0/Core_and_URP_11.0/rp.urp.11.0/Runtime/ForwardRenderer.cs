@@ -60,33 +60,35 @@ namespace UnityEngine.Rendering.Universal
             } 
         }
 
-
         internal bool accurateGbufferNormals { get { return m_DeferredLights != null ? m_DeferredLights.AccurateGbufferNormals : false; } }
 
         DepthOnlyPass m_DepthPrepass;
         DepthNormalOnlyPass m_DepthNormalPrepass;
         MainLightShadowCasterPass m_MainLightShadowCasterPass;
         AdditionalLightsShadowCasterPass m_AdditionalLightsShadowCasterPass;
-        GBufferPass m_GBufferPass;
-        CopyDepthPass m_GBufferCopyDepthPass;
-        TileDepthRangePass m_TileDepthRangePass;
-        TileDepthRangePass m_TileDepthRangeExtraPass; // TODO use subpass API to hide this pass
-        DeferredPass m_DeferredPass;
 
 
-        DrawObjectsPass m_RenderOpaqueForwardOnlyPass;
+        GBufferPass m_GBufferPass;//暂时先忽略, 反正 11.0 中也不支持 延迟渲染       tpr
+        CopyDepthPass m_GBufferCopyDepthPass;//暂时先忽略, 反正 11.0 中也不支持 延迟渲染       tpr
+        TileDepthRangePass m_TileDepthRangePass;//暂时先忽略, 反正 11.0 中也不支持 延迟渲染       tpr
+        // TODO use subpass API to hide this pass
+        TileDepthRangePass m_TileDepthRangeExtraPass; //暂时先忽略, 反正 11.0 中也不支持 延迟渲染       tpr
+        DeferredPass m_DeferredPass;//暂时先忽略, 反正 11.0 中也不支持 延迟渲染       tpr
+        DrawObjectsPass m_RenderOpaqueForwardOnlyPass;//暂时先忽略, 反正 11.0 中也不支持 延迟渲染       tpr
+
 
 
         // "渲染不透明物" 的 render pass 
         // 始终创建此 render pass, 就算在 延迟渲染模式 也创建此 render pass, 
         // 因为:(1) editor 中的线框模式, (2) 绘制到 depth render texture 的 camera, 都要用到它;
         DrawObjectsPass m_RenderOpaqueForwardPass;
+
         DrawSkyboxPass m_DrawSkyboxPass;
-        CopyDepthPass m_CopyDepthPass;
+        CopyDepthPass m_CopyDepthPass; // 看完
         CopyColorPass m_CopyColorPass;
         TransparentSettingsPass m_TransparentSettingsPass;
         DrawObjectsPass m_RenderTransparentForwardPass;
-        InvokeOnRenderObjectCallbackPass m_OnRenderObjectCallbackPass;
+        InvokeOnRenderObjectCallbackPass m_OnRenderObjectCallbackPass;// 看完
         FinalBlitPass m_FinalBlitPass;
         CapturePass m_CapturePass;
 /*   tpr
@@ -191,6 +193,7 @@ namespace UnityEngine.Rendering.Universal
             m_DepthNormalPrepass = new DepthNormalOnlyPass(RenderPassEvent.BeforeRenderingPrePasses, RenderQueueRange.opaque, data.opaqueLayerMask);
 
 
+            /* 暂时先忽略, 反正 11.0 中也不支持 延迟渲染          tpr
             if (this.renderingMode == RenderingMode.Deferred)
             {
                 m_DeferredLights = new DeferredLights(m_TileDepthInfoMaterial, m_TileDeferredMaterial, m_StencilDeferredMaterial);
@@ -232,6 +235,8 @@ namespace UnityEngine.Rendering.Universal
                 m_TileDepthRangeExtraPass = new TileDepthRangePass(RenderPassEvent.BeforeRenderingOpaques + 4, m_DeferredLights, 1);
                 m_DeferredPass = new DeferredPass(RenderPassEvent.BeforeRenderingOpaques + 5, m_DeferredLights);
             }
+            */
+
 
 
             // Always create this pass even in deferred because we use it for
@@ -241,7 +246,7 @@ namespace UnityEngine.Rendering.Universal
             // 始终创建此 render pass, 就算在 延迟渲染模式 也创建此 render pass, 
             // 因为:(1) editor 中的线框模式, (2) 绘制到 depth render texture 的 camera, 都要用到它;
             m_RenderOpaqueForwardPass = new DrawObjectsPass(
-                URPProfileId.DrawOpaqueObjects,         // 分析代码块 name
+                URPProfileId.DrawOpaqueObjects,         // 分析代码块的 name
                 // ----------                           // 参数2被省略, 使用一组预定义 ShaderTagIds
                 true,                                   // 本 render pass 渲染的是 不透明物体
                 RenderPassEvent.BeforeRenderingOpaques, // 设置 render pass 执行时间: 在渲染 prepasses 之后, 在渲染不透明物体之前
@@ -257,16 +262,35 @@ namespace UnityEngine.Rendering.Universal
             );
             
             m_DrawSkyboxPass = new DrawSkyboxPass(RenderPassEvent.BeforeRenderingSkybox);
-            m_CopyColorPass = new CopyColorPass(RenderPassEvent.AfterRenderingSkybox, m_SamplingMaterial, m_BlitMaterial);
+            m_CopyColorPass = new CopyColorPass(
+                RenderPassEvent.AfterRenderingSkybox, // skybox 之后, 就意味着 所有 不透明物体都渲染完毕了
+                m_SamplingMaterial, // samplingMaterial
+                m_BlitMaterial      // copyColorMaterial
+            );
+
 
 // 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
             if (!UniversalRenderPipeline.asset.useAdaptivePerformance || AdaptivePerformance.AdaptivePerformanceRenderSettings.SkipTransparentObjects == false)
 #endif
             {
-                m_TransparentSettingsPass = new TransparentSettingsPass(RenderPassEvent.BeforeRenderingTransparents, data.shadowTransparentReceive);
-                m_RenderTransparentForwardPass = new DrawObjectsPass(URPProfileId.DrawTransparentObjects, false, RenderPassEvent.BeforeRenderingTransparents, RenderQueueRange.transparent, data.transparentLayerMask, m_DefaultStencilState, stencilData.stencilReference);
+                m_TransparentSettingsPass = new TransparentSettingsPass(
+                    RenderPassEvent.BeforeRenderingTransparents, 
+                    data.shadowTransparentReceive
+                );
+                
+                m_RenderTransparentForwardPass = new DrawObjectsPass(
+                    URPProfileId.DrawTransparentObjects,        // 分析代码块的 name
+                    // ----------                               // 参数2被省略, 使用一组预定义 ShaderTagIds
+                    false,                                      // 本 render pass 渲染的是 半透明物体
+                    RenderPassEvent.BeforeRenderingTransparents,// 设置 render pass 执行时间: 在渲染 Transparents 之前,
+                    RenderQueueRange.transparent,               // renderQueue 值位于此区间内的物体, 可被渲染, 比如 [2000,2500]
+                    data.transparentLayerMask,                  // Forward Renderer inspector 中设置
+                    m_DefaultStencilState,                      // 替换 render state 中的 stencil 部分
+                    stencilData.stencilReference                // stencil ref 值
+                );
             }
+
             m_OnRenderObjectCallbackPass = new InvokeOnRenderObjectCallbackPass(RenderPassEvent.BeforeRenderingPostProcessing);
 
             m_PostProcessPasses = new PostProcessPasses(data.postProcessData, m_BlitMaterial);
@@ -284,6 +308,8 @@ namespace UnityEngine.Rendering.Universal
             m_CameraDepthAttachment.Init("_CameraDepthAttachment");
             m_DepthTexture.Init("_CameraDepthTexture");
             m_NormalsTexture.Init("_CameraNormalsTexture");
+
+            /* 暂时先忽略, 反正 11.0 中也不支持 延迟渲染          tpr
             if (this.renderingMode == RenderingMode.Deferred)
             {
                 m_GBufferHandles = new RenderTargetHandle[(int)DeferredLights.GBufferHandles.Count];
@@ -294,6 +320,9 @@ namespace UnityEngine.Rendering.Universal
                 m_GBufferHandles[(int)DeferredLights.GBufferHandles.Lighting] = new RenderTargetHandle();
                 m_GBufferHandles[(int)DeferredLights.GBufferHandles.ShadowMask].Init("_GBuffer4");
             }
+            */
+
+
             m_OpaqueColor.Init("_CameraOpaqueTexture");
             m_DepthInfoTexture.Init("_DepthInfoTexture");
             m_TileDepthInfoTexture.Init("_TileDepthInfoTexture");
@@ -303,6 +332,7 @@ namespace UnityEngine.Rendering.Universal
                 cameraStacking = true,
             };
 
+            /* 暂时先忽略, 反正 11.0 中也不支持 延迟渲染          tpr
             if (this.renderingMode == RenderingMode.Deferred)
             {
                 // Deferred rendering does not support MSAA.
@@ -316,6 +346,8 @@ namespace UnityEngine.Rendering.Universal
                     GraphicsDeviceType.OpenGLES3
                 };
             }
+            */
+
         }// 函数完__
 
 
@@ -426,6 +458,8 @@ namespace UnityEngine.Rendering.Universal
             bool mainLightShadows = m_MainLightShadowCasterPass.Setup(ref renderingData);
             
             bool additionalLightShadows = m_AdditionalLightsShadowCasterPass.Setup(ref renderingData);
+
+            // 如果 半透明物体 "不能接受 shadow", 此值为 true;
             bool transparentsNeedSettingsPass = m_TransparentSettingsPass.Setup(ref renderingData);
 
             /*
@@ -532,7 +566,12 @@ namespace UnityEngine.Rendering.Universal
                 ConfigureCameraTarget(activeColorRenderTargetId, activeDepthRenderTargetId);
             }
 
-            bool hasPassesAfterPostProcessing = activeRenderPassQueue.Find(x => x.renderPassEvent == RenderPassEvent.AfterRendering) != null;
+
+            // activeRenderPassQueue 中, 存在 "晚于 PostProcessing" 的 render pass;
+            bool hasPassesAfterPostProcessing = 
+                // Find(...): 根据谓词去查找所有元素, 返回第一个符合条件的元素, 若没找到, 返回类型 T 的默认值;
+                activeRenderPassQueue.Find(x => x.renderPassEvent==RenderPassEvent.AfterRendering) != null;
+
 
             if (mainLightShadows)
                 EnqueuePass(m_MainLightShadowCasterPass);
@@ -573,8 +612,11 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
 
-            if (this.actualRenderingMode == RenderingMode.Deferred)
+            if (this.actualRenderingMode == RenderingMode.Deferred){
+                /*  暂时先忽略,  反正 11.0 也不支持 延迟渲染    tpr
                 EnqueueDeferred(ref renderingData, requiresDepthPrepass, mainLightShadows, additionalLightShadows);
+                */
+            }
             else
                 EnqueuePass(m_RenderOpaqueForwardPass);
 
@@ -616,23 +658,41 @@ namespace UnityEngine.Rendering.Universal
 #endif
 
             {
+                // 只有当 半透明物体 "不能接受 shadow" 时, 此 render pass 才会被渲染;
                 if (transparentsNeedSettingsPass)
                 {
                     EnqueuePass(m_TransparentSettingsPass);
                 }
+
 
                 EnqueuePass(m_RenderTransparentForwardPass);
             }
             EnqueuePass(m_OnRenderObjectCallbackPass);
 
             bool lastCameraInTheStack = cameraData.resolveFinalTarget;
-            bool hasCaptureActions = renderingData.cameraData.captureActions != null && lastCameraInTheStack;
-            bool applyFinalPostProcessing = anyPostProcessing && lastCameraInTheStack &&
-                renderingData.cameraData.antialiasing == AntialiasingMode.FastApproximateAntialiasing;
 
-            // When post-processing is enabled we can use the stack to resolve rendering to camera target (screen or RT).
-            // However when there are render passes executing after post we avoid resolving to screen so rendering continues (before sRGBConvertion etc)
-            bool resolvePostProcessingToCameraTarget = !hasCaptureActions && !hasPassesAfterPostProcessing && !applyFinalPostProcessing;
+            // 存在 actions 且是 stack 中最后一个 camera;
+            bool hasCaptureActions = renderingData.cameraData.captureActions != null && lastCameraInTheStack;
+
+
+            bool applyFinalPostProcessing = 
+                anyPostProcessing && 
+                lastCameraInTheStack &&
+                renderingData.cameraData.antialiasing == AntialiasingMode.FastApproximateAntialiasing;// FXAA 自己就是个 PostProcessing
+
+            /*
+                When post-processing is enabled we can use the stack to resolve rendering to camera target (screen or RT).
+                However when there are render passes executing after post we avoid resolving to screen so rendering continues 
+                (before sRGBConvertion etc)
+                ---
+                (前略), 如果在 post-processing 之后还存在 render passes, 那么就不允许 post-processing 将自己的结果渲染进 screen,
+                必须渲染进 render texture, 以供后续 render pass 继续渲染;
+            */
+            bool resolvePostProcessingToCameraTarget = 
+                !hasCaptureActions &&               //  
+                !hasPassesAfterPostProcessing &&    //  
+                !applyFinalPostProcessing;          //  
+
 
             if (lastCameraInTheStack)
             {
@@ -643,7 +703,16 @@ namespace UnityEngine.Rendering.Universal
 
                     // if resolving to screen we need to be able to perform sRGBConvertion in post-processing if necessary
                     bool doSRGBConvertion = resolvePostProcessingToCameraTarget;
-                    postProcessPass.Setup(cameraTargetDescriptor, m_ActiveCameraColorAttachment, destination, m_ActiveCameraDepthAttachment, colorGradingLut, applyFinalPostProcessing, doSRGBConvertion);
+
+                    postProcessPass.Setup(
+                        cameraTargetDescriptor, 
+                        m_ActiveCameraColorAttachment, 
+                        destination, 
+                        m_ActiveCameraDepthAttachment, 
+                        colorGradingLut, 
+                        applyFinalPostProcessing, 
+                        doSRGBConvertion
+                    );
                     EnqueuePass(postProcessPass);
                 }
 
@@ -720,9 +789,12 @@ namespace UnityEngine.Rendering.Universal
         {
             m_ForwardLights.Setup(context, ref renderingData);
 
+            /*  暂时先忽略,  反正 11.0 也不支持 延迟渲染    tpr
             // Perform per-tile light culling on CPU
             if (this.actualRenderingMode == RenderingMode.Deferred)
                 m_DeferredLights.SetupLights(context, ref renderingData);
+            */
+
         }// 函数完__
 
 
@@ -758,9 +830,12 @@ namespace UnityEngine.Rendering.Universal
             }
 
 
-            if (this.actualRenderingMode == RenderingMode.Deferred)
+            if (this.actualRenderingMode == RenderingMode.Deferred){
+                /*  暂时先忽略,  反正 11.0 也不支持 延迟渲染    tpr
                 // 延迟渲染理论上支持: 每个物体 无数盏光
                 cullingParameters.maximumVisibleLights = 0xFFFF;// 65535
+                */
+            }
             else
             {
                 // We set the number of maximum visible lights allowed and we add one for the mainlight...
@@ -798,6 +873,7 @@ namespace UnityEngine.Rendering.Universal
         }// 函数完__
 
 
+        /* 暂时先忽略, 反正 11.0 中也不支持 延迟渲染       tpr
         void EnqueueDeferred(ref RenderingData renderingData, bool hasDepthPrepass, bool applyMainShadow, bool applyAdditionalShadow)
         {
             // the last slice is the lighting buffer created in DeferredRenderer.cs
@@ -845,6 +921,7 @@ namespace UnityEngine.Rendering.Universal
 
             EnqueuePass(m_DeferredPass);
         }// 函数完__
+        */
 
 
         /*
@@ -956,6 +1033,7 @@ namespace UnityEngine.Rendering.Universal
             if (cameraData.renderType == CameraRenderType.Base && !cameraData.resolveFinalTarget)
                 return true;
 
+            /*  暂时先忽略,  反正 11.0 也不支持 延迟渲染       tpr
             // Always force rendering into intermediate color texture if deferred rendering mode is selected.
             // Reason: without intermediate color texture, the target camera texture is y-flipped.
             // However, the target camera texture is bound during gbuffer pass and deferred pass.
@@ -964,6 +1042,8 @@ namespace UnityEngine.Rendering.Universal
             // This incurs an extra blit into at the end of rendering.
             if (this.actualRenderingMode == RenderingMode.Deferred)
                 return true;
+            */
+
 
             bool isSceneViewCamera = cameraData.isSceneViewCamera;
             var cameraTargetDescriptor = cameraData.cameraTargetDescriptor;
@@ -988,6 +1068,7 @@ namespace UnityEngine.Rendering.Universal
             return requiresBlitForOffscreenCamera || isSceneViewCamera || isScaledRender || cameraData.isHdrEnabled ||
                 !isCompatibleBackbufferTextureDimension || isCapturing || cameraData.requireSrgbConversion;
         }// 函数完__
+
 
 
 

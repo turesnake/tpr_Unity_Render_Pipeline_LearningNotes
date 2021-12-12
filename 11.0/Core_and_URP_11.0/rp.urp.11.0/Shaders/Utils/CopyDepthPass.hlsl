@@ -16,6 +16,7 @@
 
 struct Attributes
 {
+// xr 才启用
 #if _USE_DRAW_PROCEDURAL
     /*   tpr
     uint vertexID     : SV_VertexID;
@@ -37,7 +38,7 @@ struct Varyings
 
 // ========================================== Vertex Shader ============================================= //
 
-Varyings vert(Attributes input)
+Varyings vert(Attributes input)//  读完__
 {
     Varyings output;
     UNITY_SETUP_INSTANCE_ID(input);
@@ -67,8 +68,7 @@ Varyings vert(Attributes input)
         现在所有 shader 都是用 "_ProjectionParams.x" 来处理 y-flip 问题;
         (但是通过下方代码可知, 本pass 似乎没有直接用这个 参数)
 
-
-        在 "非 opengl 平台", 同时需要渲染到一个 render texture 时, unity 会翻转 projection矩阵;
+        当: (1)在 "非 opengl 平台", (2)同时需要渲染到一个 render texture 时, unity 会翻转 projection矩阵;
         如果 urp 正在渲染进 rt:
         -- src 的 depth 是倒置的; 
             我们需要使用一个 "带有翻转矩阵 的 shader" 来 复制 depth 数据, 
@@ -84,6 +84,7 @@ Varyings vert(Attributes input)
         -- Source Depth 不会被翻转, 我们不能在 copy depth 时翻转, 采样时也不能翻转, 此时 _ProjectionParams.x 为 1;
     */
 
+// xr 才启用
 #if _USE_DRAW_PROCEDURAL
     /*   tpr
     output.positionCS = GetQuadVertexPosition(input.vertexID);
@@ -97,7 +98,7 @@ Varyings vert(Attributes input)
 
     output.positionCS.y *= _ScaleBiasRt.x;
     return output;
-}
+}// 函数完__
 
 
 
@@ -117,6 +118,8 @@ Varyings vert(Attributes input)
 #endif
 
 
+
+
 #if MSAA_SAMPLES == 1
     DEPTH_TEXTURE(_CameraDepthAttachment);
     SAMPLER(sampler_CameraDepthAttachment);
@@ -131,6 +134,7 @@ Varyings vert(Attributes input)
 #endif
 
 
+
 #if UNITY_REVERSED_Z
     #define DEPTH_DEFAULT_VALUE 1.0
     #define DEPTH_OP min
@@ -140,16 +144,22 @@ Varyings vert(Attributes input)
 #endif
 
 
+// "_CameraDepthAttachment" 是 src 
+// "_CameraDepthTexture" 是 dest
 
-float SampleDepth(float2 uv)
+float SampleDepth(float2 uv)//   读完__
 {
 #if MSAA_SAMPLES == 1
     // 简单地把 src 数据 复制到 dest 中去;
     return SAMPLE(uv);
 #else
-    // multi-sample
-    // 此时不仅执行 depth copy 工作, 还执行了 msaa 滤波
-    // 但是, 对 depth 数据做滤波 是被允许的吗 ??? 
+    /*
+        multi-sample
+        此时不仅执行 depth copy 工作, 还执行了 msaa 滤波
+        但是, 对 depth 数据做滤波 是被允许的吗 ??? 
+            往下看就会发现, 其实并没有做 "多次采样取平均", 而是 "多次采样取最远值";
+            这个操作在 depth 数据上 还是能接受的;
+    */
     int2 coord = int2(uv * _CameraDepthAttachment_TexelSize.zw);// posSS pix为单位
     float outDepth = DEPTH_DEFAULT_VALUE;
 
@@ -161,7 +171,7 @@ float SampleDepth(float2 uv)
         outDepth = DEPTH_OP(LOAD(coord, i), outDepth);
     return outDepth;
 #endif
-}
+}// 函数完__
 
 
 // ========================================== Fragment Shader ============================================= //

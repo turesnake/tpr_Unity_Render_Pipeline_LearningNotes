@@ -3,7 +3,7 @@
 
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-/*   tpr
+/*      tpr
 #if _USE_DRAW_PROCEDURAL
     void GetProceduralQuad(in uint vertexID, out float4 positionCS, out float2 uv)
     {
@@ -16,6 +16,7 @@
 
 struct Attributes
 {
+// xr 才启用
 #if _USE_DRAW_PROCEDURAL
     /*   tpr
     uint vertexID     : SV_VertexID;
@@ -40,6 +41,7 @@ Varyings FullscreenVert(Attributes input)
     UNITY_SETUP_INSTANCE_ID(input);
     /*UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);   tpr */
 
+// xr 才启用
 #if _USE_DRAW_PROCEDURAL
     /*   tpr
     output.positionCS = GetQuadVertexPosition(input.vertexID);

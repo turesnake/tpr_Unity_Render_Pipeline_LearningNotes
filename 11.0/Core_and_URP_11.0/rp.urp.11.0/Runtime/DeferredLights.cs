@@ -106,7 +106,9 @@ namespace UnityEngine.Rendering.Universal.Internal
         SubtractiveMixedLighting = 4
     }
 
-    // Manages tiled-based deferred lights.
+    /*
+        Manages tiled-based deferred lights.
+    */
     internal class DeferredLights//DeferredLights__RR
     {
         internal static class ShaderConstants

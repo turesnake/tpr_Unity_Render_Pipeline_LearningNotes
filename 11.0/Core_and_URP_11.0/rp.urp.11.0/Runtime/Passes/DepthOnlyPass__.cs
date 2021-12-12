@@ -27,7 +27,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         // 构造函数
         public DepthOnlyPass( //  读完__
-                            RenderPassEvent evt, 
+                            RenderPassEvent evt,  // 设置 render pass 何时执行
                             RenderQueueRange renderQueueRange, // renderQueue 区间值, 比如 [0,2000]
                             LayerMask layerMask
         ){

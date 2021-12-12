@@ -2,13 +2,12 @@ using System;
 
 namespace UnityEngine.Rendering.Universal.Internal
 {
-    /// <summary>
-    /// Copy the given color buffer to the given destination color buffer.
-    ///
-    /// You can use this pass to copy a color buffer to the destination,
-    /// so you can use it later in rendering. For example, you can copy
-    /// the opaque texture to use it for distortion effects.
-    /// </summary>
+    /*
+        Copy the given color buffer to the given dest color buffer.
+
+        You can use this pass to copy a color buffer to the dest, so you can use it later in rendering.
+        For example, you can copy the opaque texture to use it for distortion effects(扭曲效果);
+    */
     public class CopyColorPass //CopyColorPass__RR
         : ScriptableRenderPass
     {
@@ -20,11 +19,13 @@ namespace UnityEngine.Rendering.Universal.Internal
         private RenderTargetIdentifier source { get; set; }
         private RenderTargetHandle destination { get; set; }
 
-        /// <summary>
-        /// Create the CopyColorPass
-        /// </summary>
-        public CopyColorPass(RenderPassEvent evt, Material samplingMaterial, Material copyColorMaterial = null)
-        {
+
+        // 构造函数
+        public CopyColorPass(
+                        RenderPassEvent evt,  // 设置 render pass 何时执行
+                        Material samplingMaterial, 
+                        Material copyColorMaterial = null
+        ){
             base.profilingSampler = new ProfilingSampler(nameof(CopyColorPass));
 
             m_SamplingMaterial = samplingMaterial;
@@ -34,13 +35,17 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_DownsamplingMethod = Downsampling.None;
         }
 
+
         /// <summary>
         /// Configure the pass with the source and destination to execute on.
         /// </summary>
         /// <param name="source">Source Render Target</param>
         /// <param name="destination">Destination Render Target</param>
-        public void Setup(RenderTargetIdentifier source, RenderTargetHandle destination, Downsampling downsampling)
-        {
+        public void Setup(
+                        RenderTargetIdentifier source, 
+                        RenderTargetHandle destination, 
+                        Downsampling downsampling
+        ){
             this.source = source;
             this.destination = destination;
             m_DownsamplingMethod = downsampling;
@@ -64,6 +69,8 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             cmd.GetTemporaryRT(destination.id, descriptor, m_DownsamplingMethod == Downsampling.None ? FilterMode.Point : FilterMode.Bilinear);
         }
+
+
 
         /// <inheritdoc/>
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
@@ -104,6 +111,8 @@ namespace UnityEngine.Rendering.Universal.Internal
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
         }
+
+
 
         /// <inheritdoc/>
         public override void OnCameraCleanup(CommandBuffer cmd)

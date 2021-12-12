@@ -68,9 +68,15 @@ namespace UnityEngine.Rendering.Universal.Internal
         // If yes, Film Grain and Dithering are setup in the final pass, otherwise they are setup in this pass.
         bool m_HasFinalPass;
 
-        // Some Android devices do not support sRGB backbuffer
-        // We need to do the conversion manually on those
+
+        /*
+            Some Android devices do not support sRGB backbuffer
+            We need to do the conversion manually on those
+            ---
+            上面这句的描述很含糊... 
+        */
         bool m_EnableSRGBConversionIfNeeded;
+
 
         // Option to use procedural draw instead of cmd.blit
         bool m_UseDrawProcedural; // xr
@@ -132,8 +138,17 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         public void Cleanup() => m_Materials.Cleanup();
 
-        public void Setup(in RenderTextureDescriptor baseDescriptor, in RenderTargetHandle source, in RenderTargetHandle destination, in RenderTargetHandle depth, in RenderTargetHandle internalLut, bool hasFinalPass, bool enableSRGBConversion)
-        {
+
+
+        public void Setup(
+                    in RenderTextureDescriptor baseDescriptor, 
+                    in RenderTargetHandle source, 
+                    in RenderTargetHandle destination, 
+                    in RenderTargetHandle depth, 
+                    in RenderTargetHandle internalLut, 
+                    bool hasFinalPass, 
+                    bool enableSRGBConversion
+        ){
             m_Descriptor = baseDescriptor;
             m_Descriptor.useMipMap = false;
             m_Descriptor.autoGenerateMips = false;
@@ -145,6 +160,8 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_HasFinalPass = hasFinalPass;
             m_EnableSRGBConversionIfNeeded = enableSRGBConversion;
         }
+
+
 
         public void SetupFinalPass(in RenderTargetHandle source)
         {
@@ -261,10 +278,15 @@ namespace UnityEngine.Rendering.Universal.Internal
             return desc;
         }
 
+        // 如果启用了 linear 工作流, 且 backbuffer 不支持 "自动执行 linear->sRGB 转换",
+        // 那么当把 backbuffer 定位一次 Blit() 的目的地时, 
+        // 需要启用此 keyword, 并在 shader 中手动执行 "linear->sRGB" 转换;
         bool RequireSRGBConversionBlitToBackBuffer(CameraData cameraData)
         {
             return cameraData.requireSrgbConversion && m_EnableSRGBConversionIfNeeded;
         }
+
+
 
         private new void Blit(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier destination, Material material, int passIndex = 0)
         {
@@ -432,8 +454,9 @@ namespace UnityEngine.Rendering.Universal.Internal
                 SetupGrain(cameraData, m_Materials.uber);
                 SetupDithering(cameraData, m_Materials.uber);
 
+
                 if (RequireSRGBConversionBlitToBackBuffer(cameraData))
-                    m_Materials.uber.EnableKeyword(ShaderKeywordStrings.LinearToSRGBConversion);
+                    m_Materials.uber.EnableKeyword(ShaderKeywordStrings.LinearToSRGBConversion);//"_LINEAR_TO_SRGB_CONVERSION"
 
                 if (m_UseFastSRGBLinearConversion)
                 {
@@ -1224,8 +1247,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             SetupGrain(cameraData, material);
             SetupDithering(cameraData, material);
 
+
             if (RequireSRGBConversionBlitToBackBuffer(cameraData))
-                material.EnableKeyword(ShaderKeywordStrings.LinearToSRGBConversion);
+                material.EnableKeyword(ShaderKeywordStrings.LinearToSRGBConversion);//"_LINEAR_TO_SRGB_CONVERSION"
 
             cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, m_Source.Identifier());
 

@@ -766,7 +766,7 @@ namespace UnityEngine.Rendering.Universal
 
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
-        }
+        }//  函数完__
 
         
         /*
@@ -798,7 +798,7 @@ namespace UnityEngine.Rendering.Universal
             // Implementation details:
             // Camera clear flags are used to initialize the attachments on the first render pass.
             // ClearFlag is used together with Tile Load action to figure out how to clear the camera render target.
-            // In Tile Based GPUs ClearFlag.Depth + RenderBufferLoadAction.DontCare becomes DontCare load action.
+            // In Tiled-Based GPUs ClearFlag.Depth + RenderBufferLoadAction.DontCare becomes DontCare load action.
             // While ClearFlag.All + RenderBufferLoadAction.DontCare become Clear load action.
             // In mobile we force ClearFlag.All as DontCare doesn't have noticeable perf. difference from Clear
             // and this avoid tile clearing issue when not rendering all pixels in some GPUs.
@@ -822,7 +822,7 @@ namespace UnityEngine.Rendering.Universal
                 return ClearFlag.Depth;
 
             return ClearFlag.All;
-        }
+        }//  函数完__
 
 
         /*
@@ -852,7 +852,7 @@ namespace UnityEngine.Rendering.Universal
                 if (activeRenderPassQueue[i] == null)
                     activeRenderPassQueue.RemoveAt(i);
             }
-        }
+        }//  函数完__
 
 
 
@@ -871,8 +871,8 @@ namespace UnityEngine.Rendering.Universal
             cmd.DisableShaderKeyword(ShaderKeywordStrings.MixedLightingSubtractive); //"_MIXED_LIGHTING_SUBTRACTIVE" // Backward compatibility
             cmd.DisableShaderKeyword(ShaderKeywordStrings.LightmapShadowMixing);//"LIGHTMAP_SHADOW_MIXING"
             cmd.DisableShaderKeyword(ShaderKeywordStrings.ShadowsShadowMask);//"SHADOWS_SHADOWMASK"
-            cmd.DisableShaderKeyword(ShaderKeywordStrings.LinearToSRGBConversion);
-        }
+            cmd.DisableShaderKeyword(ShaderKeywordStrings.LinearToSRGBConversion);//"_LINEAR_TO_SRGB_CONVERSION"
+        }//  函数完__
 
 
         /*
@@ -894,7 +894,7 @@ namespace UnityEngine.Rendering.Universal
 
             m_CameraColorTarget = BuiltinRenderTextureType.CameraTarget;
             m_CameraDepthTarget = BuiltinRenderTextureType.CameraTarget;
-        }
+        }//  函数完__
 
 
         /*
@@ -919,6 +919,7 @@ namespace UnityEngine.Rendering.Universal
                 context.Submit();
         }
 
+
         void ExecuteRenderPass(ScriptableRenderContext context, ScriptableRenderPass renderPass, ref RenderingData renderingData)
         {
             using var profScope = new ProfilingScope(null, renderPass.profilingSampler);
@@ -939,7 +940,9 @@ namespace UnityEngine.Rendering.Universal
             CommandBufferPool.Release(cmd);
 
             renderPass.Execute(context, ref renderingData);
-        }
+        }//  函数完__
+
+
 
         void SetRenderPassAttachments(CommandBuffer cmd, ScriptableRenderPass renderPass, ref CameraData cameraData)
         {
@@ -1131,7 +1134,9 @@ namespace UnityEngine.Rendering.Universal
 */
                 }
             }
-        }
+        }//  函数完__
+
+
 
         void BeginXRRendering(CommandBuffer cmd, ScriptableRenderContext context, ref CameraData cameraData)
         {
@@ -1146,10 +1151,11 @@ namespace UnityEngine.Rendering.Universal
             }
 #endif
 */
-        }
+        }//  函数完__
+
 
         void EndXRRendering(CommandBuffer cmd, ScriptableRenderContext context, ref CameraData cameraData)
-        {
+        {//  函数完__
 /*  tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.enabled)
@@ -1161,10 +1167,11 @@ namespace UnityEngine.Rendering.Universal
             }
 #endif
 */
-        }
+        }//  函数完__
+
 
         internal static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier colorAttachment, RenderTargetIdentifier depthAttachment, ClearFlag clearFlag, Color clearColor)
-        {
+        {//  函数完__
             m_ActiveColorAttachments[0] = colorAttachment;
             for (int i = 1; i < m_ActiveColorAttachments.Length; ++i)
                 m_ActiveColorAttachments[i] = 0;
@@ -1179,7 +1186,7 @@ namespace UnityEngine.Rendering.Universal
 
             SetRenderTarget(cmd, colorAttachment, colorLoadAction, RenderBufferStoreAction.Store,
                 depthAttachment, depthLoadAction, RenderBufferStoreAction.Store, clearFlag, clearColor);
-        }
+        }//  函数完__
 
 
         static void SetRenderTarget(
@@ -1279,7 +1286,8 @@ namespace UnityEngine.Rendering.Universal
 
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
-        }
+        }//  函数完__
+
 
         internal static void SortStable(List<ScriptableRenderPass> list)
         {
@@ -1294,7 +1302,8 @@ namespace UnityEngine.Rendering.Universal
 
                 list[j + 1] = curr;
             }
-        }
+        }//  函数完__
+
 
         internal struct RenderBlocks : IDisposable
         {
@@ -1381,6 +1390,6 @@ namespace UnityEngine.Rendering.Universal
             {
                 return new BlockRange(m_BlockRanges[index], m_BlockRanges[index + 1]);
             }
-        }
+        }//  函数完__
     }
 }

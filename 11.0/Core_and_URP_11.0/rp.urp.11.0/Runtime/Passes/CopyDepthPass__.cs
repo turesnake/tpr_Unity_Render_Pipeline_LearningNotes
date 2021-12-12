@@ -10,23 +10,21 @@ namespace UnityEngine.Rendering.Universal.Internal
         -- 如果 src texture 启用了 MSAA, the pass uses a custom MSAA resolve;
         -- 如果没启用 MSAA, the pass uses a Blit or a Copy Texture operation, (当前平台支持哪个操作, 就用哪个)
     */ 
-    public class CopyDepthPass //CopyDepthPass__RR
+    public class CopyDepthPass //CopyDepthPass__
         : ScriptableRenderPass
     {
         private RenderTargetHandle source { get; set; }
         private RenderTargetHandle destination { get; set; }
 
-        // 猜测: 是否需要本类代码来 分配 render texture
-        internal bool AllocateRT  { get; set; }
+        internal bool AllocateRT  { get; set; }// 猜测: 是否由本类来分配 dest 的 render texture
         Material m_CopyDepthMaterial;
 
-        /*
-            构造函数
-        */
-        /// <param name="evt"> enum, 控制 render pass 何时执行 </param>
-        /// <param name="copyDepthMaterial"></param>
-        public CopyDepthPass(RenderPassEvent evt, Material copyDepthMaterial)
-        {
+
+        // 构造函数
+        public CopyDepthPass(//   读完__
+                        RenderPassEvent evt,  // 设置 render pass 何时执行
+                        Material copyDepthMaterial // 比如: "Shaders/Utils/CopyDepth.shader"
+        ){
             base.profilingSampler = new ProfilingSampler(nameof(CopyDepthPass));
             AllocateRT = true;
             m_CopyDepthMaterial = copyDepthMaterial;
@@ -37,14 +35,13 @@ namespace UnityEngine.Rendering.Universal.Internal
         /*
             Configure the pass with the source and destination to execute on.
         */
-        /// <param name="source">Source Render Target</param>
-        /// <param name="destination">Destination Render Targt</param>
-        public void Setup(RenderTargetHandle source, RenderTargetHandle destination)
-        {
+        public void Setup(//  读完__
+                        RenderTargetHandle source,  
+                        RenderTargetHandle destination
+        ){
             this.source = source;
             this.destination = destination;
-            // dest 只有 nameId, 没有 rtid 时,
-            // 也许这意味着 dest 尚未分配 render texture, 需要本类来分配一个
+            // 当 dest 只有 nameId, 没有 rtid 时, 也许这意味着 dest 尚未分配 render texture, 需要本类来分配一个
             this.AllocateRT = AllocateRT && !destination.HasInternalRenderTargetId();
         }
 
@@ -64,11 +61,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             而要改用 "ScriptableRenderPass" 内的 "ConfigureTarget()", "ConfigureClear()" 函数;
             管线能保证高效地 "setup target" 和 "clear target";
         */
-        /// <param name="cmd">CommandBuffer to enqueue rendering commands. This will be executed by the pipeline;
-        ///                     将需要的 渲染指令 安排进 render queue; 
-        /// </param>
-        /// <param name="renderingData">Current rendering state information</param>
-        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)// 读完__
         {
             // 此 struct 包含用来创建 RenderTexture 所需的一切信息。
             RenderTextureDescriptor descriptor = renderingData.cameraData.cameraTargetDescriptor;
@@ -78,15 +71,14 @@ namespace UnityEngine.Rendering.Universal.Internal
             descriptor.msaaSamples = 1;
             if (this.AllocateRT)
                 cmd.GetTemporaryRT(
-                    destination.id, // 上方代码已明确得知, dest 只有 nameId 可用, 此处可安全地直接访问
+                    destination.id, // 上方代码已明确得知, dest 只有 nameId 可用, 此处可安全地直接访问 nameId
                     descriptor, 
                     FilterMode.Point
                 );
 
             // On Metal iOS, prevent camera attachments to be bound and cleared during this pass.
-            //  防止在此 pass 中 "绑定和清除相机附件"
-            // 这两函数用来取代 "CommandBuffer.SetRenderTarget()" 等
-            // set render target
+            //  防止在此 pass 中 "绑定和清除 camera 的 attachments";
+            // 本函数功能类似于: "cmd.SetRenderTarget()"
             ConfigureTarget(
                 new RenderTargetIdentifier(
                     destination.Identifier(),// renderTargetIdentifier
@@ -109,9 +101,6 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             不需要在本函数实现体内 调用 "ScriptableRenderContext.submit()", 渲染管线会在何时的时间点自动调用它;
         */
-        /// <param name="context">Use this render context to issue(发射) any draw commands during execution</param>
-        /// <param name="renderingData">Current rendering state information</param>
-        /// <inheritdoc/>
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
             if (m_CopyDepthMaterial == null)
@@ -123,6 +112,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             CommandBuffer cmd = CommandBufferPool.Get();// 这个 cmd 不创建 profiling markers
             using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.CopyDepth)))
             {
+                // 此 struct 包含用来创建 RenderTexture 所需的一切信息。
                 RenderTextureDescriptor descriptor = renderingData.cameraData.cameraTargetDescriptor;
                 int cameraSamples = descriptor.msaaSamples;
 
@@ -203,7 +193,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                     Vector4 scaleBiasRt = (flipSign < 0.0f)
                         ? new Vector4(flipSign, 1.0f, -1.0f, 1.0f)
                         : new Vector4(flipSign, 0.0f, 1.0f, 1.0f);
-                    cmd.SetGlobalVector(ShaderPropertyId.scaleBiasRt, scaleBiasRt);
+                    cmd.SetGlobalVector(ShaderPropertyId.scaleBiasRt, scaleBiasRt);//"_ScaleBiasRt"
 
                     // 执行 Blit 工作, (也许还带有 MSAA 滤波)
                     cmd.DrawMesh(

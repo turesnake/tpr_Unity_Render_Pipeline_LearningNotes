@@ -209,20 +209,30 @@ namespace UnityEngine.Rendering.Universal
         public bool xrRendering;
 #endif
 */
+
+
+        /*
+            如果你选择了 linear 工作流, 同时 backbuffer 并不支持 "自动将 线性颜色转换为 sRGB值" 这个功能,
+            而且你正要把 一组 linear 数据, 从某个 render texture 上 blit 到 backbuffer 上去;
+            那么本变量 就要设置为 true;
+
+            此时,  urp 会启用 keyword: _LINEAR_TO_SRGB_CONVERSION
+                以便在 shader 中手动实现 "linear->sRGB" 转换;
+        */
         internal bool requireSrgbConversion
         {
-            get
-            {
+            get{
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                 if (xr.enabled)
                     return !xr.renderTargetDesc.sRGB && (QualitySettings.activeColorSpace == ColorSpace.Linear);
 #endif
 */
-                // 这个 Display 猜测是个未公开的 class;
                 return Display.main.requiresSrgbBlitToBackbuffer;
             }
         }
+
+
         
         // True if the camera rendering is for the scene window in the editor
         // 仅在 editor 中存在

@@ -1,35 +1,39 @@
 namespace UnityEngine.Rendering.Universal.Internal
 {
-    /// <summary>
-    /// Copy the given color target to the current camera target
-    ///
-    /// You can use this pass to copy the result of rendering to
-    /// the camera target. The pass takes the screen viewport into
-    /// consideration.
-    /// </summary>
+    /*
+        Copy the given color target to the current camera target
+
+        You can use this pass to copy the result of rendering to the camera target.
+        The pass takes the screen viewport into consideration.
+    */
     public class FinalBlitPass //FinalBlitPass__RR
         : ScriptableRenderPass
     {
         RenderTargetHandle m_Source;
         Material m_BlitMaterial;
 
-        public FinalBlitPass(RenderPassEvent evt, Material blitMaterial)
-        {
+        
+        // 构造函数
+        public FinalBlitPass(//   读完__
+                            RenderPassEvent evt,  // 设置 render pass 何时执行
+                            Material blitMaterial // 
+        ){
             base.profilingSampler = new ProfilingSampler(nameof(FinalBlitPass));
 
             m_BlitMaterial = blitMaterial;
-            renderPassEvent = evt;
+            renderPassEvent = evt; // base class 中的;
         }
 
-        /// <summary>
-        /// Configure the pass
-        /// </summary>
-        /// <param name="baseDescriptor"></param>
-        /// <param name="colorHandle"></param>
-        public void Setup(RenderTextureDescriptor baseDescriptor, RenderTargetHandle colorHandle)
-        {
+
+  
+        public void Setup(//   读完__
+                    RenderTextureDescriptor baseDescriptor, 
+                    RenderTargetHandle colorHandle
+        ){
             m_Source = colorHandle;
         }
+
+
 
         /// <inheritdoc/>
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
@@ -40,16 +44,24 @@ namespace UnityEngine.Rendering.Universal.Internal
                 return;
             }
 
-            // Note: We need to get the cameraData.targetTexture as this will get the targetTexture of the camera stack.
-            // Overlay cameras need to output to the target described in the base camera while doing camera stack.
+
+            /*
+                Note: We need to get the cameraData.targetTexture as this will get the targetTexture of the camera stack.
+                Overlay cameras need to output to the target described in the base camera while doing camera stack.
+            */
             ref CameraData cameraData = ref renderingData.cameraData;
-            RenderTargetIdentifier cameraTarget = (cameraData.targetTexture != null) ? new RenderTargetIdentifier(cameraData.targetTexture) : BuiltinRenderTextureType.CameraTarget;
+            RenderTargetIdentifier cameraTarget = (cameraData.targetTexture != null) ? 
+                        new RenderTargetIdentifier(cameraData.targetTexture) : 
+                        BuiltinRenderTextureType.CameraTarget;
 
             bool isSceneViewCamera = cameraData.isSceneViewCamera;
             CommandBuffer cmd = CommandBufferPool.Get();
             using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.FinalBlit)))
             {
-                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.LinearToSRGBConversion,
+                // 如果启用了 linear 工作流, 且 backbuffer 不支持 "自动执行 linear->sRGB 转换",
+                // 那么当把 backbuffer 定位一次 Blit() 的目的地时, 
+                // 需要启用此 keyword, 并在 shader 中手动执行 "linear->sRGB" 转换;
+                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.LinearToSRGBConversion,//"_LINEAR_TO_SRGB_CONVERSION"
                     cameraData.requireSrgbConversion);
 
                 cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, m_Source.Identifier());

@@ -50,6 +50,8 @@ namespace UnityEngine.Rendering.Universal
         _8x = 8
     }
 
+    // 下采样: 多个 texel 放在同一个像素里; 压缩 texture;
+    // enum: None,_2xBilinear,_4xBox,_4xBilinear
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
     public enum Downsampling//Downsampling__
     {
@@ -58,6 +60,7 @@ namespace UnityEngine.Rendering.Universal
         _4xBox,
         _4xBilinear
     }
+
 
     internal enum DefaultMaterialType//DefaultMaterialType__
     {
@@ -158,6 +161,7 @@ namespace UnityEngine.Rendering.Universal
 
         // 若上面 启用了 "Opaque color Texture", 本变量可被使用;
         // 可用本变量来设置 Opaque Texture 的采样模式:
+        // 下采样: 多个 texel 放在同一个像素里; 压缩 texture;
         [SerializeField] Downsampling m_OpaqueDownsampling = Downsampling._2xBilinear;
 
         //若禁用此项, urp 将移除所有 "Terrain hole Shader variants", 以节省 build 时间;
@@ -581,7 +585,7 @@ namespace UnityEngine.Rendering.Universal
         }
 
         
-        //  是否将 camera 的 depth buffer 复制一份到 "_CameraDepth"
+        //  是否将 camera 的 depth buffer 复制一份到 "_CameraDepthTexture"
         public bool supportsCameraDepthTexture
         {
             get { return m_RequireDepthTexture; }
@@ -595,6 +599,7 @@ namespace UnityEngine.Rendering.Universal
             set { m_RequireOpaqueTexture = value; }
         }
 
+        // 下采样: 多个 texel 放在同一个像素里; 压缩 texture;
         public Downsampling opaqueDownsampling
         {
             get { return m_OpaqueDownsampling; }

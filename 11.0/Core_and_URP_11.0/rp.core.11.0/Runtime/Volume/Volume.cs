@@ -8,7 +8,8 @@ namespace UnityEngine.Rendering
     [HelpURL(Documentation.baseURLHDRP + Documentation.version + Documentation.subURL + "Volumes" + Documentation.endURL)]
     [ExecuteAlways]
     [AddComponentMenu("Miscellaneous/Volume")]
-    public class Volume : MonoBehaviour
+    public class Volume //Volume__RR
+        : MonoBehaviour
     {
         /// <summary>
         /// Specifies whether to apply the Volume to the entire Scene or not.

@@ -15,6 +15,7 @@ Shader "Hidden/Universal Render Pipeline/FinalPost"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         #include "Packages/com.unity.render-pipelines.universal/Shaders/PostProcessing/Common.hlsl"
 
+
         TEXTURE2D_X(_SourceTex);
         TEXTURE2D(_Grain_Texture);
         TEXTURE2D(_BlueNoise_Texture);
@@ -36,11 +37,13 @@ Shader "Hidden/Universal Render Pipeline/FinalPost"
         #define FXAA_REDUCE_MUL         (1.0 / 8.0)
         #define FXAA_REDUCE_MIN         (1.0 / 128.0)
 
+
         half3 Fetch(float2 coords, float2 offset)
         {
             float2 uv = coords + offset;
             return SAMPLE_TEXTURE2D_X(_SourceTex, sampler_LinearClamp, uv).xyz;
         }
+
 
         half3 Load(int2 icoords, int idx, int idy)
         {
@@ -51,6 +54,8 @@ Shader "Hidden/Universal Render Pipeline/FinalPost"
             return LOAD_TEXTURE2D_X(_SourceTex, clamp(icoords + int2(idx, idy), 0, _SourceSize.xy - 1.0)).xyz;
             #endif
         }
+
+
 
         half4 Frag(Varyings input) : SV_Target
         {
@@ -134,23 +139,31 @@ Shader "Hidden/Universal Render Pipeline/FinalPost"
             #endif
 
             return half4(color, 1.0);
-        }
+        }// 函数完__
+
 
     ENDHLSL
 
     SubShader
     {
-        Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline"}
+        Tags 
+        { 
+            "RenderType" = "Opaque" 
+            "RenderPipeline" = "UniversalPipeline"
+        }
+
         LOD 100
-        ZTest Always ZWrite Off Cull Off
+        ZTest Always 
+        ZWrite Off 
+        Cull Off
 
         Pass
         {
             Name "FinalPost"
 
             HLSLPROGRAM
-                #pragma vertex FullscreenVert
-                #pragma fragment Frag
+                #pragma vertex      FullscreenVert
+                #pragma fragment    Frag
             ENDHLSL
         }
     }

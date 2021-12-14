@@ -2,63 +2,102 @@ using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.Rendering.Universal.Internal
 {
-    // Note: this pass can't be done at the same time as post-processing as it needs to be done in
-    // advance in case we're doing on-tile color grading.
-    /// <summary>
-    /// Renders a color grading LUT texture.
-    /// </summary>
+    /*
+        Note: this pass can't be done at the same time as post-processing as it needs to be done in advance 
+        in case we're doing on-tile color grading.
+        ---
+        本 render pass 不能和 post-processing 在同一时间执行, 而是要先于 post-processing, 
+        以防我们正在执行 "on-tile color grading"
+
+    */
+
+    // Renders a color grading LUT texture.
     public class ColorGradingLutPass //ColorGradingLutPass__RR
         : ScriptableRenderPass
     {
-        readonly Material m_LutBuilderLdr;
-        readonly Material m_LutBuilderHdr;
-        readonly GraphicsFormat m_HdrLutFormat;
-        readonly GraphicsFormat m_LdrLutFormat;
+        
+        // 此二 materials 都是在 代码中当场新建的; (所有也需要释放之)
+        readonly Material m_LutBuilderLdr;//"Shaders/PostProcessing/LutBuilderLdr.shader"
+        readonly Material m_LutBuilderHdr;//"Shaders/PostProcessing/LutBuilderHdr.shader"
+
+        readonly GraphicsFormat m_HdrLutFormat;//R16G16B16A16_SFloat, 或 B10G11R11_UFloatPack32, 或 R8G8B8A8_UNorm
+        readonly GraphicsFormat m_LdrLutFormat;//R8G8B8A8_UNorm
 
         RenderTargetHandle m_InternalLut;
 
-        public ColorGradingLutPass(RenderPassEvent evt, PostProcessData data)
-        {
-            base.profilingSampler = new ProfilingSampler(nameof(ColorGradingLutPass));
-            renderPassEvent = evt;
-            overrideCameraTarget = true;
 
+        // 构造函数
+        public ColorGradingLutPass(//   读完__
+                            RenderPassEvent evt, // 设置 render pass 何时执行
+                            PostProcessData data
+        ){
+            base.profilingSampler = new ProfilingSampler(nameof(ColorGradingLutPass));
+            renderPassEvent = evt;// base class 中的
+
+            // 此值为 true 意味着: 用户要调用 "ConfigureTarget()" 重新设置了 camera 的 color 和 depth target, 
+            overrideCameraTarget = true;// base class 中的
+
+            // 局部函数
             Material Load(Shader shader)
             {
                 if (shader == null)
                 {
+                    // "DeclaringType" 要访问本 class
                     Debug.LogError($"Missing shader. {GetType().DeclaringType.Name} render pass will not execute. Check for missing reference in the renderer resources.");
                     return null;
                 }
-
                 return CoreUtils.CreateEngineMaterial(shader);
             }
 
-            m_LutBuilderLdr = Load(data.shaders.lutBuilderLdrPS);
-            m_LutBuilderHdr = Load(data.shaders.lutBuilderHdrPS);
+            // 调用 "局部函数"
+            m_LutBuilderLdr = Load(data.shaders.lutBuilderLdrPS);//"Shaders/PostProcessing/LutBuilderLdr.shader"
+            m_LutBuilderHdr = Load(data.shaders.lutBuilderHdrPS);//"Shaders/PostProcessing/LutBuilderHdr.shader"
 
             // Warm up lut format as IsFormatSupported adds GC pressure...
+            /*
+                HDR texture 需要支持的功能:
+                -----
+                FormatUsage: "GraphicsFormat" (如:B8G8R8A8_SRGB) 在本平台上所支持的 "功能":
+                -- Linear: Use this to sample textures with a linear filter
+                -- Render: Use this to create and render to a render texture.
+            */
             const FormatUsage kFlags = FormatUsage.Linear | FormatUsage.Render;
+
             if (SystemInfo.IsFormatSupported(GraphicsFormat.R16G16B16A16_SFloat, kFlags))
                 m_HdrLutFormat = GraphicsFormat.R16G16B16A16_SFloat;
+    
             else if (SystemInfo.IsFormatSupported(GraphicsFormat.B10G11R11_UFloatPack32, kFlags))
                 m_HdrLutFormat = GraphicsFormat.B10G11R11_UFloatPack32;
             else
-                // Obviously using this for log lut encoding is a very bad idea for precision but we
-                // need it for compatibility reasons and avoid black screens on platforms that don't
-                // support floating point formats. Expect banding and posterization artifact if this
-                // ends up being used.
+                /*
+                    Obviously using this for log lut encoding is a very bad idea for precision but we
+                    need it for compatibility reasons and avoid black screens on platforms that don't
+                    support floating point formats. 
+                    Expect banding and posterization artifact if this ends up being used.
+                    ---
+                    若不得不选择此 format, 可能会出现 带状伪影 或 分色伪影;
+                */
                 m_HdrLutFormat = GraphicsFormat.R8G8B8A8_UNorm;
 
             m_LdrLutFormat = GraphicsFormat.R8G8B8A8_UNorm;
-        }
+        }//  函数完__
+
+
 
         public void Setup(in RenderTargetHandle internalLut)
         {
             m_InternalLut = internalLut;
         }
 
-        /// <inheritdoc/>
+
+        /*
+            ------------------------------------------------------------------- +++
+            可在本函数体内编写: 渲染逻辑本身, 也就是 用户希望本 render pass 要做的那些工作;
+            使用参数 context 来发送 绘制指令, 执行 commandbuffers;
+            不需要在本函数实现体内 调用 "ScriptableRenderContext.submit()", 渲染管线会在何时的时间点自动调用它;
+        */
+        /// <param name="context">Use this render context to issue(发射) any draw commands during execution</param>
+        /// <param name="renderingData">Current rendering state information</param>
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
             var cmd = CommandBufferPool.Get();
@@ -82,7 +121,10 @@ namespace UnityEngine.Rendering.Universal.Internal
                 int lutHeight = postProcessingData.lutSize;
                 int lutWidth = lutHeight * lutHeight;
                 var format = hdr ? m_HdrLutFormat : m_LdrLutFormat;
-                var material = hdr ? m_LutBuilderHdr : m_LutBuilderLdr;
+                var material = hdr ? 
+                    m_LutBuilderHdr : //"Shaders/PostProcessing/LutBuilderHdr.shader"
+                    m_LutBuilderLdr;  //"Shaders/PostProcessing/LutBuilderLdr.shader"
+
                 var desc = new RenderTextureDescriptor(lutWidth, lutHeight, format, 0);
                 desc.vrUsage = VRTextureUsage.None; // We only need one for both eyes in VR
                 cmd.GetTemporaryRT(m_InternalLut.id, desc, FilterMode.Bilinear);
@@ -175,19 +217,33 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
-        }
+        }//  函数完__
 
+
+        /*
+            ------------------------------------------------------------------- +++
+            覆写 "ScriptableRenderPass" 的虚函数;
+            ===
+            在完成一个 camera stack 的渲染后, 本函数会被调用;
+            可在本函数实现体内释放由本 render pass 新建的任何资源;
+
+            如果一个 camera 没有显式的 camera stack, 它也被认为是一个 camera stack, 不过这个 stack 内只有它一个 camera;
+        */
         /// <inheritdoc/>
-        public override void OnFinishCameraStackRendering(CommandBuffer cmd)
+        /// <param name="cmd">Use this CommandBuffer to cleanup any generated data</param>
+        public override void OnFinishCameraStackRendering(CommandBuffer cmd)//  读完__
         {
             cmd.ReleaseTemporaryRT(m_InternalLut.id);
         }
 
-        public void Cleanup()
+
+        public void Cleanup()//  读完__
         {
+            // 释放 materials
             CoreUtils.Destroy(m_LutBuilderLdr);
             CoreUtils.Destroy(m_LutBuilderHdr);
         }
+
 
         // Precomputed shader ids to same some CPU cycles (mostly affects mobile)
         static class ShaderConstants

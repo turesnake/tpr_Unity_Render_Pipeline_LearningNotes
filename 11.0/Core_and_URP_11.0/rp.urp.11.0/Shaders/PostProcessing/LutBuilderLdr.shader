@@ -35,11 +35,13 @@ Shader "Hidden/Universal Render Pipeline/LutBuilderLdr"
         TEXTURE2D(_CurveSatVsSat);
         TEXTURE2D(_CurveLumVsSat);
 
+
         half EvaluateCurve(TEXTURE2D(curve), float t)
         {
             half x = SAMPLE_TEXTURE2D(curve, sampler_LinearClamp, float2(t, 0.0)).x;
             return saturate(x);
         }
+
 
         half4 Frag(Varyings input) : SV_Target
         {
@@ -141,9 +143,10 @@ Shader "Hidden/Universal Render Pipeline/LutBuilderLdr"
             }
 
             return half4(saturate(colorLinear), 1.0);
-        }
+        }//  函数完__
 
     ENDHLSL
+
 
     SubShader
     {
@@ -156,8 +159,8 @@ Shader "Hidden/Universal Render Pipeline/LutBuilderLdr"
             Name "LutBuilderLdr"
 
             HLSLPROGRAM
-                #pragma vertex FullscreenVert
-                #pragma fragment Frag
+                #pragma vertex      FullscreenVert
+                #pragma fragment    Frag
             ENDHLSL
         }
     }

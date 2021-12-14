@@ -46,6 +46,9 @@ namespace UnityEngine.Rendering.Universal
         private RenderTargetIdentifier rtid { set; get; }
 
 
+        // 这个 -1 值应该仅仅是个 标识符, 不能拿它当成 Shader.PropertyToID() 创建出来的值 来使用;
+        // 在实际使用时, 一般会调用 Identifier() 来获得正确的 Camera Target 信息;
+        // 而不是粗鲁地直接得到这个 -1;
         public static readonly RenderTargetHandle CameraTarget = new RenderTargetHandle {id = -1 };
 
         /*
@@ -93,7 +96,8 @@ namespace UnityEngine.Rendering.Universal
         {
             if (id == -1)
             {
-                return BuiltinRenderTextureType.CameraTarget;
+                // 仅指: "current camera 的 render target", 但它不一定是: "Currently active render target";
+                return BuiltinRenderTextureType.CameraTarget; // 执行隐式类型转换
             }
             if (id == -2)
             {

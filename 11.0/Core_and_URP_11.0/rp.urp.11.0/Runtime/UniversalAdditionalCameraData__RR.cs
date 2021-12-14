@@ -201,6 +201,7 @@ namespace UnityEngine.Rendering.Universal
         [SerializeField] bool m_ClearDepth = true;
         [SerializeField] bool m_AllowXRRendering = true;
 
+
         [NonSerialized] Camera m_Camera;
         // Deprecated:
         [FormerlySerializedAs("requiresDepthTexture"), SerializeField]
@@ -357,6 +358,10 @@ namespace UnityEngine.Rendering.Universal
 
 
         /*
+            Returns true if this camera needs to render depth information in a texture. 
+            If enabled, depth texture is available to be bound and read from shaders as _CameraDepthTexture after rendering skybox.
+            ---
+            
             如果本 camera 会将 depth 数据写入一个 texture 中, 本变量返回 true;
 
             此时, 可在 渲染完 skybox 之后, 在 shader 中绑定和访问 "_CameraDepthTexture" 来获得这个 depth 数据;
@@ -469,10 +474,8 @@ namespace UnityEngine.Rendering.Universal
             set => m_RenderPostProcessing = value;
         }
 
-        /// <summary>
+       
         /// Returns the current anti-aliasing mode used by this camera.
-        /// <see cref="AntialiasingMode"/>.
-        /// </summary>
         public AntialiasingMode antialiasing
         {
             get => m_Antialiasing;

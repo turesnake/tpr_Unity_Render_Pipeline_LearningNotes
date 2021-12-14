@@ -150,10 +150,13 @@ namespace UnityEngine.Rendering.Universal
 
         public Camera camera; // camera 本体, 
 
-        // enum: Base, Overlay
-        public CameraRenderType renderType; // Base, Overlay
+    
+        public CameraRenderType renderType; // enum: Base, Overlay
 
-        public RenderTexture targetTexture; // = Camera's; [- stack 中所有 camera 的值都相同 -]
+
+        // 等于 baseCamera.targetTexture;
+        // 此值若为 null, 表示目标为 backbuffer;
+        public RenderTexture targetTexture; // [- stack 中所有 camera 的值都相同 -]
 
 
         // 此 struct 包含用来创建 RenderTexture 所需的一切信息。
@@ -196,11 +199,14 @@ namespace UnityEngine.Rendering.Universal
 
         public bool isHdrEnabled;//[- stack 中所有 camera 的值都相同 -]
 
-        // 是否将 camera 的 depth buffer 复制一份到 "_CameraDepth"
-        // 从实现中看到: overlay camera 不支持
+        /*
+            在渲染完 skybox 之后, 是否将 camera 的 depth buffer 复制一份到 "_CameraDepthTexture";
+            从实现中看到: overlay camera 不支持
+        */
         public bool requiresDepthTexture; 
 
-        //  是否将 camera 的 不透明物的 color buffer 复制一份到 "_CameraOpaque"
+
+        //  在渲染完 skybox 之后, 是否将 camera 的不透明物的 color buffer 复制一份到 "_CameraOpaqueTexture"
         //  从实现中看到: overlay camera 不支持
         public bool requiresOpaqueTexture;
 
@@ -214,10 +220,10 @@ namespace UnityEngine.Rendering.Universal
         /*
             如果你选择了 linear 工作流, 同时 backbuffer 并不支持 "自动将 线性颜色转换为 sRGB值" 这个功能,
             而且你正要把 一组 linear 数据, 从某个 render texture 上 blit 到 backbuffer 上去;
-            那么本变量 就要设置为 true;
+            那么本变量 就需要设置为 true;
 
             此时,  urp 会启用 keyword: _LINEAR_TO_SRGB_CONVERSION
-                以便在 shader 中手动实现 "linear->sRGB" 转换;
+                以便提示 shader, 要在代码中 中手动实现 "linear->sRGB" 转换;
         */
         internal bool requireSrgbConversion
         {
@@ -235,6 +241,7 @@ namespace UnityEngine.Rendering.Universal
 
         
         // True if the camera rendering is for the scene window in the editor
+        // 是否为 editor 中 scene窗口 使用的 camera;
         // 仅在 editor 中存在
         public bool isSceneViewCamera => cameraType==CameraType.SceneView;
 
@@ -314,6 +321,7 @@ namespace UnityEngine.Rendering.Universal
         // 元素们 原本存储在 "CameraCaptureBridge" 中
         // [- stack 中所有 camera 的值都相同 -]  
         public IEnumerator<Action<RenderTargetIdentifier, CommandBuffer>> captureActions;
+
 
         // the Layer Mask that defines which Volumes affect this Camera. 
         // [- stack 中所有 camera 的值都相同 -]

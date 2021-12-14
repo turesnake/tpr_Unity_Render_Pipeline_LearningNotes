@@ -7,175 +7,140 @@ using System.Reflection;
 
 namespace UnityEngine.Rendering
 {
-    // We need this base class to be able to store a list of VolumeParameter in collections as we
-    // can't store VolumeParameter<T> with variable T types in the same collection. As a result some
-    // of the following is a bit hacky...
-
-    /// <summary>
-    /// The base class for all parameters types stored in a <see cref="VolumeComponent"/>.
-    /// </summary>
-    /// <seealso cref="VolumeParameter{T}"/>
-    public abstract class VolumeParameter
+    /*
+        We need this base class to be able to store a list of VolumeParameter in collections as we
+        can't store VolumeParameter<T> with variable T types in the same collection. As a result some
+        of the following is a bit hacky...
+    */
+    // The base class for all parameters types stored in a "VolumeComponent".
+    public abstract class VolumeParameter// 不能直接继承这个. 
     {
-        /// <summary>
-        /// A beautified string for debugger output. This is set on a <c>DebuggerDisplay</c> on every
-        /// parameter types.
-        /// </summary>
+
+        // A beautified string for debugger output. This is set on a "DebuggerDisplay" on every parameter types.
         public const string k_DebuggerDisplay = "{m_Value} ({m_OverrideState})";
 
-        /// <summary>
-        /// The current override state for this parameter. The Volume system considers overriden parameters
-        /// for blending, and ignores non-overriden ones.
-        /// </summary>
-        /// <seealso cref="overrideState"/>
-        [SerializeField]
-        protected bool m_OverrideState;
-
-        /// <summary>
-        /// The current override state for this parameter. The Volume system considers overriden parameters
-        /// for blending, and ignores non-overriden ones.
-        /// </summary>
-        /// <remarks>
-        /// You can override this property to define custom behaviors when the override state
-        /// changes.
-        /// </remarks>
-        /// <seealso cref="m_OverrideState"/>
+       
+        [SerializeField]protected bool m_OverrideState;
+        // The current override state for this parameter. 
+        // The Volume system considers overriden parameters for blending, and ignores non-overriden ones.
+        //
+        // You can override this property to define custom behaviors when the override state changes.
         public virtual bool overrideState
         {
             get => m_OverrideState;
             set => m_OverrideState = value;
         }
 
+        // 猜测是 插值;
         internal abstract void Interp(VolumeParameter from, VolumeParameter to, float t);
 
-        /// <summary>
-        /// Casts and gets the typed value of this parameter.
-        /// </summary>
+
+        /*
+            Casts and gets the typed value of this parameter.
+            不安全, 不做任何 类型检测
+        */
         /// <typeparam name="T">The type of the value stored in this parameter</typeparam>
-        /// <returns>A value of type <typeparamref name="T"/>.</returns>
-        /// <remarks>
-        /// This method is unsafe and does not do any type checking.
-        /// </remarks>
+        /// <returns> A value of type "T". </returns>
         public T GetValue<T>()
         {
             return ((VolumeParameter<T>) this).value;
         }
 
-        /// <summary>
-        /// Sets the value of this parameter to the value in <paramref name="parameter"/>.
-        /// </summary>
-        /// <param name="parameter">The <see cref="VolumeParameter"/> to copy the value from.</param>
+       
+        // Sets the value of this parameter to the value in 参数 "parameter".
+        /// <param name="parameter">The "VolumeParameter" to copy the value from.</param>
         public abstract void SetValue(VolumeParameter parameter);
 
-        /// <summary>
-        /// Unity calls this method when the parent <see cref="VolumeComponent"/> loads.
-        /// </summary>
-        /// <remarks>
-        /// Use this if you need to access fields and properties that you can not access in
-        /// the constructor of a <c>ScriptableObject</c>. (<see cref="VolumeParameter"/> are
-        /// generally declared and initialized in a <see cref="VolumeComponent"/>, which is a
-        /// <c>ScriptableObject</c>). Unity calls this right after it constructs the parent
-        /// <see cref="VolumeComponent"/>, thus allowing access to previously
-        /// inaccessible fields and properties.
-        /// </remarks>
+        
+        /*
+            Unity calls this method when the parent "VolumeComponent" loads.
+
+            Use this if you need to access fields and properties that you can not access in the constructor of a "ScriptableObject".
+            ("VolumeParameter" are generally declared and initialized in a "VolumeComponent", which is a "ScriptableObject"). 
+            Unity calls this right after it constructs the parent "VolumeComponent", 
+            thus allowing access to previously inaccessible fields and properties.
+            ---
+            当父类 "VolumeComponent" 执行 load 时, 本函数被调用;
+
+            unity 在 构造完 "VolumeComponent" 之后就立即调用本函数,
+            从而允许访问以前无法访问的字段和属性。
+        */
         protected internal virtual void OnEnable()
         {
         }
 
-        /// <summary>
-        /// Unity calls this method when the parent <see cref="VolumeComponent"/> goes out of scope.
-        /// </summary>
+   
+        /// Unity calls this method when the parent "VolumeComponent" goes out of scope;
         protected internal virtual void OnDisable()
         {
         }
 
-        /// <summary>
-        /// Checks if a given type is an <see cref="ObjectParameter{T}"/>.
-        /// </summary>
-        /// <param name="type">The type to check.</param>
-        /// <returns><c>true</c> if <paramref name="type"/> is an <see cref="ObjectParameter{T}"/>,
-        /// <c>false</c> otherwise.</returns>
-        public static bool IsObjectParameter(Type type)
-        {
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ObjectParameter<>))
-                return true;
 
-            return type.BaseType != null
-                && IsObjectParameter(type.BaseType);
+        /*
+            Checks if a given type is an "ObjectParameter{T}".
+            (关于这个 "ObjectParameter{T}", 参见本文件最下方)
+            
+            只要参数 type, 或者其某一层基类 属于 "ObjectParameter{T}", 本函数就返回 true;
+
+            <递归函数>
+        */
+        /// <param name="type">The type to check.</param>
+        public static bool IsObjectParameter(Type type) //   读完__
+        {
+            if( type.IsGenericType && // 参数 type 是否为 泛型类型
+                // 参数 type 的 "generic type definition" 类型, 是否为 "ObjectParameter<>"
+                type.GetGenericTypeDefinition() == typeof(ObjectParameter<>)
+            ){
+                return true;
+            }
+
+            return type.BaseType != null             // 参数 type 的类型不能为 System.Object, 或 接口
+                && IsObjectParameter(type.BaseType); // 递归查询 参数 type 的基类...
         }
 
-        /// <summary>
+
         /// Override this method to free all allocated resources
-        /// </summary>
         public virtual void Release() {}
-    }
+    }//  类读完__
 
-    /// <summary>
-    /// A generic implementation of <see cref="VolumeParameter"/>. Custom parameters should derive
-    /// from this class and implement their own behavior.
-    /// </summary>
-    /// <typeparam name="T">The type of value to hold in this parameter.</typeparam>
-    /// <remarks>
-    /// <typeparamref name="T"/> should a serializable type.
-    /// Due to limitations with the serialization system in Unity, you should not use this class
-    /// directly to declare parameters in a <see cref="VolumeComponent"/>. Instead, use one of the
-    /// pre-flatten types (like <see cref="FloatParameter"/>, or make your own by extending this
-    /// class.
-    /// </remarks>
-    /// <example>
-    /// This sample code shows how to make a custom parameter holding a <c>float</c>:
-    /// <code>
-    /// using UnityEngine.Rendering;
-    ///
-    /// [Serializable]
-    /// public sealed class MyFloatParameter : VolumeParameter&lt;float&gt;
-    /// {
-    ///     public MyFloatParameter(float value, bool overrideState = false)
-    ///         : base(value, overrideState) { }
-    ///
-    ///     public sealed override void Interp(float from, float to, float t)
-    ///     {
-    ///         m_Value = from + (to - from) * t;
-    ///     }
-    /// }
-    /// </code>
-    /// </example>
-    /// <seealso cref="VolumeParameter"/>
+
+
+    /*
+        Custom parameters should derive from this class and implement their own behavior.
+
+        "T" should a "serializable type". (比如 int, float...)
+        Due to limitations with the serialization system in Unity, you should not use this class
+        directly to declare parameters in a "VolumeComponent". Instead, use one of the
+        pre-flatten types (like "FloatParameter", or make your own by extending this class;
+    */ 
     [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
-    public class VolumeParameter<T> : VolumeParameter, IEquatable<VolumeParameter<T>>
+    public class VolumeParameter<T>//VolumeParameter__   读完__
+        : VolumeParameter, IEquatable<VolumeParameter<T>>
     {
-        /// <summary>
-        /// The value stored and serialized by this parameter.
-        /// </summary>
+        
         [SerializeField]
-        protected T m_Value;
+        protected T m_Value; // The value stored and serialized by this parameter.
 
-        /// <summary>
-        /// The value that this parameter stores.
-        /// </summary>
-        /// <remarks>
-        /// You can override this property to define custom behaviors when the value is changed.
-        /// </remarks>
+        // The value that this parameter stores.
+        // You can override this property to define custom behaviors when the value is changed.
         public virtual T value
         {
             get => m_Value;
             set => m_Value = value;
         }
 
-        /// <summary>
-        /// Creates a new <see cref="VolumeParameter{T}"/> instance.
-        /// </summary>
+
+        // Creates a new "VolumeParameter{T}" instance.
         public VolumeParameter()
             : this(default, false)
         {
         }
 
-        /// <summary>
-        /// Creates a new <see cref="VolumeParameter{T}"/> instance.
-        /// </summary>
+      
+        /// Creates a new "VolumeParameter{T}" instance.
         /// <param name="value">The initial value to store in the parameter.</param>
         /// <param name="overrideState">The initial override state for the parameter.</param>
-        protected VolumeParameter(T value, bool overrideState)
+        protected VolumeParameter( T value, bool overrideState )
         {
             m_Value = value;
             this.overrideState = overrideState;
@@ -187,26 +152,22 @@ namespace UnityEngine.Rendering
             Interp(from.GetValue<T>(), to.GetValue<T>(), t);
         }
 
-        /// <summary>
-        /// Interpolates two values using a factor <paramref name="t"/>.
-        /// </summary>
-        /// <remarks>
-        /// By default, this method does a "snap" interpolation, meaning it returns the value
-        /// <paramref name="to"/> if <paramref name="t"/> is higher than 0, and <paramref name="from"/>
-        /// otherwise.
-        /// </remarks>
-        /// <param name="from">The start value.</param>
-        /// <param name="to">The end value.</param>
+
+        /*
+            Interpolates two values using a factor "t".
+            By default, this method does a "snap"(折断) interpolation,
+            meaning it returns the value "to" if "t" is higher than 0, and "from" otherwise.
+        */
         /// <param name="t">The interpolation factor in range [0,1].</param>
-        public virtual void Interp(T from, T to, float t)
+        public virtual void Interp( T from, T to, float t )
         {
             // Default interpolation is naive
             m_Value = t > 0f ? to : from;
         }
 
-        /// <summary>
-        /// Sets the value for this parameter and sets its override state to <c>true</c>.
-        /// </summary>
+
+      
+        //  Sets the value for this parameter and sets its override state to true.
         /// <param name="x">The value to assign to this parameter.</param>
         public void Override(T x)
         {
@@ -214,19 +175,17 @@ namespace UnityEngine.Rendering
             m_Value = x;
         }
 
-        /// <summary>
-        /// Sets the value of this parameter to the value in <paramref name="parameter"/>.
-        /// </summary>
-        /// <param name="parameter">The <see cref="VolumeParameter"/> to copy the value from.</param>
-        public override void SetValue(VolumeParameter parameter)
+
+     
+        /// Sets the value of this parameter to the value in "parameter".
+        /// <param name="parameter">The "VolumeParameter" to copy the value from.</param>
+        public override void SetValue( VolumeParameter parameter )
         {
             m_Value = parameter.GetValue<T>();
         }
 
-        /// <summary>
-        /// Returns a hash code for the current object.
-        /// </summary>
-        /// <returns>A hash code for the current object.</returns>
+      
+        //  Returns a hash code for the current object.
         public override int GetHashCode()
         {
             unchecked
@@ -241,115 +200,96 @@ namespace UnityEngine.Rendering
             }
         }
 
-        /// <summary>
+      
         /// Returns a string that represents the current object.
-        /// </summary>
-        /// <returns>A string that represents the current object.</returns>
         public override string ToString() => $"{value} ({overrideState})";
 
-        /// <summary>
-        /// Compares the value in a parameter with another value of the same type.
-        /// </summary>
-        /// <param name="lhs">The first value in a <see cref="VolumeParameter"/>.</param>
-        /// <param name="rhs">The second value.</param>
-        /// <returns><c>true</c> if both values are equal, <c>false</c> otherwise.</returns>
-        public static bool operator==(VolumeParameter<T> lhs, T rhs) => lhs != null && !ReferenceEquals(lhs.value, null) && lhs.value.Equals(rhs);
 
-        /// <summary>
-        /// Compares the value store in a parameter with another value of the same type.
-        /// </summary>
-        /// <param name="lhs">The first value in a <see cref="VolumeParameter"/>.</param>
+        /// Compares the value in a parameter with another value of the same type.
+        /// <param name="lhs">The first value in a "VolumeParameter".</param>
         /// <param name="rhs">The second value.</param>
-        /// <returns><c>false</c> if both values are equal, <c>true</c> otherwise</returns>
+        /// <returns> true if both values are equal, false otherwise.</returns>
+        public static bool operator==( VolumeParameter<T> lhs, T rhs ) => 
+            lhs != null && 
+            !ReferenceEquals(lhs.value, null) && // lhs.value 不能为 null
+            lhs.value.Equals(rhs);
+
+        /// Compares the value store in a parameter with another value of the same type.
         public static bool operator!=(VolumeParameter<T> lhs, T rhs) => !(lhs == rhs);
 
-        /// <summary>
+
         /// Checks if this parameter is equal to another.
-        /// </summary>
         /// <param name="other">The other parameter to check against.</param>
         /// <returns><c>true</c> if both parameters are equal, <c>false</c> otherwise</returns>
-        public bool Equals(VolumeParameter<T> other)
+        public bool Equals( VolumeParameter<T> other )
         {
-            if (ReferenceEquals(null, other))
+            if (ReferenceEquals(null, other))// other 为 null
                 return false;
-
-            if (ReferenceEquals(this, other))
+            if (ReferenceEquals(this, other))// this 和 other 指向统一对象, 或者都为 null
                 return true;
-
             return EqualityComparer<T>.Default.Equals(m_Value, other.m_Value);
         }
 
-        /// <summary>
-        /// Determines whether two object instances are equal.
-        /// </summary>
+       
+        //  Determines whether two object instances are equal.
         /// <param name="obj">The object to compare with the current object.</param>
-        /// <returns><c>true</c> if the specified object is equal to the current object, <c>false</c> otherwise.</returns>
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj))
+            if (ReferenceEquals(null, obj))// obj 为 null
                 return false;
-
-            if (ReferenceEquals(this, obj))
+            if (ReferenceEquals(this, obj))// this 和 obj 指向统一对象, 或者都为 null
                 return true;
-
             if (obj.GetType() != GetType())
                 return false;
-
             return Equals((VolumeParameter<T>)obj);
         }
 
-        /// <summary>
-        /// Explicitly downcast a <see cref="VolumeParameter{T}"/> to a value of type
-        /// <typeparamref name="T"/>.
-        /// </summary>
+       
+        // Explicitly downcast a "VolumeParameter{T}" to a value of type
         /// <param name="prop">The parameter to downcast.</param>
-        /// <returns>A value of type <typeparamref name="T"/>.</returns>
+        /// <returns>A value of type "T".</returns>
         public static explicit operator T(VolumeParameter<T> prop) => prop.m_Value;
     }
 
-    //
-    // The serialization system in Unity can't serialize generic types, the workaround is to extend
-    // and flatten pre-defined generic types.
-    // For enums it's recommended to make your own types on the spot, like so:
-    //
-    //  [Serializable]
-    //  public sealed class MyEnumParameter : VolumeParameter<MyEnum> { }
-    //  public enum MyEnum { One, Two }
-    //
 
-    /// <summary>
-    /// A <see cref="VolumeParameter"/> that holds a <c>bool</c> value.
-    /// </summary>
+
+    /*
+        The serialization system in Unity can't serialize generic types, the workaround is to extend
+        and flatten pre-defined generic types.
+        For enums it's recommended to make your own types on the spot, like so:
+    
+        [Serializable]
+        public sealed class MyEnumParameter : VolumeParameter<MyEnum> { }
+        public enum MyEnum { One, Two }
+    */
+
+
+
+    // ------------------------------------------------------------------------------:
+    // A "VolumeParameter" that holds a bool value.
     [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
-    public class BoolParameter : VolumeParameter<bool>
+    public class BoolParameter//BoolParameter__
+        : VolumeParameter<bool>
     {
-        /// <summary>
-        /// Creates a new <see cref="BoolParameter"/> instance.
-        /// </summary>
-        /// <param name="value">The initial value to store in the parameter</param>
-        /// <param name="overrideState">The initial override state for the parameter</param>
         public BoolParameter(bool value, bool overrideState = false)
             : base(value, overrideState) {}
     }
 
-    /// <summary>
-    /// A <see cref="VolumeParameter"/> that holds a <c>LayerMask</c> value.
-    /// </summary>
+
+    // ------------------------------------------------------------------------------:
+    /// A "VolumeParameter" that holds a LayerMask value.
     [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
-    public class LayerMaskParameter : VolumeParameter<LayerMask>
+    public class LayerMaskParameter//LayerMaskParameter__
+        : VolumeParameter<LayerMask>
     {
-        /// <summary>
-        /// Creates a new <see cref="LayerMaskParameter"/> instance.
-        /// </summary>
-        /// <param name="value">The initial value to store in the parameter.</param>
-        /// <param name="overrideState">The initial override state for the parameter.</param>
         public LayerMaskParameter(LayerMask value, bool overrideState = false)
             : base(value, overrideState) {}
     }
 
-    /// <summary>
-    /// A <see cref="VolumeParameter"/> that holds an <c>int</c> value.
-    /// </summary>
+
+
+    // ------------------------------------------------------------------------------:
+    /// A "VolumeParameter" that holds an int value.
     /// <seealso cref="MinIntParameter"/>
     /// <seealso cref="MaxIntParameter"/>
     /// <seealso cref="ClampedIntParameter"/>
@@ -358,89 +298,60 @@ namespace UnityEngine.Rendering
     /// <seealso cref="NoInterpMaxIntParameter"/>
     /// <seealso cref="NoInterpClampedIntParameter"/>
     [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
-    public class IntParameter : VolumeParameter<int>
+    public class IntParameter//IntParameter__
+        : VolumeParameter<int>
     {
-        /// <summary>
-        /// Creates a new <see cref="IntParameter"/> instance.
-        /// </summary>
-        /// <param name="value">The initial value to store in the parameter.</param>
-        /// <param name="overrideState">The initial override state for the parameter.</param>
         public IntParameter(int value, bool overrideState = false)
             : base(value, overrideState) {}
 
-        /// <summary>
-        /// Interpolates between two <c>int</c> values.
-        /// </summary>
-        /// <param name="from">The start value</param>
-        /// <param name="to">The end value</param>
+    
+        /// Interpolates between two "int" values.
         /// <param name="t">The interpolation factor in range [0,1]</param>
         public sealed override void Interp(int from, int to, float t)
         {
-            // Int snapping interpolation. Don't use this for enums as they don't necessarily have
-            // contiguous values. Use the default interpolator instead (same as bool).
+            /*
+                Int snapping(折断) interpolation. 
+                Don't use this for enums as they don't necessarily have contiguous values. 
+                Use the default interpolator instead (same as bool).
+                ---
+                不要将此函数用在 enum 类型上, 因为 enum 有可能没有 连续的 int值 的元素;
+                (最后计算出的那个 int 值, 无法扎到 enum 中对应的元素)
+                改用 默认的就行;
+            */
             m_Value = (int)(from + (to - from) * t);
         }
     }
 
-    /// <summary>
-    /// A <see cref="VolumeParameter"/> that holds a non-interpolating <c>int</c> value.
-    /// </summary>
-    /// <seealso cref="IntParameter"/>
-    /// <seealso cref="MinIntParameter"/>
-    /// <seealso cref="MaxIntParameter"/>
-    /// <seealso cref="ClampedIntParameter"/>
-    /// <seealso cref="NoInterpMinIntParameter"/>
-    /// <seealso cref="NoInterpMaxIntParameter"/>
-    /// <seealso cref="NoInterpClampedIntParameter"/>
+
+    // ------------------------------------------------------------------------------:
+    // A "VolumeParameter" that holds a non-interpolating int value.
+    // 和 "IntParameter" 不同, 此版本没有自定义插值函数;
     [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
-    public class NoInterpIntParameter : VolumeParameter<int>
+    public class NoInterpIntParameter//NoInterpIntParameter__
+        : VolumeParameter<int>
     {
-        /// <summary>
-        /// Creates a new <see cref="NoInterpIntParameter"/> instance.
-        /// </summary>
-        /// <param name="value">The initial value to store in the parameter.</param>
-        /// <param name="overrideState">The initial override state for the parameter.</param>
         public NoInterpIntParameter(int value, bool overrideState = false)
             : base(value, overrideState) {}
     }
 
-    /// <summary>
-    /// A <see cref="VolumeParameter"/> that holds an <c>int</c> value clamped to a
-    /// minimum value.
-    /// </summary>
-    /// <seealso cref="IntParameter"/>
-    /// <seealso cref="MaxIntParameter"/>
-    /// <seealso cref="ClampedIntParameter"/>
-    /// <seealso cref="NoInterpIntParameter"/>
-    /// <seealso cref="NoInterpMinIntParameter"/>
-    /// <seealso cref="NoInterpMaxIntParameter"/>
-    /// <seealso cref="NoInterpClampedIntParameter"/>
-    [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
-    public class MinIntParameter : IntParameter
-    {
-        /// <summary>
-        /// The minimum value to clamp this parameter to.
-        /// </summary>
-        public int min;
 
-        /// <summary>
-        /// The value that this parameter stores.
-        /// </summary>
-        /// <remarks>
-        /// You can override this property to define custom behaviors when the value is changed.
-        /// </remarks>
+
+    // ------------------------------------------------------------------------------:
+    // A "VolumeParameter" that holds an int value clamped to a minimum value.
+    // 任何传入的值, 都将被 clamp 到 [min, +inf] 区间;
+    [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
+    public class MinIntParameter//MinIntParameter__
+        : IntParameter
+    {
+        public int min; // The minimum value to clamp this parameter to.
+
+        // The value that this parameter stores.
         public override int value
         {
             get => m_Value;
-            set => m_Value = Mathf.Max(value, min);
+            set => m_Value = Mathf.Max(value, min);// 小于 min 的参数都将被丢弃;
         }
-
-        /// <summary>
-        /// Creates a new <see cref="MinIntParameter"/> instance.
-        /// </summary>
-        /// <param name="value">The initial value to store in the parameter.</param>
-        /// <param name="min">The minimum value to clamp the parameter to.</param>
-        /// <param name="overrideState">The initial override state for the parameter.</param>
+        
         public MinIntParameter(int value, int min, bool overrideState = false)
             : base(value, overrideState)
         {
@@ -448,43 +359,25 @@ namespace UnityEngine.Rendering
         }
     }
 
-    /// <summary>
-    /// A <see cref="VolumeParameter"/> that holds a non-interpolating <c>int</c> value that
-    /// clamped to a minimum value.
-    /// </summary>
-    /// <seealso cref="IntParameter"/>
-    /// <seealso cref="MinIntParameter"/>
-    /// <seealso cref="MaxIntParameter"/>
-    /// <seealso cref="ClampedIntParameter"/>
-    /// <seealso cref="NoInterpIntParameter"/>
-    /// <seealso cref="NoInterpMaxIntParameter"/>
-    /// <seealso cref="NoInterpClampedIntParameter"/>
-    [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
-    public class NoInterpMinIntParameter : VolumeParameter<int>
-    {
-        /// <summary>
-        /// The minimum value to clamp this parameter to.
-        /// </summary>
-        public int min;
 
-        /// <summary>
-        /// The value that this parameter stores.
-        /// </summary>
-        /// <remarks>
-        /// You can override this property to define custom behaviors when the value is changed.
-        /// </remarks>
+    // ------------------------------------------------------------------------------:
+    /// A "VolumeParameter" that holds a "non-interpolating int" value that clamped to a minimum value.
+    // 存储 没有实现 插值的 int 值, 且被 clamp 到 [min, +inf] 区间;
+    [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
+    public class NoInterpMinIntParameter//NoInterpMinIntParameter__
+        : VolumeParameter<int>
+    {
+
+        public int min;// The minimum value to clamp this parameter to.
+
+
+        // The value that this parameter stores.
         public override int value
         {
             get => m_Value;
             set => m_Value = Mathf.Max(value, min);
         }
 
-        /// <summary>
-        /// Creates a new <see cref="NoInterpMinIntParameter"/> instance.
-        /// </summary>
-        /// <param name="value">The initial value to store in the parameter.</param>
-        /// <param name="min">The minimum value to clamp the parameter to.</param>
-        /// <param name="overrideState">The initial override state for the parameter.</param>
         public NoInterpMinIntParameter(int value, int min, bool overrideState = false)
             : base(value, overrideState)
         {
@@ -492,43 +385,23 @@ namespace UnityEngine.Rendering
         }
     }
 
-    /// <summary>
-    /// A <see cref="VolumeParameter"/> that holds an <c>int</c> value clamped to a
-    /// maximum value.
-    /// </summary>
-    /// <seealso cref="IntParameter"/>
-    /// <seealso cref="MinIntParameter"/>
-    /// <seealso cref="ClampedIntParameter"/>
-    /// <seealso cref="NoInterpIntParameter"/>
-    /// <seealso cref="NoInterpMinIntParameter"/>
-    /// <seealso cref="NoInterpMaxIntParameter"/>
-    /// <seealso cref="NoInterpClampedIntParameter"/>
-    [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
-    public class MaxIntParameter : IntParameter
-    {
-        /// <summary>
-        /// The maximum value to clamp this parameter to.
-        /// </summary>
-        public int max;
 
-        /// <summary>
+    // ------------------------------------------------------------------------------:
+    // A "VolumeParameter" that holds an int value clamped to a maximum value.
+    // 存储的 int 值, 被 clamp 到 [-inf, max] 区间;
+    [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
+    public class MaxIntParameter//MaxIntParameter__
+        : IntParameter
+    {
+        public int max;// The maximum value to clamp this parameter to.
+
         /// The value that this parameter stores.
-        /// </summary>
-        /// <remarks>
-        /// You can override this property to define custom behaviors when the value is changed.
-        /// </remarks>
         public override int value
         {
             get => m_Value;
             set => m_Value = Mathf.Min(value, max);
         }
 
-        /// <summary>
-        /// Creates a new <see cref="MaxIntParameter"/> instance.
-        /// </summary>
-        /// <param name="value">The initial value to store in the parameter.</param>
-        /// <param name="max">The maximum value to clamp the parameter to.</param>
-        /// <param name="overrideState">The initial override state for the parameter.</param>
         public MaxIntParameter(int value, int max, bool overrideState = false)
             : base(value, overrideState)
         {
@@ -536,43 +409,25 @@ namespace UnityEngine.Rendering
         }
     }
 
-    /// <summary>
-    /// A <see cref="VolumeParameter"/> that holds a non-interpolating <c>int</c> value that
-    /// clamped to a maximum value.
-    /// </summary>
-    /// <seealso cref="IntParameter"/>
-    /// <seealso cref="MinIntParameter"/>
-    /// <seealso cref="MaxIntParameter"/>
-    /// <seealso cref="ClampedIntParameter"/>
-    /// <seealso cref="NoInterpIntParameter"/>
-    /// <seealso cref="NoInterpMinIntParameter"/>
-    /// <seealso cref="NoInterpClampedIntParameter"/>
-    [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
-    public class NoInterpMaxIntParameter : VolumeParameter<int>
-    {
-        /// <summary>
-        /// The maximum value to clamp this parameter to.
-        /// </summary>
-        public int max;
 
-        /// <summary>
+    // ------------------------------------------------------------------------------:
+    // A "VolumeParameter" that holds a non-interpolating int value that clamped to a maximum value.
+    // 存储 没有实现 插值的 int 值, 且被 clamp 到 [-inf, max] 区间;
+    [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
+    public class NoInterpMaxIntParameter//NoInterpMaxIntParameter__
+        : VolumeParameter<int>
+    {
+
+        public int max;// The maximum value to clamp this parameter to.
+
+
         /// The value that this parameter stores.
-        /// </summary>
-        /// <remarks>
-        /// You can override this property to define custom behaviors when the value is changed.
-        /// </remarks>
         public override int value
         {
             get => m_Value;
             set => m_Value = Mathf.Min(value, max);
         }
 
-        /// <summary>
-        /// Creates a new <see cref="NoInterpMaxIntParameter"/> instance.
-        /// </summary>
-        /// <param name="value">The initial value to store in the parameter.</param>
-        /// <param name="max">The maximum value to clamp the parameter to.</param>
-        /// <param name="overrideState">The initial override state for the parameter.</param>
         public NoInterpMaxIntParameter(int value, int max, bool overrideState = false)
             : base(value, overrideState)
         {
@@ -580,49 +435,27 @@ namespace UnityEngine.Rendering
         }
     }
 
-    /// <summary>
-    /// A <see cref="VolumeParameter"/> that holds an <c>int</c> value clamped between a
-    /// minimum and a maximum value.
-    /// </summary>
-    /// <seealso cref="IntParameter"/>
-    /// <seealso cref="MinIntParameter"/>
-    /// <seealso cref="MaxIntParameter"/>
-    /// <seealso cref="NoInterpIntParameter"/>
-    /// <seealso cref="NoInterpMinIntParameter"/>
-    /// <seealso cref="NoInterpMaxIntParameter"/>
-    /// <seealso cref="NoInterpClampedIntParameter"/>
+
+
+    // ------------------------------------------------------------------------------:
+    /// A "VolumeParameter" that holds an int value clamped between a minimum and a maximum value.
+    // 存储的 int 值, 被 clamp 到 [min, max] 区间;
     [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
-    public class ClampedIntParameter : IntParameter
+    public class ClampedIntParameter//ClampedIntParameter__
+        : IntParameter
     {
-        /// <summary>
-        /// The minimum value to clamp this parameter to.
-        /// </summary>
-        public int min;
+        public int min;// The minimum value to clamp this parameter to.
 
-        /// <summary>
-        /// The maximum value to clamp this parameter to.
-        /// </summary>
-        public int max;
+        public int max;// The maximum value to clamp this parameter to.
 
-        /// <summary>
+
         /// The value that this parameter stores.
-        /// </summary>
-        /// <remarks>
-        /// You can override this property to define custom behaviors when the value is changed.
-        /// </remarks>
         public override int value
         {
             get => m_Value;
             set => m_Value = Mathf.Clamp(value, min, max);
         }
 
-        /// <summary>
-        /// Creates a new <see cref="ClampedIntParameter"/> instance.
-        /// </summary>
-        /// <param name="value">The initial value to store in the parameter.</param>
-        /// <param name="min">The minimum value to clamp the parameter to</param>
-        /// <param name="max">The maximum value to clamp the parameter to.</param>
-        /// <param name="overrideState">The initial override state for the parameter.</param>
         public ClampedIntParameter(int value, int min, int max, bool overrideState = false)
             : base(value, overrideState)
         {
@@ -631,49 +464,27 @@ namespace UnityEngine.Rendering
         }
     }
 
-    /// <summary>
+
+
+    // ------------------------------------------------------------------------------:
     /// A <see cref="VolumeParameter"/> that holds a non-interpolating <c>int</c> value
     /// clamped between a minimum and a maximum value.
-    /// </summary>
-    /// <seealso cref="IntParameter"/>
-    /// <seealso cref="MinIntParameter"/>
-    /// <seealso cref="MaxIntParameter"/>
-    /// <seealso cref="ClampedIntParameter"/>
-    /// <seealso cref="NoInterpIntParameter"/>
-    /// <seealso cref="NoInterpMinIntParameter"/>
-    /// <seealso cref="NoInterpMaxIntParameter"/>
     [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
     public class NoInterpClampedIntParameter : VolumeParameter<int>
     {
-        /// <summary>
-        /// The minimum value to clamp this parameter to.
-        /// </summary>
-        public int min;
 
-        /// <summary>
-        /// The maximum value to clamp this parameter to.
-        /// </summary>
-        public int max;
+        public int min;// The minimum value to clamp this parameter to.
 
-        /// <summary>
+        public int max;// The maximum value to clamp this parameter to.
+
+
         /// The value that this parameter stores.
-        /// </summary>
-        /// <remarks>
-        /// You can override this property to define custom behaviors when the value is changed.
-        /// </remarks>
         public override int value
         {
             get => m_Value;
             set => m_Value = Mathf.Clamp(value, min, max);
         }
 
-        /// <summary>
-        /// Creates a new <see cref="NoInterpClampedIntParameter"/> instance.
-        /// </summary>
-        /// <param name="value">The initial value to store in the parameter.</param>
-        /// <param name="min">The minimum value to clamp the parameter to</param>
-        /// <param name="max">The maximum value to clamp the parameter to.</param>
-        /// <param name="overrideState">The initial override state for the parameter.</param>
         public NoInterpClampedIntParameter(int value, int min, int max, bool overrideState = false)
             : base(value, overrideState)
         {
@@ -681,6 +492,8 @@ namespace UnityEngine.Rendering
             this.max = max;
         }
     }
+
+
 
     /// <summary>
     /// A <see cref="VolumeParameter"/> that holds a <c>float</c> value.
@@ -716,6 +529,8 @@ namespace UnityEngine.Rendering
             m_Value = from + (to - from) * t;
         }
     }
+
+
 
     /// <summary>
     /// A <see cref="VolumeParameter"/> that holds a non-interpolating <c>float</c> value.
@@ -1501,6 +1316,8 @@ namespace UnityEngine.Rendering
         public NoInterpCubemapParameter(Cubemap value, bool overrideState = false)
             : base(value, overrideState) {}
     }
+
+
 
     /// <summary>
     /// A <see cref="VolumeParameter"/> that holds a serializable class or struct.

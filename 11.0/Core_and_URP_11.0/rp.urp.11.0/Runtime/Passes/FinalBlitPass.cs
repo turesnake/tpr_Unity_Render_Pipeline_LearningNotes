@@ -10,13 +10,14 @@ namespace UnityEngine.Rendering.Universal.Internal
         : ScriptableRenderPass
     {
         RenderTargetHandle m_Source;
-        Material m_BlitMaterial;
+        Material m_BlitMaterial; // 如: "Shaders/Utils/Blit.shader"
 
         
+
         // 构造函数
         public FinalBlitPass(//   读完__
-                            RenderPassEvent evt,  // 设置 render pass 何时执行
-                            Material blitMaterial // 
+                            RenderPassEvent evt,  // 设置 render pass 何时执行; 如: AfterRendering + 1
+                            Material blitMaterial // 如: "Shaders/Utils/Blit.shader"
         ){
             base.profilingSampler = new ProfilingSampler(nameof(FinalBlitPass));
 
@@ -48,13 +49,16 @@ namespace UnityEngine.Rendering.Universal.Internal
             /*
                 Note: We need to get the cameraData.targetTexture as this will get the targetTexture of the camera stack.
                 Overlay cameras need to output to the target described in the base camera while doing camera stack.
+                ---
+                base camera 的 "targetTexture"; 也是整个 stack 的 render target;
             */
             ref CameraData cameraData = ref renderingData.cameraData;
             RenderTargetIdentifier cameraTarget = (cameraData.targetTexture != null) ? 
                         new RenderTargetIdentifier(cameraData.targetTexture) : 
-                        BuiltinRenderTextureType.CameraTarget;
+                        BuiltinRenderTextureType.CameraTarget;//仅指: "current camera 的 render target", 但它不一定是: "Currently active render target";
 
-            bool isSceneViewCamera = cameraData.isSceneViewCamera;
+
+            bool isSceneViewCamera = cameraData.isSceneViewCamera;// 是否为 editor 中 scene窗口 使用的 camera;
             CommandBuffer cmd = CommandBufferPool.Get();
             using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.FinalBlit)))
             {
@@ -64,7 +68,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.LinearToSRGBConversion,//"_LINEAR_TO_SRGB_CONVERSION"
                     cameraData.requireSrgbConversion);
 
-                cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, m_Source.Identifier());
+                cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, m_Source.Identifier());//"_SourceTex"
 
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE

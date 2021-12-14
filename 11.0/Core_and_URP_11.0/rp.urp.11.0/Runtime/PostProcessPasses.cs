@@ -6,10 +6,11 @@ using UnityEngine.Rendering.Universal.Internal;
 
 namespace UnityEngine.Rendering.Universal
 {
-    /// <summary>
-    /// Type acts as wrapper for post process passes. Can we be recreated and destroyed at any point during runtime with post process data.
-    /// </summary>
-    internal struct PostProcessPasses : IDisposable
+    /*
+        Type acts as wrapper for post process passes. Can we be recreated and destroyed at any point during runtime with post process data.
+    */
+    internal struct PostProcessPasses //PostProcessPasses__RR
+        : IDisposable
     {
         ColorGradingLutPass m_ColorGradingLutPass;
         PostProcessPass m_PostProcessPass;

@@ -438,6 +438,8 @@ namespace UnityEngine.Rendering.Universal
         /*
             -2-
             Renders a single camera. This method will do culling, setup and execution of the renderer.
+
+            base / overlay camera 皆可
         */
         /// <param name="context">Render context used to record commands during execution.</param>
         /// <param name="cameraData">Camera rendering data. This might contain data inherited from a base camera.</param>
@@ -878,6 +880,7 @@ namespace UnityEngine.Rendering.Universal
             // 右侧原值意思: 是否保留 framebuffer 的 alpha 通道信息 (readonly).
             // 此处左侧变量含义: 选择合适的 texture/render texture 的 GraphicsFormat 类型, 比如是否携带 alpha 通道;
             bool needsAlphaChannel = Graphics.preserveFramebufferAlpha; 
+            
             cameraData.cameraTargetDescriptor = CreateRenderTextureDescriptor(
                 camera, 
                 cameraData.renderScale,

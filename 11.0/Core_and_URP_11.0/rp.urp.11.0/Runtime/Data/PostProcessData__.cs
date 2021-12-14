@@ -6,11 +6,15 @@ using System;
 
 namespace UnityEngine.Rendering.Universal
 {
+
+    // PostProcess 要使用到的 资源对象: shaders, textures
     [Serializable]
-    public class PostProcessData //PostProcessData__RR
+    public class PostProcessData //PostProcessData__
         : ScriptableObject
     {
 #if UNITY_EDITOR
+        // editor 这部分暂时没看...
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812")]
         internal class CreatePostProcessDataAsset : EndNameEditAction
         {
@@ -74,6 +78,7 @@ namespace UnityEngine.Rendering.Universal
             public Shader finalPostPassPS;
         }
 
+
         [Serializable, ReloadGroup]
         public sealed class TextureResources//TextureResources__RR
         {
@@ -104,7 +109,7 @@ namespace UnityEngine.Rendering.Universal
             public Texture2D smaaSearchTex;
         }
 
-        public ShaderResources shaders;
-        public TextureResources textures;
+        public ShaderResources shaders;// 很多 shader 文件 path (已加载)
+        public TextureResources textures;// 很多 texture 资源 pass (已加载)
     }
 }

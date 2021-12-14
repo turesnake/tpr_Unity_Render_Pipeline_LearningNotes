@@ -69,7 +69,7 @@ namespace UnityEngine.Rendering.Universal
         /*
             Executes a "ScriptableRenderPass" before rendering prepasses,
             --
-            在 渲染 prepasses (预备pass) 之前, 比如, 在渲染 depth prepass 之前 
+            在 渲染 prepasses 之前, 比如, 在渲染 depth prepass 之前 
             此时, camera矩阵 和 "stereo rendering" 已经被设置 !!! 
             (毕竟, 计算 depth, normal 数据都是基于 camera 视角)
             =================
@@ -88,7 +88,7 @@ namespace UnityEngine.Rendering.Universal
         /*
             Executes a "ScriptableRenderPass" after rendering prepasses,
             --
-            在 渲染 prepasses (预备pass) 之后, 比如, 在渲染 depth prepass 之后 
+            在 渲染 prepasses 之后, 比如, 在渲染 depth prepass 之后 
             此时, camera矩阵 和 "stereo rendering" 已经被设置 !!! 
             (毕竟, 计算 depth, normal 数据都是基于 camera 视角)
             =================
@@ -104,32 +104,21 @@ namespace UnityEngine.Rendering.Universal
             在 渲染实心物体之前;
         */
         BeforeRenderingOpaques = 250,
-        
-        /*
-            Executes a "ScriptableRenderPass" after rendering opaque objects.
-
-            在 渲染实心物体之后;
-        */
+        //    Executes a "ScriptableRenderPass" after rendering opaque objects.
         AfterRenderingOpaques = 300,
 
         /*
             Executes a "ScriptableRenderPass" before rendering the sky.
         */
         BeforeRenderingSkybox = 350,
-    
-        /*
-            Executes a "ScriptableRenderPass" after rendering the sky.
-        */
+        //    Executes a "ScriptableRenderPass" after rendering the sky.
         AfterRenderingSkybox = 400,
     
         /*
             Executes a "ScriptableRenderPass" before rendering transparent objects.
         */
         BeforeRenderingTransparents = 450,
-       
-        /*
-            Executes a "ScriptableRenderPass" after rendering transparent objects.
-        */
+        //    Executes a "ScriptableRenderPass" after rendering transparent objects.
         AfterRenderingTransparents = 500,
         
         /*
@@ -396,11 +385,8 @@ namespace UnityEngine.Rendering.Universal
 
             如果一个 camera 没有显式的 camera stack, 它也被认为是一个 camera stack,
             不过这个 stack 内只有它一个 camera;
-
-            参数:
-            cmd:
-                Use this CommandBuffer to cleanup any generated data
         */
+        /// <param name="cmd">Use this CommandBuffer to cleanup any generated data</param>
         public virtual void OnFinishCameraStackRendering(CommandBuffer cmd)
         {}
 

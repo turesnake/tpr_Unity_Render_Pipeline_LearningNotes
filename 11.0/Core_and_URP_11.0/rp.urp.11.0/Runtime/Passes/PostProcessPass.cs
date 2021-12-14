@@ -15,17 +15,21 @@ namespace UnityEngine.Rendering.Universal.Internal
 {
     // TODO: TAA
     // TODO: Motion blur
-    /// <summary>
-    /// Renders the post-processing effect stack.
-    /// </summary>
+
+    /*
+        Renders the post-processing effect stack.
+    */
     public class PostProcessPass //PostProcessPass__RR
         : ScriptableRenderPass
     {
-        RenderTextureDescriptor m_Descriptor;
+
+        // 此 struct 包含用来创建 RenderTexture 所需的一切信息。
+        RenderTextureDescriptor m_Descriptor; 
         RenderTargetHandle m_Source;
         RenderTargetHandle m_Destination;
         RenderTargetHandle m_Depth;
         RenderTargetHandle m_InternalLut;
+
 
         const string k_RenderPostProcessingTag = "Render PostProcessing Effects";
         const string k_RenderFinalPostProcessingTag = "Render Final PostProcessing Pass";
@@ -86,8 +90,12 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         Material m_BlitMaterial;
 
-        public PostProcessPass(RenderPassEvent evt, PostProcessData data, Material blitMaterial)
-        {
+        // 构造函数
+        public PostProcessPass(
+                            RenderPassEvent evt, 
+                            PostProcessData data, 
+                            Material blitMaterial
+        ){
             base.profilingSampler = new ProfilingSampler(nameof(PostProcessPass));
             renderPassEvent = evt;
             m_Data = data;
@@ -134,7 +142,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             m_MRT2 = new RenderTargetIdentifier[2];
             m_ResetHistory = true;
-        }
+        }//  函数完__
 
         public void Cleanup() => m_Materials.Cleanup();
 
@@ -159,7 +167,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_IsFinalPass = false;
             m_HasFinalPass = hasFinalPass;
             m_EnableSRGBConversionIfNeeded = enableSRGBConversion;
-        }
+        }//  函数完__
 
 
 
@@ -170,7 +178,8 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_IsFinalPass = true;
             m_HasFinalPass = false;
             m_EnableSRGBConversionIfNeeded = true;
-        }
+        }//  函数完__
+
 
         /// <inheritdoc/>
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
@@ -185,7 +194,8 @@ namespace UnityEngine.Rendering.Universal.Internal
             var desc = GetCompatibleDescriptor();
             desc.depthBufferBits = 0;
             cmd.GetTemporaryRT(m_Destination.id, desc, FilterMode.Point);
-        }
+        }//  函数完__
+
 
         /// <inheritdoc/>
         public override void OnCameraCleanup(CommandBuffer cmd)
@@ -262,7 +272,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             }
 
             m_ResetHistory = false;
-        }
+        }//  函数完__
+
+
 
         RenderTextureDescriptor GetCompatibleDescriptor()
             => GetCompatibleDescriptor(m_Descriptor.width, m_Descriptor.height, m_Descriptor.graphicsFormat, m_Descriptor.depthBufferBits);
@@ -288,9 +300,14 @@ namespace UnityEngine.Rendering.Universal.Internal
 
 
 
-        private new void Blit(CommandBuffer cmd, RenderTargetIdentifier source, RenderTargetIdentifier destination, Material material, int passIndex = 0)
-        {
-            cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, source);
+        private new void Blit(
+                        CommandBuffer cmd, 
+                        RenderTargetIdentifier source, 
+                        RenderTargetIdentifier destination, 
+                        Material material, 
+                        int passIndex = 0
+        ){
+            cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, source);//"_SourceTex"
             if (m_UseDrawProcedural)
             {
                 /*     tpr
@@ -306,7 +323,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             {
                 cmd.Blit(source, destination, material, passIndex);
             }
-        }
+        }//  函数完__
+
+
 
         private void DrawFullscreenMesh(CommandBuffer cmd, Material material, int passIndex)
         {
@@ -322,7 +341,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             {
                 cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, material, 0, passIndex);
             }
-        }
+        }//  函数完__
+
+        
 
         void Render(CommandBuffer cmd, ref RenderingData renderingData)
         {
@@ -343,15 +364,23 @@ namespace UnityEngine.Rendering.Universal.Internal
             {
                 if (destination == -1)
                 {
-                    cmd.GetTemporaryRT(ShaderConstants._TempTarget, GetCompatibleDescriptor(), FilterMode.Bilinear);
-                    destination = ShaderConstants._TempTarget;
+                    cmd.GetTemporaryRT(
+                        ShaderConstants._TempTarget, //"_TempTarget"
+                        GetCompatibleDescriptor(), 
+                        FilterMode.Bilinear
+                    );
+                    destination = ShaderConstants._TempTarget;//"_TempTarget"
                     tempTargetUsed = true;
                 }
                 else if (destination == m_Source.id && m_Descriptor.msaaSamples > 1)
                 {
                     // Avoid using m_Source.id as new destination, it may come with a depth buffer that we don't want, may have MSAA that we don't want etc
-                    cmd.GetTemporaryRT(ShaderConstants._TempTarget2, GetCompatibleDescriptor(), FilterMode.Bilinear);
-                    destination = ShaderConstants._TempTarget2;
+                    cmd.GetTemporaryRT(
+                        ShaderConstants._TempTarget2,//"_TempTarget2"
+                        GetCompatibleDescriptor(), 
+                        FilterMode.Bilinear
+                    );
+                    destination = ShaderConstants._TempTarget2;//"_TempTarget2"
                     tempTarget2Used = true;
                 }
 
@@ -464,7 +493,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 }
 
                 // Done with Uber, blit it
-                cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, GetSource());
+                cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, GetSource());//"_SourceTex"
 
                 var colorLoadAction = RenderBufferLoadAction.DontCare;
                 if (m_Destination == RenderTargetHandle.CameraTarget && !cameraData.isDefaultViewport)
@@ -530,7 +559,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                     // in the pipeline to avoid this extra blit.
                     if (!finishPostProcessOnScreen)
                     {
-                        cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, cameraTarget);
+                        cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, cameraTarget);//"_SourceTex"
                         cmd.SetRenderTarget(m_Source.id, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
                         cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, m_BlitMaterial);
                     }
@@ -543,12 +572,14 @@ namespace UnityEngine.Rendering.Universal.Internal
                     cmd.ReleaseTemporaryRT(ShaderConstants._BloomMipUp[0]);
 
                 if (tempTargetUsed)
-                    cmd.ReleaseTemporaryRT(ShaderConstants._TempTarget);
+                    cmd.ReleaseTemporaryRT(ShaderConstants._TempTarget);//"_TempTarget"
 
                 if (tempTarget2Used)
-                    cmd.ReleaseTemporaryRT(ShaderConstants._TempTarget2);
+                    cmd.ReleaseTemporaryRT(ShaderConstants._TempTarget2);//"_TempTarget2"
             }
-        }
+        }//  函数完__
+
+
 
         private BuiltinRenderTextureType BlitDstDiscardContent(CommandBuffer cmd, RenderTargetIdentifier rt)
         {
@@ -560,6 +591,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             return BuiltinRenderTextureType.CurrentActive;
         }
 
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
+        // SMAA
         #region Sub-pixel Morphological Anti-aliasing
 
         void DoSubpixelMorphologicalAntialiasing(ref CameraData cameraData, CommandBuffer cmd, int source, int destination)
@@ -570,11 +604,20 @@ namespace UnityEngine.Rendering.Universal.Internal
             const int kStencilBit = 64;
 
             // Globals
-            material.SetVector(ShaderConstants._Metrics, new Vector4(1f / m_Descriptor.width, 1f / m_Descriptor.height, m_Descriptor.width, m_Descriptor.height));
-            material.SetTexture(ShaderConstants._AreaTexture, m_Data.textures.smaaAreaTex);
-            material.SetTexture(ShaderConstants._SearchTexture, m_Data.textures.smaaSearchTex);
-            material.SetFloat(ShaderConstants._StencilRef, (float)kStencilBit);
-            material.SetFloat(ShaderConstants._StencilMask, (float)kStencilBit);
+            material.SetVector(
+                ShaderConstants._Metrics, //"_Metrics"
+                new Vector4(1f / m_Descriptor.width, 1f / m_Descriptor.height, m_Descriptor.width, m_Descriptor.height)
+            );
+            material.SetTexture(
+                ShaderConstants._AreaTexture, //"_AreaTexture"
+                m_Data.textures.smaaAreaTex
+            );
+            material.SetTexture(
+                ShaderConstants._SearchTexture, //"_SearchTexture"
+                m_Data.textures.smaaSearchTex
+            );
+            material.SetFloat(ShaderConstants._StencilRef, (float)kStencilBit);//"_StencilRef"
+            material.SetFloat(ShaderConstants._StencilMask, (float)kStencilBit);//"_StencilMask"
 
             // Quality presets
             material.shaderKeywords = null;
@@ -638,10 +681,11 @@ namespace UnityEngine.Rendering.Universal.Internal
             cmd.ReleaseTemporaryRT(ShaderConstants._EdgeTexture);
             cmd.ReleaseTemporaryRT(ShaderConstants._BlendTexture);
             cmd.SetViewProjectionMatrices(camera.worldToCameraMatrix, camera.projectionMatrix);
-        }
-
+        }//  函数完__
         #endregion
 
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Depth Of Field
 
         // TODO: CoC reprojection once TAA gets in LW
@@ -653,6 +697,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             else if (m_DepthOfField.mode.value == DepthOfFieldMode.Bokeh)
                 DoBokehDepthOfField(cmd, source, destination, pixelRect);
         }
+
 
         void DoGaussianDepthOfField(Camera camera, CommandBuffer cmd, int source, int destination, Rect pixelRect)
         {
@@ -670,50 +715,94 @@ namespace UnityEngine.Rendering.Universal.Internal
             maxRadius = Mathf.Min(maxRadius, 2f);
 
             CoreUtils.SetKeyword(material, ShaderKeywordStrings.HighQualitySampling, m_DepthOfField.highQualitySampling.value);
-            material.SetVector(ShaderConstants._CoCParams, new Vector3(farStart, farEnd, maxRadius));
+            material.SetVector(
+                ShaderConstants._CoCParams, //"_CoCParams"
+                new Vector3(farStart, farEnd, maxRadius)
+            );
 
             // Temporary textures
-            cmd.GetTemporaryRT(ShaderConstants._FullCoCTexture, GetCompatibleDescriptor(m_Descriptor.width, m_Descriptor.height, m_GaussianCoCFormat), FilterMode.Bilinear);
-            cmd.GetTemporaryRT(ShaderConstants._HalfCoCTexture, GetCompatibleDescriptor(wh, hh, m_GaussianCoCFormat), FilterMode.Bilinear);
-            cmd.GetTemporaryRT(ShaderConstants._PingTexture, GetCompatibleDescriptor(wh, hh, m_DefaultHDRFormat), FilterMode.Bilinear);
-            cmd.GetTemporaryRT(ShaderConstants._PongTexture, GetCompatibleDescriptor(wh, hh, m_DefaultHDRFormat), FilterMode.Bilinear);
+            cmd.GetTemporaryRT(
+                ShaderConstants._FullCoCTexture, //"_FullCoCTexture"
+                GetCompatibleDescriptor(m_Descriptor.width, m_Descriptor.height, m_GaussianCoCFormat), 
+                FilterMode.Bilinear
+            );
+            cmd.GetTemporaryRT(
+                ShaderConstants._HalfCoCTexture, //"_HalfCoCTexture"
+                GetCompatibleDescriptor(wh, hh, m_GaussianCoCFormat), 
+                FilterMode.Bilinear
+            );
+            cmd.GetTemporaryRT(
+                ShaderConstants._PingTexture, //"_PingTexture"
+                GetCompatibleDescriptor(wh, hh, m_DefaultHDRFormat), 
+                FilterMode.Bilinear
+            );
+            cmd.GetTemporaryRT(
+                ShaderConstants._PongTexture, //"_PongTexture"
+                GetCompatibleDescriptor(wh, hh, m_DefaultHDRFormat), 
+                FilterMode.Bilinear
+            );
             // Note: fresh temporary RTs don't require explicit RenderBufferLoadAction.DontCare, only when they are reused (such as PingTexture)
 
             PostProcessUtils.SetSourceSize(cmd, m_Descriptor);
             cmd.SetGlobalVector(ShaderConstants._DownSampleScaleFactor, new Vector4(1.0f / downSample, 1.0f / downSample, downSample, downSample));
 
             // Compute CoC
-            Blit(cmd, source, ShaderConstants._FullCoCTexture, material, 0);
+            Blit(
+                cmd, 
+                source, 
+                ShaderConstants._FullCoCTexture, //"_FullCoCTexture"
+                material, 
+                0
+            );
 
             // Downscale & prefilter color + coc
-            m_MRT2[0] = ShaderConstants._HalfCoCTexture;
-            m_MRT2[1] = ShaderConstants._PingTexture;
+            m_MRT2[0] = ShaderConstants._HalfCoCTexture;//"_HalfCoCTexture"
+            m_MRT2[1] = ShaderConstants._PingTexture;//"_PingTexture"
 
             cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
             cmd.SetViewport(pixelRect);
             cmd.SetGlobalTexture(ShaderConstants._ColorTexture, source);
-            cmd.SetGlobalTexture(ShaderConstants._FullCoCTexture, ShaderConstants._FullCoCTexture);
-            cmd.SetRenderTarget(m_MRT2, ShaderConstants._HalfCoCTexture, 0, CubemapFace.Unknown, -1);
+            cmd.SetGlobalTexture(
+                ShaderConstants._FullCoCTexture, //"_FullCoCTexture"
+                ShaderConstants._FullCoCTexture  //"_FullCoCTexture"
+            );
+            cmd.SetRenderTarget(
+                m_MRT2, 
+                ShaderConstants._HalfCoCTexture, //"_HalfCoCTexture"
+                0, 
+                CubemapFace.Unknown, 
+                -1
+            );
             DrawFullscreenMesh(cmd, material, 1);
 
             cmd.SetViewProjectionMatrices(camera.worldToCameraMatrix, camera.projectionMatrix);
 
             // Blur
-            cmd.SetGlobalTexture(ShaderConstants._HalfCoCTexture, ShaderConstants._HalfCoCTexture);
+            cmd.SetGlobalTexture(
+                ShaderConstants._HalfCoCTexture, //"_HalfCoCTexture"
+                ShaderConstants._HalfCoCTexture  //"_HalfCoCTexture"
+            );
             Blit(cmd, ShaderConstants._PingTexture, ShaderConstants._PongTexture, material, 2);
             Blit(cmd, ShaderConstants._PongTexture, BlitDstDiscardContent(cmd, ShaderConstants._PingTexture), material, 3);
 
             // Composite
-            cmd.SetGlobalTexture(ShaderConstants._ColorTexture, ShaderConstants._PingTexture);
-            cmd.SetGlobalTexture(ShaderConstants._FullCoCTexture, ShaderConstants._FullCoCTexture);
+            cmd.SetGlobalTexture(
+                ShaderConstants._ColorTexture, 
+                ShaderConstants._PingTexture //"_PingTexture"
+            );
+            cmd.SetGlobalTexture(
+                ShaderConstants._FullCoCTexture, //"_FullCoCTexture"
+                ShaderConstants._FullCoCTexture  //"_FullCoCTexture"
+            );
             Blit(cmd, source, BlitDstDiscardContent(cmd, destination), material, 4);
 
             // Cleanup
-            cmd.ReleaseTemporaryRT(ShaderConstants._FullCoCTexture);
-            cmd.ReleaseTemporaryRT(ShaderConstants._HalfCoCTexture);
-            cmd.ReleaseTemporaryRT(ShaderConstants._PingTexture);
-            cmd.ReleaseTemporaryRT(ShaderConstants._PongTexture);
-        }
+            cmd.ReleaseTemporaryRT(ShaderConstants._FullCoCTexture);//"_FullCoCTexture"
+            cmd.ReleaseTemporaryRT(ShaderConstants._HalfCoCTexture);//"_HalfCoCTexture"
+            cmd.ReleaseTemporaryRT(ShaderConstants._PingTexture);//"_PingTexture"
+            cmd.ReleaseTemporaryRT(ShaderConstants._PongTexture);//"_PongTexture"
+        }//  函数完__
+
 
         void PrepareBokehKernel()
         {
@@ -755,7 +844,9 @@ namespace UnityEngine.Rendering.Universal.Internal
                     idx++;
                 }
             }
-        }
+        }//  函数完__
+
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static float GetMaxBokehRadiusInPixels(float viewportHeight)
@@ -764,6 +855,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             const float kRadiusInPixels = 14f;
             return Mathf.Min(0.05f, kRadiusInPixels / viewportHeight);
         }
+
 
         void DoBokehDepthOfField(CommandBuffer cmd, int source, int destination, Rect pixelRect)
         {
@@ -781,7 +873,10 @@ namespace UnityEngine.Rendering.Universal.Internal
             float rcpAspect = 1f / (wh / (float)hh);
 
             CoreUtils.SetKeyword(material, ShaderKeywordStrings.UseFastSRGBLinearConversion, m_UseFastSRGBLinearConversion);
-            cmd.SetGlobalVector(ShaderConstants._CoCParams, new Vector4(P, maxCoC, maxRadius, rcpAspect));
+            cmd.SetGlobalVector(
+                ShaderConstants._CoCParams, //"_CoCParams"
+                new Vector4(P, maxCoC, maxRadius, rcpAspect)
+            );
 
             // Prepare the bokeh kernel constant buffer
             int hash = m_DepthOfField.GetHashCode();
@@ -791,10 +886,18 @@ namespace UnityEngine.Rendering.Universal.Internal
                 PrepareBokehKernel();
             }
 
-            cmd.SetGlobalVectorArray(ShaderConstants._BokehKernel, m_BokehKernel);
+            cmd.SetGlobalVectorArray(
+                ShaderConstants._BokehKernel, //"_BokehKernel"
+                m_BokehKernel
+            );
 
             // Temporary textures
-            cmd.GetTemporaryRT(ShaderConstants._FullCoCTexture, GetCompatibleDescriptor(m_Descriptor.width, m_Descriptor.height, GraphicsFormat.R8_UNorm), FilterMode.Bilinear);
+            cmd.GetTemporaryRT(
+                ShaderConstants._FullCoCTexture, //"_FullCoCTexture"
+                GetCompatibleDescriptor(m_Descriptor.width, 
+                m_Descriptor.height, GraphicsFormat.R8_UNorm), 
+                FilterMode.Bilinear
+            );
             cmd.GetTemporaryRT(ShaderConstants._PingTexture, GetCompatibleDescriptor(wh, hh, GraphicsFormat.R16G16B16A16_SFloat), FilterMode.Bilinear);
             cmd.GetTemporaryRT(ShaderConstants._PongTexture, GetCompatibleDescriptor(wh, hh, GraphicsFormat.R16G16B16A16_SFloat), FilterMode.Bilinear);
 
@@ -803,7 +906,10 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             // Compute CoC
             Blit(cmd, source, ShaderConstants._FullCoCTexture, material, 0);
-            cmd.SetGlobalTexture(ShaderConstants._FullCoCTexture, ShaderConstants._FullCoCTexture);
+            cmd.SetGlobalTexture(
+                ShaderConstants._FullCoCTexture, //"_FullCoCTexture"
+                ShaderConstants._FullCoCTexture  //"_FullCoCTexture"
+            );
 
             // Downscale & prefilter color + coc
             Blit(cmd, source, ShaderConstants._PingTexture, material, 1);
@@ -815,19 +921,22 @@ namespace UnityEngine.Rendering.Universal.Internal
             Blit(cmd, ShaderConstants._PongTexture, BlitDstDiscardContent(cmd, ShaderConstants._PingTexture), material, 3);
 
             // Composite
-            cmd.SetGlobalTexture(ShaderConstants._DofTexture, ShaderConstants._PingTexture);
+            cmd.SetGlobalTexture(
+                ShaderConstants._DofTexture, //"_DofTexture"
+                ShaderConstants._PingTexture
+            );
             Blit(cmd, source, BlitDstDiscardContent(cmd, destination), material, 4);
 
             // Cleanup
-            cmd.ReleaseTemporaryRT(ShaderConstants._FullCoCTexture);
-            cmd.ReleaseTemporaryRT(ShaderConstants._PingTexture);
-            cmd.ReleaseTemporaryRT(ShaderConstants._PongTexture);
-        }
-
+            cmd.ReleaseTemporaryRT(ShaderConstants._FullCoCTexture);//"_FullCoCTexture"
+            cmd.ReleaseTemporaryRT(ShaderConstants._PingTexture);//"_PingTexture"
+            cmd.ReleaseTemporaryRT(ShaderConstants._PongTexture);//"_PongTexture"
+        }//  函数完__
         #endregion
 
-        #region Motion Blur
 
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
+        #region Motion Blur
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
         // Hold the stereo matrices to avoid allocating arrays every frame
@@ -892,10 +1001,12 @@ namespace UnityEngine.Rendering.Universal.Internal
             PostProcessUtils.SetSourceSize(cmd, m_Descriptor);
 
             Blit(cmd, source, BlitDstDiscardContent(cmd, destination), material, (int)m_MotionBlur.quality.value);
-        }
-
+        }//  函数完__
         #endregion
 
+
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Panini Projection
 
         // Back-ported & adapted from the work of the Stockholm demo team - thanks Lasse!
@@ -920,7 +1031,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             );
 
             Blit(cmd, source, BlitDstDiscardContent(cmd, destination), material);
-        }
+        }//  函数完__
 
         Vector2 CalcViewExtents(Camera camera)
         {
@@ -967,10 +1078,11 @@ namespace UnityEngine.Rendering.Universal.Internal
             var cylPos = projPos * cylDistMinusD;
 
             return cylPos * (viewDist / cylDist);
-        }
-
+        }//  函数完__
         #endregion
 
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Bloom
 
         void SetupBloom(CommandBuffer cmd, int source, Material uberMaterial)
@@ -1085,10 +1197,11 @@ namespace UnityEngine.Rendering.Universal.Internal
                 uberMaterial.EnableKeyword(dirtIntensity > 0f ? ShaderKeywordStrings.BloomHQDirt : ShaderKeywordStrings.BloomHQ);
             else
                 uberMaterial.EnableKeyword(dirtIntensity > 0f ? ShaderKeywordStrings.BloomLQDirt : ShaderKeywordStrings.BloomLQ);
-        }
-
+        }//  函数完__
         #endregion
 
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Lens Distortion
 
         void SetupLensDistortion(Material material, bool isSceneView)
@@ -1115,10 +1228,11 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             if (m_LensDistortion.IsActive() && !isSceneView)
                 material.EnableKeyword(ShaderKeywordStrings.Distortion);
-        }
-
+        }//  函数完__
         #endregion
 
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Chromatic Aberration
 
         void SetupChromaticAberration(Material material)
@@ -1128,9 +1242,10 @@ namespace UnityEngine.Rendering.Universal.Internal
             if (m_ChromaticAberration.IsActive())
                 material.EnableKeyword(ShaderKeywordStrings.ChromaticAberration);
         }
-
         #endregion
 
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Vignette
 
         void SetupVignette(Material material)
@@ -1151,10 +1266,11 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             material.SetVector(ShaderConstants._Vignette_Params1, v1);
             material.SetVector(ShaderConstants._Vignette_Params2, v2);
-        }
-
+        }//  函数完__
         #endregion
 
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Color Grading
 
         void SetupColorGrading(CommandBuffer cmd, ref RenderingData renderingData, Material material)
@@ -1190,10 +1306,11 @@ namespace UnityEngine.Rendering.Universal.Internal
                     default: break; // None
                 }
             }
-        }
-
+        }//  函数完__
         #endregion
 
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Film Grain
 
         void SetupGrain(in CameraData cameraData, Material material)
@@ -1209,9 +1326,11 @@ namespace UnityEngine.Rendering.Universal.Internal
                 );
             }
         }
-
         #endregion
 
+
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region 8-bit Dithering
 
         void SetupDithering(in CameraData cameraData, Material material)
@@ -1227,9 +1346,10 @@ namespace UnityEngine.Rendering.Universal.Internal
                 );
             }
         }
-
         #endregion
 
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Final pass
 
         void RenderFinalPass(CommandBuffer cmd, ref RenderingData renderingData)
@@ -1251,7 +1371,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             if (RequireSRGBConversionBlitToBackBuffer(cameraData))
                 material.EnableKeyword(ShaderKeywordStrings.LinearToSRGBConversion);//"_LINEAR_TO_SRGB_CONVERSION"
 
-            cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, m_Source.Identifier());
+            cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, m_Source.Identifier());//"_SourceTex"
 
             var colorLoadAction = cameraData.isDefaultViewport ? RenderBufferLoadAction.DontCare : RenderBufferLoadAction.Load;
 
@@ -1292,10 +1412,12 @@ namespace UnityEngine.Rendering.Universal.Internal
                 cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, material);
                 cmd.SetViewProjectionMatrices(cameraData.camera.worldToCameraMatrix, cameraData.camera.projectionMatrix);
             }
-        }
-
+        }//  函数完__
         #endregion
 
+
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Internal utilities
 
         class MaterialLibrary

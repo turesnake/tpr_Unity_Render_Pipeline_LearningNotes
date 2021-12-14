@@ -8,10 +8,10 @@ namespace UnityEngine.Rendering
 {
     using UnityObject = UnityEngine.Object;
 
-    /// <summary>
-    /// A global manager that tracks all the Volumes in the currently loaded Scenes and does all the
-    /// interpolation work.
-    /// </summary>
+    /*
+        A global manager that tracks all the Volumes in the currently loaded Scenes and does all the
+        interpolation work.
+    */
     public sealed class VolumeManager//VolumeManager__RR
     {
         static readonly Lazy<VolumeManager> s_Instance = new Lazy<VolumeManager>(() => new VolumeManager());

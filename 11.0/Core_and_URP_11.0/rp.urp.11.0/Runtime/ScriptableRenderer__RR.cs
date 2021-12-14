@@ -190,12 +190,13 @@ namespace UnityEngine.Rendering.Universal
                 // we will also change it here to avoid breaking existing shaders. (case 1257518)
                 Matrix4x4 worldToCameraMatrix = Matrix4x4.Scale(new Vector3(1.0f, 1.0f, -1.0f)) * viewMatrix;
                 Matrix4x4 cameraToWorldMatrix = worldToCameraMatrix.inverse;
-                cmd.SetGlobalMatrix(ShaderPropertyId.worldToCameraMatrix, worldToCameraMatrix);
-                cmd.SetGlobalMatrix(ShaderPropertyId.cameraToWorldMatrix, cameraToWorldMatrix);
 
-                cmd.SetGlobalMatrix(ShaderPropertyId.inverseViewMatrix, inverseViewMatrix);
-                cmd.SetGlobalMatrix(ShaderPropertyId.inverseProjectionMatrix, inverseProjectionMatrix);
-                cmd.SetGlobalMatrix(ShaderPropertyId.inverseViewAndProjectionMatrix, inverseViewProjection);
+                cmd.SetGlobalMatrix(ShaderPropertyId.worldToCameraMatrix, worldToCameraMatrix);//"unity_WorldToCamera"
+                cmd.SetGlobalMatrix(ShaderPropertyId.cameraToWorldMatrix, cameraToWorldMatrix);//"unity_CameraToWorld"
+
+                cmd.SetGlobalMatrix(ShaderPropertyId.inverseViewMatrix, inverseViewMatrix);//"unity_MatrixInvV"
+                cmd.SetGlobalMatrix(ShaderPropertyId.inverseProjectionMatrix, inverseProjectionMatrix);//"unity_MatrixInvP"
+                cmd.SetGlobalMatrix(ShaderPropertyId.inverseViewAndProjectionMatrix, inverseViewProjection);//"unity_MatrixInvVP"
             }
 
             // TODO: missing unity_CameraWorldClipPlanes[6], currently set by context.SetupCameraProperties
@@ -284,11 +285,25 @@ namespace UnityEngine.Rendering.Universal
             Vector4 orthoParams = new Vector4(camera.orthographicSize * cameraData.aspectRatio, camera.orthographicSize, 0.0f, isOrthographic);
 
             // Camera and Screen variables as described in https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html
-            cmd.SetGlobalVector(ShaderPropertyId.worldSpaceCameraPos, camera.transform.position);
-            cmd.SetGlobalVector(ShaderPropertyId.screenParams, new Vector4(cameraWidth, cameraHeight, 1.0f + 1.0f / cameraWidth, 1.0f + 1.0f / cameraHeight));
-            cmd.SetGlobalVector(ShaderPropertyId.scaledScreenParams, new Vector4(scaledCameraWidth, scaledCameraHeight, 1.0f + 1.0f / scaledCameraWidth, 1.0f + 1.0f / scaledCameraHeight));
-            cmd.SetGlobalVector(ShaderPropertyId.zBufferParams, zBufferParams);
-            cmd.SetGlobalVector(ShaderPropertyId.orthoParams, orthoParams);
+            cmd.SetGlobalVector(ShaderPropertyId.worldSpaceCameraPos, camera.transform.position);//"_WorldSpaceCameraPos"
+            cmd.SetGlobalVector(ShaderPropertyId.screenParams, // "_ScreenParams"
+                new Vector4(
+                    cameraWidth, 
+                    cameraHeight, 
+                    1.0f + 1.0f / cameraWidth, 
+                    1.0f + 1.0f / cameraHeight
+                ));
+
+            cmd.SetGlobalVector(ShaderPropertyId.scaledScreenParams, //"_ScaledScreenParams"
+                new Vector4(
+                    scaledCameraWidth, 
+                    scaledCameraHeight, 
+                    1.0f + 1.0f / scaledCameraWidth, 
+                    1.0f + 1.0f / scaledCameraHeight
+                ));
+
+            cmd.SetGlobalVector(ShaderPropertyId.zBufferParams, zBufferParams);//"_ZBufferParams"
+            cmd.SetGlobalVector(ShaderPropertyId.orthoParams, orthoParams);//"unity_OrthoParams"
         }
 
 
@@ -299,12 +314,6 @@ namespace UnityEngine.Rendering.Universal
             Set shader time variables;
             https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html
 
-            参数:
-            cmd:    
-                CommandBuffer to submit data to GPU
-            time:
-            deltaTime:
-            smoothDeltaTime:
         */
         void SetShaderTimeValues(CommandBuffer cmd, float time, float deltaTime, float smoothDeltaTime)
         {
@@ -319,11 +328,11 @@ namespace UnityEngine.Rendering.Universal
             Vector4 deltaTimeVector = new Vector4(deltaTime, 1f / deltaTime, smoothDeltaTime, 1f / smoothDeltaTime);
             Vector4 timeParametersVector = new Vector4(time, Mathf.Sin(time), Mathf.Cos(time), 0.0f);
 
-            cmd.SetGlobalVector(ShaderPropertyId.time, timeVector);
-            cmd.SetGlobalVector(ShaderPropertyId.sinTime, sinTimeVector);
-            cmd.SetGlobalVector(ShaderPropertyId.cosTime, cosTimeVector);
-            cmd.SetGlobalVector(ShaderPropertyId.deltaTime, deltaTimeVector);
-            cmd.SetGlobalVector(ShaderPropertyId.timeParameters, timeParametersVector);
+            cmd.SetGlobalVector(ShaderPropertyId.time, timeVector);//"_Time"
+            cmd.SetGlobalVector(ShaderPropertyId.sinTime, sinTimeVector);//"_SinTime"
+            cmd.SetGlobalVector(ShaderPropertyId.cosTime, cosTimeVector);//"_CosTime"
+            cmd.SetGlobalVector(ShaderPropertyId.deltaTime, deltaTimeVector);//"unity_DeltaTime"
+            cmd.SetGlobalVector(ShaderPropertyId.timeParameters, timeParametersVector);//"_TimeParameters"
         }
 
 
@@ -581,7 +590,7 @@ namespace UnityEngine.Rendering.Universal
         /// <param name="depthTarget">Camera depth target. 
         ///                           Pass "BuiltinRenderTextureType.CameraTarget" if color has depth or rendering to backbuffer.
         /// </param>
-        public void ConfigureCameraTarget(RenderTargetIdentifier colorTarget, RenderTargetIdentifier depthTarget)
+        public void ConfigureCameraTarget(RenderTargetIdentifier colorTarget, RenderTargetIdentifier depthTarget)//  读完__
         {
             m_CameraColorTarget = colorTarget;
             m_CameraDepthTarget = depthTarget;
@@ -773,7 +782,7 @@ namespace UnityEngine.Rendering.Universal
             Enqueues a render pass for execution.
         */
         /// <param name="pass">Render pass to be enqueued.</param>
-        public void EnqueuePass(ScriptableRenderPass pass)
+        public void EnqueuePass(ScriptableRenderPass pass)//   读完__
         {
             m_ActiveRenderPassQueue.Add(pass);
         }

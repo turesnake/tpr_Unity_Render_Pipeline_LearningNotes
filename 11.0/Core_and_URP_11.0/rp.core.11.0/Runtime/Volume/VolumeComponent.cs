@@ -6,30 +6,45 @@ using System.Linq;
 
 namespace UnityEngine.Rendering
 {
-    /// <summary>
-    /// This attribute allows you to add commands to the <strong>Add Override</strong> popup menu
-    /// on Volumes.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-    public sealed class VolumeComponentMenu : Attribute
-    {
-        /// <summary>
-        /// The name of the entry in the override list. You can use slashes to create sub-menus.
-        /// </summary>
-        public readonly string menu;
-        // TODO: Add support for component icons
+    /*
+        This attribute allows you to add commands to the "Add Override" popup menu on Volumes.
+        ---
+        在 volume 组件的 inspector 中, 当选定具体的 "Profile" 对象后, 将会多出一个 "Add Override" 按钮;
+        点此函数, 弹出一个候选菜单, 用户可选择使用某一个 postprocessing 功能;
+        ---
+        而那些具体的 postprocessing class, 他们会使用本 attribute, 如:
 
-        /// <summary>
-        /// Creates a new <seealso cref="VolumeComponentMenu"/> instance.
-        /// </summary>
-        /// <param name="menu">The name of the entry in the override list. You can use slashes to
-        /// create sub-menus.</param>
+            [Serializable, VolumeComponentMenu("Post-processing/AAA")]
+            public sealed class AAA
+                : VolumeComponent, IPostProcessComponent
+            {...}
+
+        通过本 attribute, 这些实现类能让自己出现在 "Add Override" 按钮 绑定的菜单中;
+
+        传入的参数 name 是个 string, 其实就是 菜单中的放置路径;
+    */
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    public sealed class VolumeComponentMenu//VolumeComponentMenu__
+        : Attribute
+    {
+        
+        // The name of the entry in the override list. You can use slashes to create sub-menus.
+        public readonly string menu;
+
+        // TODO: Add support for component icons
+        
+        //  Creates a new "VolumeComponentMenu" instance.
+        /// <param name="menu">The name of the entry in the override list. You can use slashes to create sub-menus.</param>
         public VolumeComponentMenu(string menu)
         {
             this.menu = menu;
         }
     }
 
+
+
+
+    /*
     /// <summary>
     /// An attribute set on deprecated volume components.
     /// </summary>
@@ -37,11 +52,14 @@ namespace UnityEngine.Rendering
     public sealed class VolumeComponentDeprecated : Attribute
     {
     }
+    */
 
-    /// <summary>
-    /// The base class for all the components that can be part of a <see cref="VolumeProfile"/>.
-    /// The Volume framework automatically handles and interpolates any <see cref="VolumeParameter"/> members found in this class.
-    /// </summary>
+
+
+    /*
+        The base class for all the components that can be part of a "VolumeProfile".
+        The Volume framework automatically handles and interpolates any "VolumeParameter" members found in this class.
+    */
     /// <example>
     /// <code>
     /// using UnityEngine.Rendering;
@@ -54,38 +72,46 @@ namespace UnityEngine.Rendering
     /// </code>
     /// </example>
     [Serializable]
-    public class VolumeComponent : ScriptableObject
+    public class VolumeComponent//VolumeComponent__RR
+        : ScriptableObject
     {
-        /// <summary>
-        /// The active state of the set of parameters defined in this class. You can use this to
-        /// quickly turn on or off all the overrides at once.
-        /// </summary>
+        /*
+            The active state of the set of parameters defined in this class.
+            You can use this to quickly turn on or off all the overrides at once.
+            ---
+            猜测: 就是 那些后处理面板上的: ALL, NONE 按钮;
+        */
         public bool active = true;
 
-        /// <summary>
-        /// The name displayed in the component header. If you do not set a name, Unity generates one from
-        /// the class name automatically.
-        /// </summary>
+
+        /*
+            The name displayed in the component header. If you do not set a name, Unity generates one from
+            the class name automatically.
+        */
         public string displayName { get; protected set; } = "";
 
-        /// <summary>
-        /// A read-only collection of all the <see cref="VolumeParameter"/>s defined in this class.
-        /// </summary>
+
+        // A read-only collection of all the "VolumeParameter"s defined in this class.
         public ReadOnlyCollection<VolumeParameter> parameters { get; private set; }
+
 
 #pragma warning disable 414
         [SerializeField]
         bool m_AdvancedMode = false; // Editor-only
 #pragma warning restore 414
 
-        /// <summary>
-        /// Extracts all the <see cref="VolumeParameter"/>s defined in this class and nested classes.
-        /// </summary>
+
+        /*
+            Extracts(提取) all the "VolumeParameter"s defined in this class and nested classes.
+        */
         /// <param name="o">The object to find the parameters</param>
         /// <param name="parameters">The list filled with the parameters.</param>
         /// <param name="filter">If you want to filter the parameters</param>
-        internal static void FindParameters(object o, List<VolumeParameter> parameters, Func<FieldInfo, bool> filter = null)
-        {
+        internal static void FindParameters(
+                                        object o, 
+                                        List<VolumeParameter> parameters, 
+                                        Func<FieldInfo, bool> filter = null
+        ){
             if (o == null)
                 return;
 
@@ -103,7 +129,8 @@ namespace UnityEngine.Rendering
                 else if (!field.FieldType.IsArray && field.FieldType.IsClass)
                     FindParameters(field.GetValue(o), parameters, filter);
             }
-        }
+        }//   读完__
+
 
         /// <summary>
         /// Unity calls this method when it loads the class.
@@ -125,7 +152,8 @@ namespace UnityEngine.Rendering
                 else
                     Debug.LogWarning("Volume Component " + GetType().Name + " contains a null parameter; please make sure all parameters are initialized to a default value. Until this is fixed the null parameters will not be considered by the system.");
             }
-        }
+        }//   读完__
+
 
         /// <summary>
         /// Unity calls this method when the object goes out of scope.
@@ -140,7 +168,8 @@ namespace UnityEngine.Rendering
                 if (parameter != null)
                     parameter.OnDisable();
             }
-        }
+        }//   读完__
+
 
         /// <summary>
         /// Interpolates a <see cref="VolumeComponent"/> with this component by an interpolation
@@ -193,7 +222,8 @@ namespace UnityEngine.Rendering
                     stateParam.Interp(stateParam, toParam, interpFactor);
                 }
             }
-        }
+        }//   读完__
+
 
         /// <summary>
         /// Sets the state of all the overrides on this component to a given value.
@@ -203,6 +233,7 @@ namespace UnityEngine.Rendering
         {
             SetOverridesTo(parameters, state);
         }
+
 
         /// <summary>
         /// Sets the override state of the given parameters on this component to a given value.
@@ -226,7 +257,8 @@ namespace UnityEngine.Rendering
                         SetOverridesTo(innerParams, state);
                 }
             }
-        }
+        }//   读完__
+
 
         /// <summary>
         /// A custom hashing function that Unity uses to compare the state of parameters.
@@ -245,12 +277,14 @@ namespace UnityEngine.Rendering
 
                 return hash;
             }
-        }
+        }//   读完__
+
 
         /// <summary>
         /// Unity calls this method before the object is destroyed.
         /// </summary>
         protected virtual void OnDestroy() => Release();
+
 
         /// <summary>
         /// Releases all the allocated resources.

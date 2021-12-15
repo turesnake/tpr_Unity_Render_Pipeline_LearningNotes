@@ -1326,7 +1326,8 @@ namespace UnityEngine.Rendering
     /// </typeparam>
     // TODO: ObjectParameter<T> doesn't seem to be working as expect, debug me
     [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
-    public class ObjectParameter<T> : VolumeParameter<T>
+    public class ObjectParameter<T> 
+        : VolumeParameter<T>
     {
         internal ReadOnlyCollection<VolumeParameter> parameters { get; private set; }
 

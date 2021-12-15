@@ -267,8 +267,7 @@ namespace UnityEngine.Rendering.Universal
                 TODO: Would be better to add Profiling name hooks into RenderPipelineManager.
                 C#8 feature, only in >= 2020.2
                 --
-                (笔记查找 "using var")
-                此 "未托管资源" 会一直存在, 直到函数体结束 才被释放; (它不是没有用)
+                (笔记查找 "using var") 此 "未托管资源" 会一直存在, 直到函数体结束 才被释放; (它不是没有用)
             */
             using var profScope = new ProfilingScope(null, ProfilingSampler.Get(URPProfileId.UniversalRenderTotal));
 
@@ -566,11 +565,13 @@ namespace UnityEngine.Rendering.Universal
             baseCamera.TryGetComponent<UniversalAdditionalCameraData>(out var baseCameraAdditionalData);
 
             // Overlay cameras will be rendered stacked while rendering base cameras
+            // camera add data 如果不是 base camera, 直接放弃渲染
             if (baseCameraAdditionalData != null && baseCameraAdditionalData.renderType == CameraRenderType.Overlay)
                 return;
 
             // renderer contains a stack if it has additional data and the renderer supports stacking
-            var renderer = baseCameraAdditionalData?.scriptableRenderer;
+            var renderer = baseCameraAdditionalData?.scriptableRenderer;// 如 "Forward Renderer"
+            
             bool supportsCameraStacking = renderer != null && renderer.supportedRenderingFeatures.cameraStacking;
             List<Camera> cameraStack = (supportsCameraStacking) ? baseCameraAdditionalData?.cameraStack : null;
 

@@ -856,13 +856,13 @@ namespace UnityEngine.Rendering.Universal
                 EnqueuePass(m_SceneViewDepthCopyPass);
             }
 #endif
-        }// 函数完__
+        }// 函数 Setup() 完__
 
 
 
 
         /// <inheritdoc />
-        public override void SetupLights(ScriptableRenderContext context, ref RenderingData renderingData)
+        public override void SetupLights(ScriptableRenderContext context, ref RenderingData renderingData)//  读完__
         {
             m_ForwardLights.Setup(context, ref renderingData);
 
@@ -880,7 +880,7 @@ namespace UnityEngine.Rendering.Universal
             为 "参数 cullingParameters" 设置一部分成员数据;
         */
         /// <inheritdoc />
-        public override void SetupCullingParameters( // 读完__
+        public override void SetupCullingParameters( //   读完__
                         ref ScriptableCullingParameters cullingParameters,
                         ref CameraData cameraData
         ){
@@ -905,7 +905,6 @@ namespace UnityEngine.Rendering.Universal
             {
                 cullingParameters.cullingOptions &= ~CullingOptions.ShadowCasters;// 关闭这个 flag
             }
-
 
             if (this.actualRenderingMode == RenderingMode.Deferred){
                 /*  暂时先忽略,  反正 11.0 也不支持 延迟渲染    tpr
@@ -948,6 +947,7 @@ namespace UnityEngine.Rendering.Universal
                 m_ActiveCameraDepthAttachment = RenderTargetHandle.CameraTarget;
             }
         }// 函数完__
+
 
 
         /* 暂时先忽略, 反正 11.0 中也不支持 延迟渲染       tpr

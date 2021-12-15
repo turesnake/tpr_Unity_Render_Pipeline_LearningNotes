@@ -501,11 +501,9 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
-        /// <summary>
+    
         /// Returns a renderer from the current pipeline asset
-        /// </summary>
         /// <param name="index">Index to the renderer. If invalid index is passed, the default renderer is returned instead.</param>
-        /// <returns></returns>
         public ScriptableRenderer GetRenderer(int index)
         {
             if (index == -1)
@@ -533,6 +531,8 @@ namespace UnityEngine.Rendering.Universal
 
             return m_Renderers[index];
         }
+
+
 
         internal ScriptableRendererData scriptableRendererData
         {
@@ -1114,8 +1114,9 @@ namespace UnityEngine.Rendering.Universal
         /// <summary>
         /// Check to see if the RendererData list contains valid RendererData references.
         /// </summary>
-        /// <param name="partial">This bool controls whether to test against all or any, if false then there has to be no invalid RendererData</param>
-        /// <returns></returns>
+        /// <param name="partial">This bool controls whether to test against all or any, 
+        ///                     if false then there has to be no invalid RendererData
+        /// </param>
         internal bool ValidateRendererDataList(bool partial = false)
         {
             var emptyEntries = 0;
@@ -1126,8 +1127,8 @@ namespace UnityEngine.Rendering.Universal
         }
 
 
-
-        internal bool ValidateRendererData(int index)
+        // 检查参数 index 是否指向一个有效的的 renderer;
+        internal bool ValidateRendererData(int index)//  读完__
         {
             // Check to see if you are asking for the default renderer
             if (index == -1) index = m_DefaultRendererIndex;

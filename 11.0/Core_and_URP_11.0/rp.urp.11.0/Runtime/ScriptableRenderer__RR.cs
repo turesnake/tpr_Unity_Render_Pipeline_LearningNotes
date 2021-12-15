@@ -423,6 +423,7 @@ namespace UnityEngine.Rendering.Universal
 
         /*
             Supported "rendering features" by this renderer.
+            包含: cameraStacking, msaa;
         */
         public RenderingFeatures supportedRenderingFeatures { get; set; } = new RenderingFeatures();
 

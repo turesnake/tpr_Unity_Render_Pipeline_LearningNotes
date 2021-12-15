@@ -180,14 +180,14 @@ namespace UnityEngine.Rendering.Universal
         [FormerlySerializedAs("renderShadows"), SerializeField]
         bool m_RenderShadows = true;
 
-        [SerializeField]
-        CameraOverrideOption m_RequiresDepthTextureOption = CameraOverrideOption.UsePipelineSettings;
+        [SerializeField]CameraOverrideOption m_RequiresDepthTextureOption = CameraOverrideOption.UsePipelineSettings;
 
-        [SerializeField]
-        CameraOverrideOption m_RequiresOpaqueTextureOption = CameraOverrideOption.UsePipelineSettings;
+        [SerializeField]CameraOverrideOption m_RequiresOpaqueTextureOption = CameraOverrideOption.UsePipelineSettings;
 
         [SerializeField] CameraRenderType m_CameraType = CameraRenderType.Base;
         [SerializeField] List<Camera> m_Cameras = new List<Camera>();
+
+        // 值为 -1,  表示使用 asset 的默认值;
         [SerializeField] int m_RendererIndex = -1;
 
         [SerializeField] LayerMask m_VolumeLayerMask = 1; // "Default"
@@ -423,7 +423,8 @@ namespace UnityEngine.Rendering.Universal
                 if (UniversalRenderPipeline.asset is null)
                     return null;
                 if (!UniversalRenderPipeline.asset.ValidateRendererData(m_RendererIndex))
-                {
+                {   // 如果 m_RendererIndex 不能指向 asset 的容器中 一个有效的 renderer
+                    // 就要直接改用 asset 的默认 renderer 
                     int defaultIndex = UniversalRenderPipeline.asset.m_DefaultRendererIndex;
                     Debug.LogWarning(
                         $"Renderer at <b>index {m_RendererIndex.ToString()}</b> is missing for camera <b>{camera.name}</b>, falling back to Default Renderer. <b>{UniversalRenderPipeline.asset.m_RendererDataList[defaultIndex].name}</b>",

@@ -2,64 +2,60 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Rendering
 {
-    /// <summary>
-    /// A generic Volume component holding a <see cref="VolumeProfile"/>.
-    /// </summary>
+    /*
+        A generic Volume component holding a "VolumeProfile".
+    */
     [HelpURL(Documentation.baseURLHDRP + Documentation.version + Documentation.subURL + "Volumes" + Documentation.endURL)]
     [ExecuteAlways]
     [AddComponentMenu("Miscellaneous/Volume")]
     public class Volume //Volume__RR
         : MonoBehaviour
     {
-        /// <summary>
-        /// Specifies whether to apply the Volume to the entire Scene or not.
-        /// </summary>
+     
+        // Specifies whether to apply the Volume to the entire Scene or not.
         [Tooltip("When enabled, HDRP applies this Volume to the entire Scene.")]
         public bool isGlobal = true;
 
-        /// <summary>
-        /// The Volume priority in the stack. A higher value means higher priority. This supports negative values.
-        /// </summary>
+       
+        // The Volume priority in the stack. 
+        // 值越高, 优先级越高, 可用负数
         [Tooltip("Sets the Volume priority in the stack. A higher value means higher priority. You can use negative values.")]
         public float priority = 0f;
 
-        /// <summary>
-        /// The outer distance to start blending from. A value of 0 means no blending and Unity applies
-        /// the Volume overrides immediately upon entry.
-        /// </summary>
+
+   
+        // The outer distance to start blending from. 
+        // 0 值表示立即切换, 没有任何 blend; 好像是从 volume 的边界处向外拓展的一个 过度区间;
         [Tooltip("Sets the outer distance to start blending from. A value of 0 means no blending and Unity applies the Volume overrides immediately upon entry.")]
         public float blendDistance = 0f;
 
-        /// <summary>
+
+ 
         /// The total weight of this volume in the Scene. 0 means no effect and 1 means full effect.
-        /// </summary>
         [Range(0f, 1f), Tooltip("Sets the total weight of this Volume in the Scene. 0 means no effect and 1 means full effect.")]
         public float weight = 1f;
 
-        /// <summary>
-        /// The shared Profile that this Volume uses.
-        /// Modifying <c>sharedProfile</c> changes every Volumes that uses this Profile and also changes
-        /// the Profile settings stored in the Project.
-        /// </summary>
-        /// <remarks>
-        /// You should not modify Profiles that <c>sharedProfile</c> returns. If you want
-        /// to modify the Profile of a Volume, use <see cref="profile"/> instead.
-        /// </remarks>
-        /// <seealso cref="profile"/>
+
+        /*
+            The shared Profile that this Volume uses.
+            Modifying sharedProfile changes every Volumes that uses this Profile and also changes
+            the Profile settings stored in the Project.
+
+            You should not modify Profiles that sharedProfile returns. 
+            If you want to modify the Profile of a Volume, use "profile" instead.
+        */
         public VolumeProfile sharedProfile = null;
 
-        /// <summary>
-        /// Gets the first instantiated <see cref="VolumeProfile"/> assigned to the Volume.
-        /// Modifying <c>profile</c> changes the Profile for this Volume only. If another Volume
-        /// uses the same Profile, this clones the shared Profile and starts using it from now on.
-        /// </summary>
-        /// <remarks>
-        /// This property automatically instantiates the Profile and make it unique to this Volume
-        /// so you can safely edit it via scripting at runtime without changing the original Asset
-        /// in the Project.
-        /// Note that if you pass your own Profile, you must destroy it when you finish using it.
-        /// </remarks>
-        /// <seealso cref="sharedProfile"/>
+
+        /*
+            Gets the first instantiated "VolumeProfile" assigned to the Volume.
+            Modifying profile changes the Profile for this Volume only. 
+            If another Volume uses the same Profile, this clones the shared Profile and starts using it from now on.
+
+            This property automatically instantiates the Profile and make it unique to this Volume
+            so you can safely edit it via scripting at runtime without changing the original Asset in the Project.
+            Note that if you pass your own Profile, you must destroy it when you finish using it.
+        */
         public VolumeProfile profile
         {
             get
@@ -83,20 +79,24 @@ namespace UnityEngine.Rendering
             set => m_InternalProfile = value;
         }
 
+
+
         internal VolumeProfile profileRef => m_InternalProfile == null ? sharedProfile : m_InternalProfile;
 
-        /// <summary>
-        /// Checks if the Volume has an instantiated Profile or if it uses a shared Profile.
-        /// </summary>
-        /// <returns><c>true</c> if the profile has been instantiated.</returns>
-        /// <seealso cref="profile"/>
-        /// <seealso cref="sharedProfile"/>
+
+        /*
+            Checks if the Volume has an instantiated(实例化的) Profile or if it uses a shared Profile.
+        */
+        /// <returns>true if the profile has been instantiated.</returns>
         public bool HasInstantiatedProfile() => m_InternalProfile != null;
+
+
 
         // Needed for state tracking (see the comments in Update)
         int m_PreviousLayer;
         float m_PreviousPriority;
         VolumeProfile m_InternalProfile;
+
 
         void OnEnable()
         {
@@ -113,20 +113,19 @@ namespace UnityEngine.Rendering
         {
             // Unfortunately we need to track the current layer to update the volume manager in
             // real-time as the user could change it at any time in the editor or at runtime.
-            // Because no event is raised when the layer changes, we have to track it on every
-            // frame :/
+            // Because no event is raised when the layer changes, we have to track it on every frame :/
             UpdateLayer();
 
             // Same for priority. We could use a property instead, but it doesn't play nice with the
             // serialization system. Using a custom Attribute/PropertyDrawer for a property is
-            // possible but it doesn't work with Undo/Redo in the editor, which makes it useless for
-            // our case.
+            // possible but it doesn't work with Undo/Redo in the editor, which makes it useless for our case.
             if (priority != m_PreviousPriority)
             {
                 VolumeManager.instance.SetLayerDirty(gameObject.layer);
                 m_PreviousPriority = priority;
             }
-        }
+        }//  函数完__
+
 
         internal void UpdateLayer()
         {
@@ -137,6 +136,7 @@ namespace UnityEngine.Rendering
                 m_PreviousLayer = layer;
             }
         }
+        
 
 #if UNITY_EDITOR
         // TODO: Look into a better volume previsualization system
@@ -197,7 +197,7 @@ namespace UnityEngine.Rendering
             }
 
             colliders.Clear();
-        }
+        }//  函数完__
 
 #endif
     }

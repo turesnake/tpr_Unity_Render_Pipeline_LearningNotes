@@ -46,60 +46,91 @@
 // ----------------------------------------------------------------------------
 
 // Time (t = time since current level load) values from Unity
+
 float4 _Time; // (t/20, t, t*2, t*3)
 float4 _SinTime; // sin(t/8), sin(t/4), sin(t/2), sin(t)
 float4 _CosTime; // cos(t/8), cos(t/4), cos(t/2), cos(t)
-float4 unity_DeltaTime; // dt, 1/dt, smoothdt, 1/smoothdt
-float4 _TimeParameters; // t, sin(t), cos(t)
+float4 unity_DeltaTime; // deltaTime, 1/deltaTime, smoothDeltaTime, 1/smoothDeltaTime
+float4 _TimeParameters; // t, sin(t), cos(t), 0
+
 
 
 #if !defined(USING_STEREO_MATRICES) // 非xr
-    float3 _WorldSpaceCameraPos;
+    float3 _WorldSpaceCameraPos; // camera.transform.position
 #endif
 
- 
-// x = 1 or -1 (-1 if projection is flipped)
-//
-//      标记 投影变换 (posVS -> posHCS) 过程中, 是否把 y轴的方向 上下颠倒了.
-//      ---
-//      unity 遵循 OpenGL风格. 通过 .x 来指示, unity 有没有帮你翻转 投影变换的 纵坐标 (朝上->朝下)
-//      值为 -1 就说明没翻好 (当前朝下,需要再手动翻回 朝上):
-//      if (_ProjectionParams.x < 0){
-//          pos.y = 1 - pos.y;
-//      }
-// 
-// y = near plane
-// z = far plane
-// w = 1/far plane
+/*
+    x = 1 or -1 (-1 if projection is flipped)
+        标记 投影变换 (posVS -> posHCS) 过程中, 是否把 y轴的方向 上下颠倒了.
+        ---
+        unity 遵循 OpenGL风格. 
+        通过 .x 来指示, unity 有没有帮你翻转 投影变换的 纵坐标 (朝上->朝下)
+        值为 -1 就说明没翻好 (当前朝下,需要再手动翻回 朝上):
+        if (_ProjectionParams.x < 0){
+            pos.y = 1 - pos.y;
+        }
+     
+    y = near plane
+    z = far plane
+    w = 1/far plane
+*/
 float4 _ProjectionParams;
 
 
-// x = width
-// y = height
-// z = 1 + 1.0/width
-// w = 1 + 1.0/height
+/*
+    === 原始含义 ===:
+    x = width    
+    y = height
+    z = 1 + 1.0/width
+    w = 1 + 1.0/height
+    ---
+    === urp ===:
+        (其实内容 和 上文的原始含义是一致的)
+        x: baseCamera.pixelRect.width
+        y: baseCamera.pixelRect.height
+        z: 1 + 1/x
+        w: 1 + 1/y
+        ----------
+        urp 中还有一个 相似的数据: "_ScaledScreenParams"
+*/
 float4 _ScreenParams;
 
 
-
-// Values used to linearize the Z buffer (http://www.humus.name/temp/Linearize%20depth.txt)
-// x = 1-far/near
-// y = far/near
-// z = x/far
-// w = y/far
-// or in case of a reversed depth buffer (UNITY_REVERSED_Z is 1)
-// x = -1+far/near
-// y = 1
-// z = x/far
-// w = 1/far
+/*
+    (http://www.humus.name/temp/Linearize%20depth.txt) 参考笔记图: "Linear01Depth.jpg"
+    -1-:
+    Values used to linearize the Z buffer 
+    此时 SystemInfo.usesReversedZBuffer == false;
+    这是 manual 中记录的格式:
+        x = 1-far/near
+        y = far/near
+        z = x/far
+        w = y/far
+    --------------------------
+    or in case of a reversed depth buffer (UNITY_REVERSED_Z is 1)
+    此时 SystemInfo.usesReversedZBuffer == true;
+    这是大多数平台 的 主要格式:
+        x = -1+far/near
+        y = 1
+        z = x/far
+        w = 1/far
+    --------------------------
+    # 为什么会被设计成这样 ？？？
+    当我们分别将 两种版本的 值，送入函数: LinearEyeDepth(), Linear01Depth()
+    发现了有趣的现象：
+        不管 SystemInfo.usesReversedZBuffer 是否为 true 这两个函数 都能稳定地工作, 调用方将无法察觉到这层差异;
+*/
 float4 _ZBufferParams;
 
 
-
-// x = orthographic camera's width
-// y = orthographic camera's height
-// z = unused
-// w = 1.0 if camera is ortho, 0.0 if perspective
+/*
+    === urp ===:
+    正交透视时 使用的数据:
+    x = orthographic camera's width:   camera.orthographicSize * cameraData.aspectRatio
+    y = orthographic camera's height:  camera.orthographicSize
+    z = 0.0 (unused)
+    w = 1 为 正交, 0 为透视
+*/
 float4 unity_OrthoParams;
 
 
@@ -133,7 +164,9 @@ float4 unity_CameraWorldClipPlanes[6];
     // of original camera.
     float4x4 unity_CameraProjection;
     float4x4 unity_CameraInvProjection;
-    float4x4 unity_WorldToCamera;
+
+    // 在 "unity_MatrixV" 的基础上, "unity_WorldToCamera" 额外翻转了自己的左右手特性;
+    float4x4 unity_WorldToCamera; // 没在 urp 中见到此值被使用
     float4x4 unity_CameraToWorld;
 #endif
 

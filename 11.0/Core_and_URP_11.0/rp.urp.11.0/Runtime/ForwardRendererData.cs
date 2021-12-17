@@ -94,7 +94,7 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-        protected override ScriptableRenderer Create()
+        protected override ScriptableRenderer Create()//  读完__
         {
             if (!Application.isPlaying)
             {
@@ -229,5 +229,6 @@ namespace UnityEngine.Rendering.Universal
 
 #endif
         }
+
     }
 }

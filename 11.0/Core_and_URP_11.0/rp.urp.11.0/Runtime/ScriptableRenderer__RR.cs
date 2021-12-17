@@ -52,7 +52,8 @@ namespace UnityEngine.Rendering.Universal
             "ScriptableRendererFeature"
             "ScriptableRenderPass"
     */
-    public abstract partial class ScriptableRenderer : IDisposable//ScriptableRenderer__RR
+    public abstract partial class ScriptableRenderer //ScriptableRenderer__RR
+        : IDisposable
     {
         private static class Profiling
         {
@@ -107,6 +108,8 @@ namespace UnityEngine.Rendering.Universal
                 参考:
                     "CameraRenderType"
                     "UniversalAdditionalCameraData.cameraStack"
+                ---
+                在 ForwardRenderer 初始化阶段, 自动设置此值为 true;
             */
             public bool cameraStacking { get; set; } = false;
             /*
@@ -125,6 +128,8 @@ namespace UnityEngine.Rendering.Universal
             一旦离开了 "rendering scope", 本值变为 null;
 
             有点类似: "Camera.current" 变量的概念
+
+            在 "RenderSingleCamera()"-2- 中被设置;
         */
         internal static ScriptableRenderer current = null;
 
@@ -142,20 +147,14 @@ namespace UnityEngine.Rendering.Universal
 
             如果你想设置通用 view and projection matrices, 改用:
                 SetViewAndProjectionMatrices(CommandBuffer, Matrix4x4, Matrix4x4, bool);
-                
-
-            参数:
-            cmd:
-                CommandBuffer to submit data to GPU
-
-            cameraData:
-                containing camera matrices information
-
-            setInverseMatrices:
-                是否额外设置对应的几个 逆矩阵;
+            
+            仅在本文件内被调用
         */
-        public static void SetCameraMatrices(CommandBuffer cmd, ref CameraData cameraData, bool setInverseMatrices)
-        {
+        public static void SetCameraMatrices(//    读完__
+                                    CommandBuffer cmd, 
+                                    ref CameraData cameraData, 
+                                    bool setInverseMatrices // 是否额外设置对应的几个 逆矩阵; true
+        ){
 /* tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.enabled)
@@ -165,7 +164,6 @@ namespace UnityEngine.Rendering.Universal
             }
 #endif
 */
-
             Matrix4x4 viewMatrix = cameraData.GetViewMatrix();
             Matrix4x4 projectionMatrix = cameraData.GetProjectionMatrix();
 
@@ -174,32 +172,44 @@ namespace UnityEngine.Rendering.Universal
                     调查使用 "SetViewAndProjectionMatrices()" 函数会导致 y-flip 问题 和 缠绕顺序问题;
                 for now using cmd.SetViewProjecionMatrices()
             */
+            // urp 自己注释掉的
             //SetViewAndProjectionMatrices(cmd, viewMatrix, cameraData.GetDeviceProjectionMatrix(), setInverseMatrices);
-            cmd.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
 
-            if (setInverseMatrices)
+            // 此函数中, 如果 view matrix 是自己实现的, 需要注意 z轴反转问题;
+            cmd.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
+            
+            if (setInverseMatrices)// 唯一一次调用中, 开启了此 bool
             {
+                // 得到最终在 shader 程序中出现的那个 投影矩阵, 比如 built-in管线中的 "UNITY_MATRIX_P" 矩阵;
+                // 本函数包含处理 "y-flip" 和 "reverse z" 的平台特定更改;
                 Matrix4x4 gpuProjectionMatrix = cameraData.GetGPUProjectionMatrix();
+
                 Matrix4x4 viewAndProjectionMatrix = gpuProjectionMatrix * viewMatrix;
                 Matrix4x4 inverseViewMatrix = Matrix4x4.Inverse(viewMatrix);
                 Matrix4x4 inverseProjectionMatrix = Matrix4x4.Inverse(gpuProjectionMatrix);
                 Matrix4x4 inverseViewProjection = inverseViewMatrix * inverseProjectionMatrix;
 
-                // There's an inconsistency in handedness between unity_matrixV and unity_WorldToCamera
-                // Unity changes the handedness of unity_WorldToCamera (see Camera::CalculateMatrixShaderProps)
-                // we will also change it here to avoid breaking existing shaders. (case 1257518)
+                /*
+                    There's an inconsistency(不一致) in handedness between "unity_matrixV" and "unity_WorldToCamera"
+                    Unity changes the handedness(惯用手) of unity_WorldToCamera 
+                    (see Camera::CalculateMatrixShaderProps) 此函数没找到..
+                    we will also change it here to avoid breaking existing shaders. (case 1257518)
+                    ---
+                    在 "unity_MatrixV" 的基础上, "unity_WorldToCamera" 额外翻转了自己的左右手特性;
+                */
                 Matrix4x4 worldToCameraMatrix = Matrix4x4.Scale(new Vector3(1.0f, 1.0f, -1.0f)) * viewMatrix;
                 Matrix4x4 cameraToWorldMatrix = worldToCameraMatrix.inverse;
 
                 cmd.SetGlobalMatrix(ShaderPropertyId.worldToCameraMatrix, worldToCameraMatrix);//"unity_WorldToCamera"
                 cmd.SetGlobalMatrix(ShaderPropertyId.cameraToWorldMatrix, cameraToWorldMatrix);//"unity_CameraToWorld"
 
+                // 逆矩阵
                 cmd.SetGlobalMatrix(ShaderPropertyId.inverseViewMatrix, inverseViewMatrix);//"unity_MatrixInvV"
                 cmd.SetGlobalMatrix(ShaderPropertyId.inverseProjectionMatrix, inverseProjectionMatrix);//"unity_MatrixInvP"
                 cmd.SetGlobalMatrix(ShaderPropertyId.inverseViewAndProjectionMatrix, inverseViewProjection);//"unity_MatrixInvVP"
             }
 
-            // TODO: missing unity_CameraWorldClipPlanes[6], currently set by context.SetupCameraProperties
+            // TODO: missing unity_CameraWorldClipPlanes[6], currently set by "context.SetupCameraProperties()"
         }
 
 
@@ -208,14 +218,14 @@ namespace UnityEngine.Rendering.Universal
             Set camera and screen shader variables
             https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html
 
-            参数:
-            cmd:
-                CommandBuffer to submit data to GPU
-
-            cameraData:
-                CameraData containing camera matrices information
+            配置如下几个 和 camera 相关的 shader数据:
+                "_WorldSpaceCameraPos"
+                "_ScreenParams"
+                "_ScaledScreenParams"
+                "_ZBufferParams"
+                "unity_OrthoParams"
         */
-        void SetPerCameraShaderVariables(CommandBuffer cmd, ref CameraData cameraData)
+        void SetPerCameraShaderVariables(CommandBuffer cmd, ref CameraData cameraData)//  读完__
         {
             using var profScope = new ProfilingScope(cmd, Profiling.setPerCameraShaderVariables);
 
@@ -241,6 +251,7 @@ namespace UnityEngine.Rendering.Universal
 
             if (camera.allowDynamicResolution)
             {
+                // 动态分辨率的 缩放
                 scaledCameraWidth *= ScalableBufferManager.widthScaleFactor;
                 scaledCameraHeight *= ScalableBufferManager.heightScaleFactor;
             }
@@ -251,12 +262,16 @@ namespace UnityEngine.Rendering.Universal
             float invFar = Mathf.Approximately(far, 0.0f) ? 0.0f : 1.0f / far;
             float isOrthographic = camera.orthographic ? 1.0f : 0.0f;
 
-            // From http://www.humus.name/temp/Linearize%20depth.txt
-            // But as depth component textures on OpenGL always return in 0..1 range (as in D3D), we have to use
-            // the same constants for both D3D and OpenGL here.
+            /*
+                From http://www.humus.name/temp/Linearize%20depth.txt
+                就是笔记中图: "Linear01Depth.jpg"
+            
+            // But as depth component textures on OpenGL always return in 0..1 range (as in D3D), 
+            // we have to use the same constants for both D3D and OpenGL here.
             // OpenGL would be this:
             // zc0 = (1.0 - far / near) / 2.0;
             // zc1 = (1.0 + far / near) / 2.0;
+            */
             // D3D is this:
             float zc0 = 1.0f - far * invNear;
             float zc1 = far * invNear;
@@ -272,8 +287,8 @@ namespace UnityEngine.Rendering.Universal
             }
 
             // Projection flip sign logic is very deep in GfxDevice::SetInvertProjectionMatrix
-            // For now we don't deal with _ProjectionParams.x and let "context.SetupCameraProperties" handle it.
-            // We need to enable this when we remove "context.SetupCameraProperties"
+            // For now we don't deal with _ProjectionParams.x and let "context.SetupCameraProperties()" handle it.
+            // We need to enable this when we remove "context.SetupCameraProperties()"
             // ---
             // 此处的代码, 被 unity 自己注释起来了;
             //
@@ -281,8 +296,12 @@ namespace UnityEngine.Rendering.Universal
             // Vector4 projectionParams = new Vector4(projectionFlipSign, near, far, 1.0f * invFar);
             // cmd.SetGlobalVector(ShaderPropertyId.projectionParams, projectionParams);
 
-
-            Vector4 orthoParams = new Vector4(camera.orthographicSize * cameraData.aspectRatio, camera.orthographicSize, 0.0f, isOrthographic);
+            Vector4 orthoParams = new Vector4(
+                camera.orthographicSize * cameraData.aspectRatio, 
+                camera.orthographicSize, 
+                0.0f, 
+                isOrthographic
+            );
 
             // Camera and Screen variables as described in https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html
             cmd.SetGlobalVector(ShaderPropertyId.worldSpaceCameraPos, camera.transform.position);//"_WorldSpaceCameraPos"
@@ -314,6 +333,7 @@ namespace UnityEngine.Rendering.Universal
             Set shader time variables;
             https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html
 
+            配置了几个与相机 相关的 shader 变量, 并传入 shader 中;
         */
         void SetShaderTimeValues(CommandBuffer cmd, float time, float deltaTime, float smoothDeltaTime)
         {
@@ -322,12 +342,36 @@ namespace UnityEngine.Rendering.Universal
             float timeHalf = time / 2f;
 
             // Time values
-            Vector4 timeVector = time * new Vector4(1f / 20f, 1f, 2f, 3f);
-            Vector4 sinTimeVector = new Vector4(Mathf.Sin(timeEights), Mathf.Sin(timeFourth), Mathf.Sin(timeHalf), Mathf.Sin(time));
-            Vector4 cosTimeVector = new Vector4(Mathf.Cos(timeEights), Mathf.Cos(timeFourth), Mathf.Cos(timeHalf), Mathf.Cos(time));
-            Vector4 deltaTimeVector = new Vector4(deltaTime, 1f / deltaTime, smoothDeltaTime, 1f / smoothDeltaTime);
-            Vector4 timeParametersVector = new Vector4(time, Mathf.Sin(time), Mathf.Cos(time), 0.0f);
-
+            Vector4 timeVector = time * new Vector4(
+                1f / 20f, 
+                1f, 
+                2f, 
+                3f
+            );
+            Vector4 sinTimeVector = new Vector4(
+                Mathf.Sin(timeEights), 
+                Mathf.Sin(timeFourth), 
+                Mathf.Sin(timeHalf), 
+                Mathf.Sin(time)
+            );
+            Vector4 cosTimeVector = new Vector4(
+                Mathf.Cos(timeEights), 
+                Mathf.Cos(timeFourth), 
+                Mathf.Cos(timeHalf), 
+                Mathf.Cos(time)
+            );
+            Vector4 deltaTimeVector = new Vector4(
+                deltaTime, 
+                1f / deltaTime, 
+                smoothDeltaTime, 
+                1f / smoothDeltaTime
+            );
+            Vector4 timeParametersVector = new Vector4(
+                time, 
+                Mathf.Sin(time), 
+                Mathf.Cos(time), 
+                0.0f
+            );
             cmd.SetGlobalVector(ShaderPropertyId.time, timeVector);//"_Time"
             cmd.SetGlobalVector(ShaderPropertyId.sinTime, sinTimeVector);//"_SinTime"
             cmd.SetGlobalVector(ShaderPropertyId.cosTime, cosTimeVector);//"_CosTime"
@@ -436,9 +480,8 @@ namespace UnityEngine.Rendering.Universal
 
 
         /*
-            
             猜测: 顶一个 render pass 的几个执行阶段(时间阶段); 有点 enum 的用法;
-            仅在本文件内被使用
+            仅在本文件内被使用;
         */
         static class RenderPassBlock//RenderPassBlock__
         {
@@ -464,20 +507,30 @@ namespace UnityEngine.Rendering.Universal
         const int k_RenderPassBlockCount = 4;
 
         List<ScriptableRenderPass> m_ActiveRenderPassQueue = new List<ScriptableRenderPass>(32);
+
+        
         List<ScriptableRendererFeature> m_RendererFeatures = new List<ScriptableRendererFeature>(10);
+
+        // Clear() 后会被设置为: "BuiltinRenderTextureType.CameraTarget";
         RenderTargetIdentifier m_CameraColorTarget;
+
+        // Clear() 后会被设置为: "BuiltinRenderTextureType.CameraTarget";
         RenderTargetIdentifier m_CameraDepthTarget;
 
 
         /*
             flag used to track when "m_CameraColorTarget" should be cleared (if necessary), 
             as well as other special actions only performed the first time "m_CameraColorTarget" is bound as a render target
+            ---
+            Clear() 后, base camera 设为 true, overlay camera 设为 false;
         */
         bool m_FirstTimeCameraColorTargetIsBound = true; 
 
         /*
             flag used to track when "m_CameraDepthTarget" should be cleared (if necessary), 
             the first time "m_CameraDepthTarget" is bound as a render target
+            ---
+            Clear() 后, 设为 true;
         */
         bool m_FirstTimeCameraDepthTargetIsBound = true; 
 
@@ -493,15 +546,19 @@ namespace UnityEngine.Rendering.Universal
         internal bool isCameraColorTargetValid = false;
 
         /*
+            Clear() 后 [0]会被设置为: "BuiltinRenderTextureType.CameraTarget"; 剩余元素设置为 0;
             tpr:
                 可看到, 最多支持 8 个 color texture
         */
         static RenderTargetIdentifier[] m_ActiveColorAttachments = new RenderTargetIdentifier[] {0, 0, 0, 0, 0, 0, 0, 0 };
 
+        // Clear() 后会被设置为: "BuiltinRenderTextureType.CameraTarget";
         static RenderTargetIdentifier m_ActiveDepthAttachment;
 
        
         /*
+            Trimmed: 修剪;
+
             如果 "colors" array 包含了无效的 RenderTargetIdentifier,
             "CoreUtils.SetRenderTarget()" 体内调用的 "CommandBuffer.SetRenderTarget()" 
             将会在 原生 c++ 代码端 曝出警告;
@@ -535,9 +592,8 @@ namespace UnityEngine.Rendering.Universal
         }
 
 
-        /*
-            构造函数
-        */
+        
+        //    构造函数
         public ScriptableRenderer(ScriptableRendererData data)// 读完__
         {
             profilingExecute = new ProfilingSampler(
@@ -639,21 +695,23 @@ namespace UnityEngine.Rendering.Universal
         {}
 
 
-        /// <summary>
-        /// Called upon finishing rendering the camera stack. You can release any resources created by the renderer here.
-        /// </summary>
-        /// <param name="cmd"></param>
-        public virtual void FinishRendering(CommandBuffer cmd)
+        /*
+            Called upon finishing rendering the camera stack. 
+            You can release any resources created by the renderer here.
+        */
+        public virtual void FinishRendering(CommandBuffer cmd)// 读完__
         {}
 
 
+        /*
+            Execute the enqueued render passes. This automatically handles editor and stereo rendering.
+            本函数只处理一个 camera
 
-        /// <summary>
-        /// Execute the enqueued render passes. This automatically handles editor and stereo rendering.
-        /// </summary>
+            被 "RenderSingleCamera()" 调用;
+        */
         /// <param name="context">Use this render context to issue any draw commands during execution.</param>
         /// <param name="renderingData">Current render state information.</param>
-        public void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        public void Execute(ScriptableRenderContext context, ref RenderingData renderingData)//   读完__
         {
             m_IsPipelineExecuting = true;
             ref CameraData cameraData = ref renderingData.cameraData;
@@ -667,15 +725,23 @@ namespace UnityEngine.Rendering.Universal
             //  非 xr 程序,  始终为 cmd
             CommandBuffer cmdScope = renderingData.cameraData.xr.enabled ? null : cmd;
 
-
             using (new ProfilingScope(cmdScope, profilingExecute))
             {
+                // 调用每个 active render pass 的 OnCameraSetup() 函数;
                 InternalStartRendering(context, ref renderingData);
 
-                // Cache the time for after the call to `SetupCameraProperties` and set the time variables in shader
-                // For now we set the time variables per camera, as we plan to remove `SetupCameraProperties`.
-                // Setting the time per frame would take API changes to pass the variable to each camera render.
-                // Once `SetupCameraProperties` is gone, the variable should be set higher in the call-stack.
+                /*
+                    Cache the time for after the call to "context.SetupCameraProperties()"
+                    and set the time variables in shader For now we set the time variables per camera, 
+                    as we plan to remove "context.SetupCameraProperties()";
+                    Setting the time per frame would take API changes to pass the variable to each camera render.
+                    Once "context.SetupCameraProperties()" is gone, the variable should be set higher in the call-stack.
+
+                    缓存调用 "context.SetupCameraProperties()" 之后的时间;
+                    并在 shader 中设置时间变量 现在我们设置每个相机的时间变量，因为我们计划删除 "context.SetupCameraProperties()"。
+                    设置每帧的时间 需要更改 API, 以将变量传递给每个 camera render。
+                    一旦 "context.SetupCameraProperties()" 被移除, 这个变量就要被放到更高的 调用栈中去;
+                */
 #if UNITY_EDITOR
                 float time = Application.isPlaying ? Time.time : Time.realtimeSinceStartup;
 #else
@@ -686,13 +752,17 @@ namespace UnityEngine.Rendering.Universal
 
                 // Initialize Camera Render State
                 ClearRenderingState(cmd);
-                SetPerCameraShaderVariables(cmd, ref cameraData);
-                SetShaderTimeValues(cmd, time, deltaTime, smoothDeltaTime);
+
+                SetPerCameraShaderVariables(cmd, ref cameraData);// 配置了几个与相机相关的数据, 传入 shader 中;
+                SetShaderTimeValues(cmd, time, deltaTime, smoothDeltaTime);// 配置了几个与相机相关的数据, 并传入 shader 中;
+
                 context.ExecuteCommandBuffer(cmd);
                 cmd.Clear();
+
                 using (new ProfilingScope(cmd, Profiling.sortRenderPasses))
                 {
                     // Sort the render pass queue
+                    // 按照 "RenderPassEvent" 来对所有 active render passes 进行排序;
                     SortStable(m_ActiveRenderPassQueue);
                 }
 
@@ -705,28 +775,46 @@ namespace UnityEngine.Rendering.Universal
 
                 using (new ProfilingScope(cmd, Profiling.RenderBlock.beforeRendering))
                 {
-                    // Before Render Block. This render blocks always execute in mono rendering.
+                    // Before Render Block. 
+                    // This render blocks always execute in mono rendering.
                     // Camera is not setup. Lights are not setup.
                     // Used to render input textures like shadowmaps.
-                    ExecuteBlock(RenderPassBlock.BeforeRendering, in renderBlocks, context, ref renderingData);
+                    ExecuteBlock(
+                        RenderPassBlock.BeforeRendering, // 0
+                        in renderBlocks, 
+                        context, 
+                        ref renderingData
+                    );
                 }
 
                 using (new ProfilingScope(cmd, Profiling.setupCamera))
                 {
-                    // This is still required because of the following reasons:
-                    // - Camera billboard properties.
-                    // - Camera frustum planes: unity_CameraWorldClipPlanes[6]
-                    // - _ProjectionParams.x logic is deep inside GfxDevice
-                    // NOTE: The only reason we have to call this here and not at the beginning (before shadows)
-                    // is because this need to be called for each eye in multi pass VR.
-                    // The side effect is that this will override some shader properties we already setup and we will have to
-                    // reset them.
+                    /*
+                        This is still required because of the following reasons:
+                        - Camera billboard properties.
+                        - Camera frustum planes: unity_CameraWorldClipPlanes[6]
+                        - _ProjectionParams.x logic is deep inside GfxDevice
+
+                        NOTE: The only reason we have to call this here and not at the beginning (before shadows)
+                        is because this need to be called for each eye in multi pass VR.
+                        The side effect is that this will override some shader properties we already setup and we will have to reset them.
+                        ---
+                        注意, 这部分内容之所以没放到上一个模块中, 是因为和 vr 相关;
+                        这部分操作 会覆写一部分已经设置好的数据;
+                        ====
+
+                        将 camera 的 specific global shader variables (如 unity_MatrixVP 等信息) 传递给 shader
+                        因为 camera 内部只有一个顶点, 所以猜测省略了 OS->WS 这层转换;
+                        直接使用 unity_MatrixVP 矩阵就能得到 camera 在 CS 中的状态;
+                        所以, 此矩阵包含了 camera 的 坐标, 朝向, 视锥体 等信息
+                    */
                     context.SetupCameraProperties(camera);
                     SetCameraMatrices(cmd, ref cameraData, true);
 
-                    // Reset shader time variables as they were overridden in SetupCameraProperties. If we don't do it we might have a mismatch between shadows and main rendering
+                    // Reset shader time variables as they were overridden in "context.SetupCameraProperties()";
+                    // If we don't do it we might have a mismatch between shadows and main rendering
+                    // 再次调用
                     SetShaderTimeValues(cmd, time, deltaTime, smoothDeltaTime);
-
 
 // 如果 package: "com.unity.visualeffectgraph" 版本大于 0.0.1
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
@@ -734,6 +822,7 @@ namespace UnityEngine.Rendering.Universal
                     VFX.VFXManager.ProcessCameraCommand(camera, cmd);
 #endif
                 }
+
 
                 context.ExecuteCommandBuffer(cmd);
                 cmd.Clear();
@@ -746,29 +835,46 @@ namespace UnityEngine.Rendering.Universal
                 if (renderBlocks.GetLength(RenderPassBlock.MainRenderingOpaque) > 0)
                 {
                     using var profScope = new ProfilingScope(cmd, Profiling.RenderBlock.mainRenderingOpaque);
-                    ExecuteBlock(RenderPassBlock.MainRenderingOpaque, in renderBlocks, context, ref renderingData);
+                    ExecuteBlock(
+                        RenderPassBlock.MainRenderingOpaque, // 1
+                        in renderBlocks, 
+                        context, 
+                        ref renderingData
+                    );
                 }
 
                 // Transparent blocks...
                 if (renderBlocks.GetLength(RenderPassBlock.MainRenderingTransparent) > 0)
                 {
                     using var profScope = new ProfilingScope(cmd, Profiling.RenderBlock.mainRenderingTransparent);
-                    ExecuteBlock(RenderPassBlock.MainRenderingTransparent, in renderBlocks, context, ref renderingData);
+                    ExecuteBlock(
+                        RenderPassBlock.MainRenderingTransparent, // 2
+                        in renderBlocks, 
+                        context, 
+                        ref renderingData
+                    );
                 }
 
-                // Draw Gizmos...
+                // editor 中的界面图标 在特效之前;
                 DrawGizmos(context, camera, GizmoSubset.PreImageEffects);
 
                 // In this block after rendering drawing happens, e.g, post processing, video player capture.
                 if (renderBlocks.GetLength(RenderPassBlock.AfterRendering) > 0)
                 {
                     using var profScope = new ProfilingScope(cmd, Profiling.RenderBlock.afterRendering);
-                    ExecuteBlock(RenderPassBlock.AfterRendering, in renderBlocks, context, ref renderingData);
+                    ExecuteBlock(
+                        RenderPassBlock.AfterRendering, // 3
+                        in renderBlocks, 
+                        context, 
+                        ref renderingData
+                    );
                 }
 
                 EndXRRendering(cmd, context, ref renderingData.cameraData);// xr
 
-                DrawWireOverlay(context, camera);
+                DrawWireOverlay(context, camera); // 绘制 editor scene窗口的 线框模式;
+
+                // editor 中的界面图标 在特效之后;
                 DrawGizmos(context, camera, GizmoSubset.PostImageEffects);
 
                 InternalFinishRendering(context, cameraData.resolveFinalTarget);
@@ -790,33 +896,34 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-        /// <summary>
-        /// Returns a clear flag based on CameraClearFlags.
-        /// </summary>
-        /// <param name="cameraClearFlags">Camera clear flags.</param>
-        /// <returns>A clear flag that tells if color and/or depth should be cleared.</returns>
-        protected static ClearFlag GetCameraClearFlag(ref CameraData cameraData)
+        /*
+            return A clear flag that tells if color and/or depth should be cleared.
+            ClearFlag: None, Color, Depth, All;
+            ---
+            仅在本文件内被使用
+        */
+        protected static ClearFlag GetCameraClearFlag(ref CameraData cameraData)//   读完__
         {
             var cameraClearFlags = cameraData.camera.clearFlags;
+            /*
+                urp doesn't support "CameraClearFlags.DepthOnly" and "CameraClearFlags.Nothing".
+                -- CameraClearFlags.DepthOnly has the same effect of CameraClearFlags.SolidColor
+                -- CameraClearFlags.Nothing clears Depth on PC/Desktop and in mobile it clears both depth and color.
+                -- CameraClearFlags.Skybox clears depth only.
 
-            // Universal RP doesn't support CameraClearFlags.DepthOnly and CameraClearFlags.Nothing.
-            // CameraClearFlags.DepthOnly has the same effect of CameraClearFlags.SolidColor
-            // CameraClearFlags.Nothing clears Depth on PC/Desktop and in mobile it clears both
-            // depth and color.
-            // CameraClearFlags.Skybox clears depth only.
+                Implementation details:
+                Camera clear flags are used to initialize the attachments on the first render pass.
+                ClearFlag is used together with Tile Load action to figure out how to clear the camera render target.
+                In Tiled-Based GPUs ClearFlag.Depth + RenderBufferLoadAction.DontCare becomes DontCare load action.
+                While ClearFlag.All + RenderBufferLoadAction.DontCare become Clear load action.
+                In mobile we force ClearFlag.All as DontCare doesn't have noticeable perf. 
+                difference from Clear and this avoid tile clearing issue when not rendering all pixels in some GPUs.
+                In desktop/consoles there's actually performance difference between DontCare and Clear.
 
-            // Implementation details:
-            // Camera clear flags are used to initialize the attachments on the first render pass.
-            // ClearFlag is used together with Tile Load action to figure out how to clear the camera render target.
-            // In Tiled-Based GPUs ClearFlag.Depth + RenderBufferLoadAction.DontCare becomes DontCare load action.
-            // While ClearFlag.All + RenderBufferLoadAction.DontCare become Clear load action.
-            // In mobile we force ClearFlag.All as DontCare doesn't have noticeable perf. difference from Clear
-            // and this avoid tile clearing issue when not rendering all pixels in some GPUs.
-            // In desktop/consoles there's actually performance difference between DontCare and Clear.
-
-            // RenderBufferLoadAction.DontCare in PC/Desktop behaves as not clearing screen
-            // RenderBufferLoadAction.DontCare in Vulkan/Metal behaves as DontCare load action
-            // RenderBufferLoadAction.DontCare in GLES behaves as glInvalidateBuffer
+                RenderBufferLoadAction.DontCare in PC/Desktop behaves as not clearing screen
+                RenderBufferLoadAction.DontCare in Vulkan/Metal behaves as DontCare load action
+                RenderBufferLoadAction.DontCare in GLES behaves as glInvalidateBuffer
+            */
 
             // Overlay cameras composite on top of previous ones. They don't clear color.
             // For overlay cameras we check if depth should be cleared on not.
@@ -824,6 +931,7 @@ namespace UnityEngine.Rendering.Universal
                 return (cameraData.clearDepth) ? ClearFlag.Depth : ClearFlag.None;
 
             // Always clear on first render pass in mobile as it's same perf of DontCare and avoid tile clearing issues.
+            // 因为此选项的性能开销和 "DontCare" 相同, 且避免了 tile clearing 这个问题;
             if (Application.isMobilePlatform)
                 return ClearFlag.All;
 
@@ -833,6 +941,7 @@ namespace UnityEngine.Rendering.Universal
 
             return ClearFlag.All;
         }//  函数完__
+
 
 
         /*
@@ -866,7 +975,8 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-        void ClearRenderingState(CommandBuffer cmd)
+        // 将所有 逐相机 shader keywords 关闭,
+        void ClearRenderingState(CommandBuffer cmd)//  读完__
         {
             using var profScope = new ProfilingScope(cmd, Profiling.clearRenderingState);
 
@@ -885,11 +995,11 @@ namespace UnityEngine.Rendering.Universal
         }//  函数完__
 
 
+
         /*
         */
-        /// <param name="cameraType"> enum: Base, Overlay
-        /// </param>
-        internal void Clear(CameraRenderType cameraType)
+        /// <param name="cameraType"> enum: Base, Overlay </param>
+        internal void Clear(CameraRenderType cameraType)//   读完__
         {
             // 右值: current camera 的 render target, (但不一定是 current active render target)
             m_ActiveColorAttachments[0] = BuiltinRenderTextureType.CameraTarget;
@@ -907,18 +1017,18 @@ namespace UnityEngine.Rendering.Universal
         }//  函数完__
 
 
+
         /*
-            参数:
-            blockIndex:
-                "RenderPassBlock" 中的值, 定义不同的执行阶段
-            renderBlocks:
-            context:
-            renderingData:
-            submit:
+            一次性把一个 render block 中的所有 render passes 全部执行完毕;
         */
-        void ExecuteBlock(int blockIndex, in RenderBlocks renderBlocks,
-            ScriptableRenderContext context, ref RenderingData renderingData, bool submit = false)
-        {
+        void ExecuteBlock(
+                    int blockIndex, // "RenderPassBlock" 中的值, 定义不同的执行阶段 {0,1,2,3}
+                    in RenderBlocks renderBlocks,
+                    ScriptableRenderContext context, 
+                    ref RenderingData renderingData, 
+                    bool submit = false
+        ){
+            // 遍历目标 block 内的所有 render pass idxs
             foreach (int currIndex in renderBlocks.GetRange(blockIndex))
             {
                 var renderPass = m_ActiveRenderPassQueue[currIndex];
@@ -926,12 +1036,23 @@ namespace UnityEngine.Rendering.Universal
             }
 
             if (submit)
-                context.Submit();
+                // 真正的 "提交" commands
+                // 现有的针对本函数的 4 次调用, 都未 submit;
+                context.Submit(); 
         }
 
 
-        void ExecuteRenderPass(ScriptableRenderContext context, ScriptableRenderPass renderPass, ref RenderingData renderingData)
-        {
+
+        /*
+            -1- renderPass.Configure()
+            -2- set color / depth render target
+            -3- renderPass.Execute()
+        */
+        void ExecuteRenderPass(//     读完__
+                                ScriptableRenderContext context, 
+                                ScriptableRenderPass renderPass, 
+                                ref RenderingData renderingData
+        ){
             using var profScope = new ProfilingScope(null, renderPass.profilingSampler);
 
             ref CameraData cameraData = ref renderingData.cameraData;
@@ -941,73 +1062,98 @@ namespace UnityEngine.Rendering.Universal
             // Track CPU only as GPU markers for this scope were "too noisy".
             using (new ProfilingScope(cmd, Profiling.RenderPass.configure))
             {
-                renderPass.Configure(cmd, cameraData.cameraTargetDescriptor);
+                renderPass.Configure(cmd, cameraData.cameraTargetDescriptor);// 调用用户自定义函数
+
+                // 在必要时绑定 color / depth render target;
                 SetRenderPassAttachments(cmd, renderPass, ref cameraData);
             }
 
-            // Also, we execute the commands recorded at this point to ensure SetRenderTarget is called before RenderPass.Execute
+            // Also, we execute the commands recorded at this point to ensure "SetRenderTarget()" is called before RenderPass.Execute
+            // 确保在 调用 "RenderPass.Execute()" 之前调用 "SetRenderTarget()";
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
 
+            // 用户自定义的 render pass 内容本体;
             renderPass.Execute(context, ref renderingData);
         }//  函数完__
 
 
 
-        void SetRenderPassAttachments(CommandBuffer cmd, ScriptableRenderPass renderPass, ref CameraData cameraData)
-        {
+        /*
+            非常复杂的一个函数, 在必要时调用本类的 "SetRenderTarget()";
+        */
+        void SetRenderPassAttachments(//    读完__  没细看,非常复杂
+                                    CommandBuffer cmd, 
+                                    ScriptableRenderPass renderPass, 
+                                    ref CameraData cameraData
+        ){
             Camera camera = cameraData.camera;
             ClearFlag cameraClearFlag = GetCameraClearFlag(ref cameraData);
 
-            // Invalid configuration - use current attachment setup
-            // Note: we only check color buffers. This is only technically correct because for shadowmaps and depth only passes
-            // we bind depth as color and Unity handles it underneath. so we never have a situation that all color buffers are null and depth is bound.
+            /*
+                Invalid configuration - use current attachment setup
+                Note: we only check color buffers. This is only technically correct 
+                because for shadowmaps and depth only passes we bind depth as color and Unity handles it underneath. 
+                so we never have a situation that all color buffers are null and depth is bound.
+                ---
+                正因为此处只检测 color buffer, 所以 shadowmaps 和 depth only passes 绑定的也都是 color buffer, 而不是 depth buffer;
+                所以在这个设计中, 永远不会出现: "color buffers 全不可用, 但 depth buffer 可用" 的局面;
+                (虽然这样配置才是合理的)
+            */
+            // 计算 render pass 的 colorAttachments 里有几个 有效的 color buffers
             uint validColorBuffersCount = RenderingUtils.GetValidColorBufferCount(renderPass.colorAttachments);
             if (validColorBuffersCount == 0)
                 return;
 
+            // =========== 两个大分支, 基于是否为 MRT ===========:
+
             // We use a different code path for MRT since it calls a different version of API SetRenderTarget
-            if (RenderingUtils.IsMRT(renderPass.colorAttachments))
+            if (RenderingUtils.IsMRT(renderPass.colorAttachments))//=================================================== MRT:
             {
                 // In the MRT path we assume that all color attachments are REAL color attachments,
                 // and that the depth attachment is a REAL depth attachment too.
 
-
                 // Determine what attachments need to be cleared. ----------------
-
                 bool needCustomCameraColorClear = false;
                 bool needCustomCameraDepthClear = false;
 
+                // 查找 m_CameraColorTarget 在 容器中的 idx, 若不存在, 返回 -1
                 int cameraColorTargetIndex = RenderingUtils.IndexOf(renderPass.colorAttachments, m_CameraColorTarget);
                 if (cameraColorTargetIndex != -1 && (m_FirstTimeCameraColorTargetIsBound))
                 {
-                    m_FirstTimeCameraColorTargetIsBound = false; // register that we did clear the camera target the first time it was bound
+                    // register that we did clear the camera target the first time it was bound
+                    m_FirstTimeCameraColorTargetIsBound = false; 
 
                     // Overlay cameras composite on top of previous ones. They don't clear.
-                    // MTT: Commented due to not implemented yet
+                    // MTT: Commented due to not implemented yet (注释起来, 因为尚未实现)
                     //                    if (renderingData.cameraData.renderType == CameraRenderType.Overlay)
                     //                        clearFlag = ClearFlag.None;
 
                     // We need to specifically clear the camera color target.
-                    // But there is still a chance we don't need to issue individual clear() on each render-targets if they all have the same clear parameters.
+                    // But there is still a chance we don't need to issue individual clear() on each render-targets 
+                    // if they all have the same clear parameters.
+                    // 但如果每个 render target 都具有相同的 clear 参数, 我们仍有可能不需要在每个 render target 上发出单独的 clear()
                     needCustomCameraColorClear = (cameraClearFlag & ClearFlag.Color) != (renderPass.clearFlag & ClearFlag.Color)
                         || CoreUtils.ConvertSRGBToActiveColorSpace(camera.backgroundColor) != renderPass.clearColor;
                 }
 
-                // Note: if we have to give up the assumption that no depthTarget can be included in the MRT colorAttachments, we might need something like this:
+                // Note: if we have to give up the assumption(假设) that no depthTarget can be included in the MRT colorAttachments, 
+                // we might need something like this:
                 // int cameraTargetDepthIndex = IndexOf(renderPass.colorAttachments, m_CameraDepthTarget);
                 // if( !renderTargetAlreadySet && cameraTargetDepthIndex != -1 && m_FirstTimeCameraDepthTargetIsBound)
                 // { ...
                 // }
 
-                if (renderPass.depthAttachment == m_CameraDepthTarget && m_FirstTimeCameraDepthTargetIsBound)
+                if( renderPass.depthAttachment==m_CameraDepthTarget && m_FirstTimeCameraDepthTargetIsBound )
                 {
                     m_FirstTimeCameraDepthTargetIsBound = false;
-                    needCustomCameraDepthClear = (cameraClearFlag & ClearFlag.Depth) != (renderPass.clearFlag & ClearFlag.Depth);
+                    needCustomCameraDepthClear = (cameraClearFlag&ClearFlag.Depth) != (renderPass.clearFlag&ClearFlag.Depth);
                 }
 
                 // Perform all clear operations needed. ----------------
                 // We try to minimize calls to SetRenderTarget().
+
+                // ===== set render target =====:
 
                 // We get here only if cameraColorTarget needs to be handled separately from the rest of the color attachments.
                 if (needCustomCameraColorClear)
@@ -1015,11 +1161,20 @@ namespace UnityEngine.Rendering.Universal
                     // Clear camera color render-target separately from the rest of the render-targets.
 
                     if ((cameraClearFlag & ClearFlag.Color) != 0)
-                        SetRenderTarget(cmd, renderPass.colorAttachments[cameraColorTargetIndex], renderPass.depthAttachment, ClearFlag.Color, CoreUtils.ConvertSRGBToActiveColorSpace(camera.backgroundColor));
+                        SetRenderTarget(// 调用 -1-:
+                            cmd, 
+                            renderPass.colorAttachments[cameraColorTargetIndex], 
+                            renderPass.depthAttachment, 
+                            ClearFlag.Color, 
+                            CoreUtils.ConvertSRGBToActiveColorSpace(camera.backgroundColor)
+                        );
 
                     if ((renderPass.clearFlag & ClearFlag.Color) != 0)
                     {
+                        // 处理 oth targets
+                        // 容器中 有效且和 m_CameraColorTarget 不相同的元素 的个数;
                         uint otherTargetsCount = RenderingUtils.CountDistinct(renderPass.colorAttachments, m_CameraColorTarget);
+                        // 挑选一个 指定数量的 容器; 将所有 oth targets 依次存入其中;
                         var nonCameraAttachments = m_TrimmedColorAttachmentCopies[otherTargetsCount];
                         int writeIndex = 0;
                         for (int readIndex = 0; readIndex < renderPass.colorAttachments.Length; ++readIndex)
@@ -1032,7 +1187,9 @@ namespace UnityEngine.Rendering.Universal
                         }
 
                         if (writeIndex != otherTargetsCount)
-                            Debug.LogError("writeIndex and otherTargetsCount values differed. writeIndex:" + writeIndex + " otherTargetsCount:" + otherTargetsCount);
+                            Debug.LogError("writeIndex and otherTargetsCount values differed. writeIndex:" 
+                                + writeIndex + " otherTargetsCount:" + otherTargetsCount);
+                        // 调用 -4-:
                         SetRenderTarget(cmd, nonCameraAttachments, m_CameraDepthTarget, ClearFlag.Color, renderPass.clearColor);
                     }
                 }
@@ -1043,17 +1200,19 @@ namespace UnityEngine.Rendering.Universal
                 finalClearFlag |= needCustomCameraColorClear ? 0 : (renderPass.clearFlag & ClearFlag.Color);
 
                 // Only setup render target if current render pass attachments are different from the active ones.
-                if (!RenderingUtils.SequenceEqual(renderPass.colorAttachments, m_ActiveColorAttachments) || renderPass.depthAttachment != m_ActiveDepthAttachment || finalClearFlag != ClearFlag.None)
-                {
+                if( !RenderingUtils.SequenceEqual(renderPass.colorAttachments, m_ActiveColorAttachments) || 
+                    renderPass.depthAttachment != m_ActiveDepthAttachment || 
+                    finalClearFlag != ClearFlag.None
+                ){
                     int lastValidRTindex = RenderingUtils.LastValid(renderPass.colorAttachments);
-                    if (lastValidRTindex >= 0)
+                    if (lastValidRTindex >= 0)// 找到了
                     {
                         int rtCount = lastValidRTindex + 1;
                         var trimmedAttachments = m_TrimmedColorAttachmentCopies[rtCount];
                         for (int i = 0; i < rtCount; ++i)
                             trimmedAttachments[i] = renderPass.colorAttachments[i];
+                        // 调用 -4-:
                         SetRenderTarget(cmd, trimmedAttachments, renderPass.depthAttachment, finalClearFlag, renderPass.clearColor);
-
 /*  tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                         if (cameraData.xr.enabled)
@@ -1069,22 +1228,32 @@ namespace UnityEngine.Rendering.Universal
                     }
                 }
             }
-            else
+            else//================================================================================================= no-MRT:
             {
                 // Currently in non-MRT case, color attachment can actually be a depth attachment.
 
                 RenderTargetIdentifier passColorAttachment = renderPass.colorAttachment;
                 RenderTargetIdentifier passDepthAttachment = renderPass.depthAttachment;
 
-                // When render pass doesn't call ConfigureTarget we assume it's expected to render to camera target
-                // which might be backbuffer or the framebuffer render textures.
+                /*
+                    When render pass doesn't call "ConfigureTarget()" we assume it's expected to render to camera target
+                    which might be backbuffer or the framebuffer render textures.
+                    ---
+                    如果 要渲染到 "BuiltinRenderTextureType.CameraTarget"
+                */
                 if (!renderPass.overrideCameraTarget)
                 {
-                    // Default render pass attachment for passes before main rendering is current active
-                    // early return so we don't change current render target setup.
+                    /*
+                        "Default render pass attachment" for passes before main rendering is current active early return 
+                        so we don't change current render target setup.
+                        ---
+                        对于那些在 "主渲染" 之前的, 绑定了 "BuiltinRenderTextureType.CameraTarget" 的 render pass,
+                        不改写它们的 当前的 "render target setup"
+                    */
                     if (renderPass.renderPassEvent < RenderPassEvent.BeforeRenderingOpaques)
                         return;
 
+                    // 如果是在 BeforeRenderingOpaques 及之后执行的 pass:
                     // Otherwise default is the pipeline camera target.
                     passColorAttachment = m_CameraColorTarget;
                     passDepthAttachment = m_CameraDepthTarget;
@@ -1095,7 +1264,8 @@ namespace UnityEngine.Rendering.Universal
 
                 if (passColorAttachment == m_CameraColorTarget && (m_FirstTimeCameraColorTargetIsBound))
                 {
-                    m_FirstTimeCameraColorTargetIsBound = false; // register that we did clear the camera target the first time it was bound
+                    // register that we did clear the camera target the first time it was bound
+                    m_FirstTimeCameraColorTargetIsBound = false; 
 
                     finalClearFlag |= (cameraClearFlag & ClearFlag.Color);
                     finalClearColor = CoreUtils.ConvertSRGBToActiveColorSpace(camera.backgroundColor);
@@ -1103,7 +1273,8 @@ namespace UnityEngine.Rendering.Universal
                     if (m_FirstTimeCameraDepthTargetIsBound)
                     {
                         // m_CameraColorTarget can be an opaque pointer to a RenderTexture with depth-surface.
-                        // We cannot infer this information here, so we must assume both camera color and depth are first-time bound here (this is the legacy behaviour).
+                        // We cannot infer this information here, so we must assume both camera color and depth 
+                        // are first-time bound here (this is the legacy behaviour).
                         m_FirstTimeCameraDepthTargetIsBound = false;
                         finalClearFlag |= (cameraClearFlag & ClearFlag.Depth);
                     }
@@ -1114,21 +1285,31 @@ namespace UnityEngine.Rendering.Universal
                     finalClearColor = renderPass.clearColor;
                 }
 
-                // Condition (m_CameraDepthTarget!=BuiltinRenderTextureType.CameraTarget) below prevents m_FirstTimeCameraDepthTargetIsBound flag from being reset during non-camera passes (such as Color Grading LUT). This ensures that in those cases, cameraDepth will actually be cleared during the later camera pass.
-                if ((m_CameraDepthTarget != BuiltinRenderTextureType.CameraTarget) && (passDepthAttachment == m_CameraDepthTarget || passColorAttachment == m_CameraDepthTarget) && m_FirstTimeCameraDepthTargetIsBound)
-                {
+                // Condition (m_CameraDepthTarget!=BuiltinRenderTextureType.CameraTarget) below prevents 
+                // m_FirstTimeCameraDepthTargetIsBound flag from being reset during non-camera passes 
+                // (such as Color Grading LUT). This ensures that in those cases, 
+                // cameraDepth will actually be cleared during the later camera pass.
+                if( (m_CameraDepthTarget != BuiltinRenderTextureType.CameraTarget) && 
+                    (passDepthAttachment == m_CameraDepthTarget || passColorAttachment == m_CameraDepthTarget) && 
+                    m_FirstTimeCameraDepthTargetIsBound
+                ){
                     m_FirstTimeCameraDepthTargetIsBound = false;
 
                     finalClearFlag |= (cameraClearFlag & ClearFlag.Depth);
 
-                    // finalClearFlag |= (cameraClearFlag & ClearFlag.Color);  // <- m_CameraDepthTarget is never a color-surface, so no need to add this here.
+                    // m_CameraDepthTarget is never a color-surface, so no need to add this here.
+                    // finalClearFlag |= (cameraClearFlag & ClearFlag.Color);     urp 自己注释的
+                    
                 }
                 else
                     finalClearFlag |= (renderPass.clearFlag & ClearFlag.Depth);
 
                 // Only setup render target if current render pass attachments are different from the active ones
-                if (passColorAttachment != m_ActiveColorAttachments[0] || passDepthAttachment != m_ActiveDepthAttachment || finalClearFlag != ClearFlag.None)
-                {
+                if( passColorAttachment != m_ActiveColorAttachments[0] || 
+                    passDepthAttachment != m_ActiveDepthAttachment || 
+                    finalClearFlag != ClearFlag.None
+                ){
+                    // 调用 -1-:
                     SetRenderTarget(cmd, passColorAttachment, passDepthAttachment, finalClearFlag, finalClearColor);
 
 /*  tpr
@@ -1180,8 +1361,14 @@ namespace UnityEngine.Rendering.Universal
         }//  函数完__
 
 
-        internal static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier colorAttachment, RenderTargetIdentifier depthAttachment, ClearFlag clearFlag, Color clearColor)
-        {//  函数完__
+        // -1-:
+        internal static void SetRenderTarget(//   读完__
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier colorAttachment, 
+                                        RenderTargetIdentifier depthAttachment, 
+                                        ClearFlag clearFlag,  // enum: None, Color, Depth, All;
+                                        Color clearColor
+        ){
             m_ActiveColorAttachments[0] = colorAttachment;
             for (int i = 1; i < m_ActiveColorAttachments.Length; ++i)
                 m_ActiveColorAttachments[i] = 0;
@@ -1189,61 +1376,92 @@ namespace UnityEngine.Rendering.Universal
             m_ActiveDepthAttachment = depthAttachment;
 
             RenderBufferLoadAction colorLoadAction = ((uint)clearFlag & (uint)ClearFlag.Color) != 0 ?
-                RenderBufferLoadAction.DontCare : RenderBufferLoadAction.Load;
+                RenderBufferLoadAction.DontCare :   // clear
+                RenderBufferLoadAction.Load;        // 不 clear, 要加载到 rt 中
 
             RenderBufferLoadAction depthLoadAction = ((uint)clearFlag & (uint)ClearFlag.Depth) != 0 ?
-                RenderBufferLoadAction.DontCare : RenderBufferLoadAction.Load;
+                RenderBufferLoadAction.DontCare :   // clear
+                RenderBufferLoadAction.Load;        // 不 clear, 要加载到 rt 中
 
-            SetRenderTarget(cmd, colorAttachment, colorLoadAction, RenderBufferStoreAction.Store,
-                depthAttachment, depthLoadAction, RenderBufferStoreAction.Store, clearFlag, clearColor);
+            SetRenderTarget( // 调用 -3-:
+                cmd, 
+                colorAttachment, 
+                colorLoadAction, 
+                RenderBufferStoreAction.Store,
+                depthAttachment, 
+                depthLoadAction, 
+                RenderBufferStoreAction.Store, 
+                clearFlag, 
+                clearColor
+            );
         }//  函数完__
 
 
-        static void SetRenderTarget(
-            CommandBuffer cmd,
-            RenderTargetIdentifier colorAttachment,
-            RenderBufferLoadAction colorLoadAction,
-            RenderBufferStoreAction colorStoreAction,
-            ClearFlag clearFlags,
-            Color clearColor)
-        {
+        // -2-:
+        static void SetRenderTarget(//    读完__
+                            CommandBuffer cmd,
+                            RenderTargetIdentifier colorAttachment,
+                            RenderBufferLoadAction colorLoadAction,
+                            RenderBufferStoreAction colorStoreAction,
+                            ClearFlag clearFlags,
+                            Color clearColor
+        ){
+            // 调用 -10- 号重载; 绑定单个 buffer, 比如单独的 color buffer
             CoreUtils.SetRenderTarget(cmd, colorAttachment, colorLoadAction, colorStoreAction, clearFlags, clearColor);
         }
 
 
-        static void SetRenderTarget(
-            CommandBuffer cmd,
-            RenderTargetIdentifier colorAttachment,
-            RenderBufferLoadAction colorLoadAction,
-            RenderBufferStoreAction colorStoreAction,
-            RenderTargetIdentifier depthAttachment,
-            RenderBufferLoadAction depthLoadAction,
-            RenderBufferStoreAction depthStoreAction,
-            ClearFlag clearFlags,
-            Color clearColor)
-        {
+        // -3-:
+        static void SetRenderTarget(//    读完__
+                                    CommandBuffer cmd,
+                                    RenderTargetIdentifier colorAttachment,
+                                    RenderBufferLoadAction colorLoadAction,
+                                    RenderBufferStoreAction colorStoreAction,
+                                    RenderTargetIdentifier depthAttachment,
+                                    RenderBufferLoadAction depthLoadAction,
+                                    RenderBufferStoreAction depthStoreAction,
+                                    ClearFlag clearFlags,
+                                    Color clearColor
+        ){
             // XRTODO: Revisit the logic. Why treat CameraTarget depth specially?
-            if (depthAttachment == BuiltinRenderTextureType.CameraTarget)
+            if( depthAttachment == BuiltinRenderTextureType.CameraTarget )
             {
+                // 调用上面的 -2-: 仅绑定 color buffer
                 SetRenderTarget(cmd, colorAttachment, colorLoadAction, colorStoreAction, clearFlags, clearColor);
             }
             else
             {
-                CoreUtils.SetRenderTarget(cmd, colorAttachment, colorLoadAction, colorStoreAction,
-                    depthAttachment, depthLoadAction, depthStoreAction, clearFlags, clearColor);
+                CoreUtils.SetRenderTarget(// -12-:
+                    cmd, 
+                    colorAttachment, colorLoadAction, colorStoreAction,
+                    depthAttachment, depthLoadAction, depthStoreAction, 
+                    clearFlags, 
+                    clearColor
+                );
             }
         }
 
-        static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier[] colorAttachments, RenderTargetIdentifier depthAttachment, ClearFlag clearFlag, Color clearColor)
-        {
+
+        // -4-:
+        static void SetRenderTarget(//    读完__
+                                    CommandBuffer cmd, 
+                                    RenderTargetIdentifier[] colorAttachments, 
+                                    RenderTargetIdentifier depthAttachment, 
+                                    ClearFlag clearFlag, 
+                                    Color clearColor
+        ){
             m_ActiveColorAttachments = colorAttachments;
             m_ActiveDepthAttachment = depthAttachment;
 
+            // 调用 -9-:
             CoreUtils.SetRenderTarget(cmd, colorAttachments, depthAttachment, clearFlag, clearColor);
         }
 
+
+
+
         [Conditional("UNITY_EDITOR")]
-        void DrawGizmos(ScriptableRenderContext context, Camera camera, GizmoSubset gizmoSubset)
+        void DrawGizmos(ScriptableRenderContext context, Camera camera, GizmoSubset gizmoSubset)// 读完__
         {
 #if UNITY_EDITOR
             if (UnityEditor.Handles.ShouldRenderGizmos())
@@ -1251,13 +1469,17 @@ namespace UnityEngine.Rendering.Universal
 #endif
         }
 
+
         [Conditional("UNITY_EDITOR")]
         void DrawWireOverlay(ScriptableRenderContext context, Camera camera)
         {
             context.DrawWireOverlay(camera);
         }
 
-        void InternalStartRendering(ScriptableRenderContext context, ref RenderingData renderingData)
+
+
+        // 调用每个 active render pass 的 OnCameraSetup() 函数;
+        void InternalStartRendering(ScriptableRenderContext context, ref RenderingData renderingData)//  读完__
         {
             CommandBuffer cmd = CommandBufferPool.Get();
             using (new ProfilingScope(cmd, Profiling.internalStartRendering))
@@ -1267,25 +1489,31 @@ namespace UnityEngine.Rendering.Universal
                     m_ActiveRenderPassQueue[i].OnCameraSetup(cmd, ref renderingData);
                 }
             }
-
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
-        }
+        }//   函数完__
 
-        void InternalFinishRendering(ScriptableRenderContext context, bool resolveFinalTarget)
-        {
+
+        void InternalFinishRendering(//   读完__
+                                ScriptableRenderContext context, 
+                                bool resolveFinalTarget // 如果这是 stack 中最后一个 camera
+        ){
             CommandBuffer cmd = CommandBufferPool.Get();
             using (new ProfilingScope(cmd, Profiling.internalFinishRendering))
             {
                 for (int i = 0; i < m_ActiveRenderPassQueue.Count; ++i)
+                    // 等同于调用 "OnCameraCleanup(cmd)"
+                    // 执行用户自定义的 清理工作, 比如释放 render texture,
                     m_ActiveRenderPassQueue[i].FrameCleanup(cmd);
 
                 // Happens when rendering the last camera in the camera stack.
                 if (resolveFinalTarget)
                 {
                     for (int i = 0; i < m_ActiveRenderPassQueue.Count; ++i)
+                        // 执行用户自定义的 清理工作,
                         m_ActiveRenderPassQueue[i].OnFinishCameraStackRendering(cmd);
 
+                    // renderer 实现者(如 ForwardRenderer) 自定义的 清理工作;
                     FinishRendering(cmd);
 
                     // We finished camera stacking and released all intermediate pipeline textures.
@@ -1299,14 +1527,18 @@ namespace UnityEngine.Rendering.Universal
         }//  函数完__
 
 
-        internal static void SortStable(List<ScriptableRenderPass> list)
+        /*
+            双指针排序, 排序规则是: "RenderPassEvent";
+            如果两个 render pass 的 RenderPassEvent 值相同, 则保持原来的先后次序;
+        */
+        internal static void SortStable(List<ScriptableRenderPass> list)//   读完__
         {
             int j;
             for (int i = 1; i < list.Count; ++i)
             {
                 ScriptableRenderPass curr = list[i];
-
                 j = i - 1;
+
                 for (; j >= 0 && curr < list[j]; --j)
                     list[j + 1] = list[j];
 
@@ -1315,76 +1547,128 @@ namespace UnityEngine.Rendering.Universal
         }//  函数完__
 
 
-        internal struct RenderBlocks : IDisposable
+
+        /*
+            将所有的 actibe render pass 按照 RenderPassEvent 规则, 分成4个区间 block;
+        */
+        internal struct RenderBlocks//RenderBlocks__   读完__
+            : IDisposable
         {
+            /*
+                存储 4 个 RenderPassEvent 值:
+                -- BeforeRenderingPrePasses     150
+                -- AfterRenderingOpaques        300
+                        很奇怪, 为什么不是在 skybox 之后
+                -- AfterRenderingPostProcessing 600
+                -- Int32.MaxValue               +inf
+            
+                此容器数据仅在构造阶段被创建和使用, 然后就被立即释放了;
+            */
             private NativeArray<RenderPassEvent> m_BlockEventLimits;
+
+            // 存储 5 个 render pass idx (在queue中的idx), 充当一个 分隔栅栏的作用;
+            // 分出 4 个 区间; 
+            // [0] = 0,  
+            // [1] 为 >= BeforeRenderingPrePasses      的第一个 pass 的 idx
+            // [2] 为 >= AfterRenderingOpaques         的第一个 pass 的 idx
+            // [3] 为 >= AfterRenderingPostProcessing  的第一个 pass 的 idx
+            // [4] = activeRenderPassQueue.Count;      即最后一个 pass 的 idx
             private NativeArray<int> m_BlockRanges;
+
+            // [0] block 1 的 pass 个数
+            // [1] block 2 的 pass 个数
+            // [2] block 3 的 pass 个数
+            // [3] block 4 的 pass 个数
+            // [4] 未使用
             private NativeArray<int> m_BlockRangeLengths;
-            public RenderBlocks(List<ScriptableRenderPass> activeRenderPassQueue)
+
+            // 构造函数
+            // 参数 activeRenderPassQueue 已经排序好了
+            public RenderBlocks(List<ScriptableRenderPass> activeRenderPassQueue)//   读完__
             {
                 // Upper limits for each block. Each block will contains render passes with events below the limit.
-                m_BlockEventLimits = new NativeArray<RenderPassEvent>(k_RenderPassBlockCount, Allocator.Temp);
-                m_BlockRanges = new NativeArray<int>(m_BlockEventLimits.Length + 1, Allocator.Temp);
-                m_BlockRangeLengths = new NativeArray<int>(m_BlockRanges.Length, Allocator.Temp);
+                m_BlockEventLimits = new NativeArray<RenderPassEvent>(k_RenderPassBlockCount, Allocator.Temp);// 4
+                m_BlockRanges = new NativeArray<int>(m_BlockEventLimits.Length + 1, Allocator.Temp);// 5
+                m_BlockRangeLengths = new NativeArray<int>(m_BlockRanges.Length, Allocator.Temp);// 5
 
-                m_BlockEventLimits[RenderPassBlock.BeforeRendering] = RenderPassEvent.BeforeRenderingPrePasses;
-                m_BlockEventLimits[RenderPassBlock.MainRenderingOpaque] = RenderPassEvent.AfterRenderingOpaques;
-                m_BlockEventLimits[RenderPassBlock.MainRenderingTransparent] = RenderPassEvent.AfterRenderingPostProcessing;
-                m_BlockEventLimits[RenderPassBlock.AfterRendering] = (RenderPassEvent)Int32.MaxValue;
+                // 从 0 到 3 四个元素;
+                m_BlockEventLimits[RenderPassBlock.BeforeRendering] =           RenderPassEvent.BeforeRenderingPrePasses;
+                m_BlockEventLimits[RenderPassBlock.MainRenderingOpaque] =       RenderPassEvent.AfterRenderingOpaques;
+                m_BlockEventLimits[RenderPassBlock.MainRenderingTransparent] =  RenderPassEvent.AfterRenderingPostProcessing;
+                m_BlockEventLimits[RenderPassBlock.AfterRendering] =            (RenderPassEvent)Int32.MaxValue;
 
-                // blockRanges[0] is always 0
-                // blockRanges[i] is the index of the first RenderPass found in m_ActiveRenderPassQueue that has a ScriptableRenderPass.renderPassEvent higher than blockEventLimits[i] (i.e, should be executed after blockEventLimits[i])
-                // blockRanges[blockEventLimits.Length] is m_ActiveRenderPassQueue.Count
+                /*
+                    m_BlockRanges[0] is always 0
+                    m_BlockRanges[i] is the index of the first RenderPass found in m_ActiveRenderPassQueue 
+                    that has a ScriptableRenderPass.renderPassEvent higher(其实是大于等于) than blockEventLimits[i] 
+                    (i.e, should be executed after blockEventLimits[i])
+                    m_BlockRanges[blockEventLimits.Length] is m_ActiveRenderPassQueue.Count
+                */
+                // 初始化 m_BlockRanges 中的数据;
                 FillBlockRanges(activeRenderPassQueue);
-                m_BlockEventLimits.Dispose();
+                m_BlockEventLimits.Dispose(); // 居然在这里释放了.....
 
-                for (int i = 0; i < m_BlockRanges.Length - 1; i++)
+                // 奇怪, 只写了前 4 个元素
+                for (int i = 0; i < m_BlockRanges.Length - 1; i++)// {0,1,2,3}
                 {
                     m_BlockRangeLengths[i] = m_BlockRanges[i + 1] - m_BlockRanges[i];
                 }
-            }
+            }//   函数完__
+
 
             //  RAII like Dispose pattern implementation for 'using' keyword
-            public void Dispose()
+            public void Dispose() //   读完__
             {
                 m_BlockRangeLengths.Dispose();
                 m_BlockRanges.Dispose();
-            }
+            }//   函数完__
+
+
 
             // Fill in render pass indices for each block. End index is startIndex + 1.
-            void FillBlockRanges(List<ScriptableRenderPass> activeRenderPassQueue)
+            // 参数 activeRenderPassQueue 已经排序好了
+            void FillBlockRanges(List<ScriptableRenderPass> activeRenderPassQueue)//   读完__
             {
                 int currRangeIndex = 0;
                 int currRenderPass = 0;
-                m_BlockRanges[currRangeIndex++] = 0;
+                m_BlockRanges[currRangeIndex++] = 0; // m_BlockRanges[0] = 0;
 
                 // For each block, it finds the first render pass index that has an event
                 // higher than the block limit.
-                for (int i = 0; i < m_BlockEventLimits.Length - 1; ++i)
+                for (int i = 0; i < m_BlockEventLimits.Length - 1; ++i)// {0,1,2}
                 {
-                    while (currRenderPass < activeRenderPassQueue.Count &&
-                           activeRenderPassQueue[currRenderPass].renderPassEvent < m_BlockEventLimits[i])
+                    while( currRenderPass < activeRenderPassQueue.Count &&
+                           activeRenderPassQueue[currRenderPass].renderPassEvent < m_BlockEventLimits[i]
+                    ){
                         currRenderPass++;
-
+                    }
+                    // 现在, currRenderPass 的 renderPassEvent >= m_BlockEventLimits[i]
                     m_BlockRanges[currRangeIndex++] = currRenderPass;
                 }
 
                 m_BlockRanges[currRangeIndex] = activeRenderPassQueue.Count;
-            }
+            }//   函数完__
 
-            public int GetLength(int index)
+
+            public int GetLength(int index)//   读完__
             {
                 return m_BlockRangeLengths[index];
             }
 
+
+
             // Minimal foreach support
-            public struct BlockRange : IDisposable
+            // 用来遍历 pass idx 用的
+            public struct BlockRange//BlockRange__
+                : IDisposable
             {
                 int m_Current;
                 int m_End;
+
+                // 参数: pass 在 queue 中的 idx 值;
                 public BlockRange(int begin, int end)
                 {
-                    Assertions.Assert.IsTrue(begin <= end);
+                    Assertions.Assert.IsTrue(begin <= end);// 否则抛出异常
                     m_Current = begin < end ? begin : end;
                     m_End   = end >= begin ? end : begin;
                     m_Current -= 1;
@@ -1394,7 +1678,8 @@ namespace UnityEngine.Rendering.Universal
                 public bool MoveNext() { return ++m_Current < m_End; }
                 public int Current { get => m_Current; }
                 public void Dispose() {}
-            }
+            }//   函数完__
+
 
             public BlockRange GetRange(int index)
             {

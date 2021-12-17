@@ -108,17 +108,19 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
-        /// <summary>
-        /// Set view and projection matrices.
-        /// This function will set <c>UNITY_MATRIX_V</c>, <c>UNITY_MATRIX_P</c>, <c>UNITY_MATRIX_VP</c> to given view and projection matrices.
-        /// If <c>setInverseMatrices</c> is set to true this function will also set <c>UNITY_MATRIX_I_V</c> and <c>UNITY_MATRIX_I_VP</c>.
-        /// </summary>
-        /// <param name="cmd">CommandBuffer to submit data to GPU.</param>
-        /// <param name="viewMatrix">View matrix to be set.</param>
-        /// <param name="projectionMatrix">Projection matrix to be set.</param>
+
+        /*
+            Set view and projection matrices.
+            This function will set "UNITY_MATRIX_V", "UNITY_MATRIX_P", "UNITY_MATRIX_VP" to given view and projection matrices.
+            If "setInverseMatrices" is set to true this function will also set "UNITY_MATRIX_I_V" and "UNITY_MATRIX_I_VP".
+        */
         /// <param name="setInverseMatrices">Set this to true if you also need to set inverse camera matrices.</param>
-        public static void SetViewAndProjectionMatrices(CommandBuffer cmd, Matrix4x4 viewMatrix, Matrix4x4 projectionMatrix, bool setInverseMatrices)
-        {
+        public static void SetViewAndProjectionMatrices(
+                                                    CommandBuffer cmd, 
+                                                    Matrix4x4 viewMatrix, 
+                                                    Matrix4x4 projectionMatrix, 
+                                                    bool setInverseMatrices
+        ){
             Matrix4x4 viewAndProjectionMatrix = projectionMatrix * viewMatrix;
             cmd.SetGlobalMatrix(ShaderPropertyId.viewMatrix, viewMatrix);
             cmd.SetGlobalMatrix(ShaderPropertyId.projectionMatrix, projectionMatrix);
@@ -134,6 +136,7 @@ namespace UnityEngine.Rendering.Universal
                 cmd.SetGlobalMatrix(ShaderPropertyId.inverseViewAndProjectionMatrix, inverseViewProjection);
             }
         }// 函数完__
+
 
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
@@ -369,7 +372,7 @@ namespace UnityEngine.Rendering.Universal
             计算并返回, 参数 colorBuffers 中 "有效的 color buffer" 的数据;
             id值不为0, 就是有效的
         */
-        internal static uint GetValidColorBufferCount(RenderTargetIdentifier[] colorBuffers)
+        internal static uint GetValidColorBufferCount(RenderTargetIdentifier[] colorBuffers)//  读完__
         {
             uint nonNullColorBuffers = 0;
             if (colorBuffers != null){
@@ -382,12 +385,9 @@ namespace UnityEngine.Rendering.Universal
         }// 函数完__
 
 
-        /// <summary>
+   
         /// Return true if colorBuffers is an actual MRT setup
-        /// </summary>
-        /// <param name="colorBuffers"></param>
-        /// <returns></returns>
-        internal static bool IsMRT(RenderTargetIdentifier[] colorBuffers)
+        internal static bool IsMRT(RenderTargetIdentifier[] colorBuffers)//   读完__
         {
             return GetValidColorBufferCount(colorBuffers) > 1;
         }// 函数完__
@@ -410,12 +410,10 @@ namespace UnityEngine.Rendering.Universal
         }// 函数完__
 
 
-        /// <summary>
-        /// Return the index where value was found source. Otherwise, return -1. (without recurring to Linq)
-        /// </summary>
-        /// <param name="source"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
+       
+        // Return the index where value was found source. Otherwise, return -1. 
+        // (without recurring to Linq)
+        // 如果参数 value 在容器 source 中, 返回它的 idx, 否则返回 -1;
         internal static int IndexOf(RenderTargetIdentifier[] source, RenderTargetIdentifier value)
         {
             for (int i = 0; i < source.Length; ++i)
@@ -427,14 +425,15 @@ namespace UnityEngine.Rendering.Universal
         }// 函数完__
 
 
-        /// <summary>
-        /// Return the number of RenderTargetIdentifiers in "source" that are valid (not 0) and different from "value" (without recurring to Linq)
-        /// </summary>
-        /// <param name="source"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        internal static uint CountDistinct(RenderTargetIdentifier[] source, RenderTargetIdentifier value)
-        {
+        /*
+            Return the number of RenderTargetIdentifiers in "source" that are valid (not 0) and different from "value" 
+            (without recurring to Linq)
+            容器中 有效且和 参数 value 不相同的元素 的个数;
+        */
+        internal static uint CountDistinct(//   读完__
+                                    RenderTargetIdentifier[] source, 
+                                    RenderTargetIdentifier value
+        ){
             uint count = 0;
             for (int i = 0; i < source.Length; ++i)
             {
@@ -445,12 +444,11 @@ namespace UnityEngine.Rendering.Universal
         }// 函数完__
 
 
-        /// <summary>
-        /// Return the index of last valid (i.e different from 0) RenderTargetIdentifiers in "source" (without recurring to Linq)
-        /// </summary>
-        /// <param name="source"></param>
-        /// <returns></returns>
-        internal static int LastValid(RenderTargetIdentifier[] source)
+
+
+        // Return the index of last valid (i.e different from 0) RenderTargetIdentifiers in "source" (without recurring to Linq)
+        // 如果 参数 source 中不存在 有效的 元素, 本函数返回 -1;
+        internal static int LastValid( RenderTargetIdentifier[] source )
         {
             for (int i = source.Length - 1; i >= 0; --i)
             {
@@ -459,6 +457,7 @@ namespace UnityEngine.Rendering.Universal
             }
             return -1;
         }// 函数完__
+
 
 
         /// <summary>
@@ -473,14 +472,13 @@ namespace UnityEngine.Rendering.Universal
         }// 函数完__
 
 
-        /// <summary>
-        /// Return true if "left" and "right" are the same (without recurring to Linq)
-        /// </summary>
-        /// <param name="left"></param>
-        /// <param name="right"></param>
-        /// <returns></returns>
-        internal static bool SequenceEqual(RenderTargetIdentifier[] left, RenderTargetIdentifier[] right)
-        {
+
+  
+        /// Return true if "left" and "right" are the same (without recurring to Linq)   
+        internal static bool SequenceEqual(//   读完__
+                                RenderTargetIdentifier[] left, 
+                                RenderTargetIdentifier[] right
+        ){
             if (left.Length != right.Length)
                 return false;
 

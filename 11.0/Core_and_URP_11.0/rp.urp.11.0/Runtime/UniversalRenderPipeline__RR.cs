@@ -249,15 +249,19 @@ namespace UnityEngine.Rendering.Universal
     // ===================================================================================================:
     // 区别仅仅是 参数 cameras 的类型是 array 还是 List<>;
 
+    // 由本类来自定义 Render() 内容
+    // 参数中的 context 和 cameras 则由 unity 提供过来
+    // 本函数由 unity 自动调用
+
 #if UNITY_2021_1_OR_NEWER
-        protected override void Render(ScriptableRenderContext renderContext,  Camera[] cameras)
+        protected override void Render(ScriptableRenderContext renderContext,  Camera[] cameras)//   读完__
         {
             Render(renderContext, new List<Camera>(cameras));
         }
 #endif
 
 #if UNITY_2021_1_OR_NEWER
-        protected override void Render(ScriptableRenderContext renderContext, List<Camera> cameras)
+        protected override void Render(ScriptableRenderContext renderContext, List<Camera> cameras) //  读完__
 #else
         protected override void Render(ScriptableRenderContext renderContext, Camera[] cameras)
         
@@ -312,14 +316,15 @@ namespace UnityEngine.Rendering.Universal
             */
 #endif
             {
-                var camera = cameras[i];
+                var camera = cameras[i]; // base or overlay;
                 if (IsGameCamera(camera))
                 {
                     //  核心 !!!!
+                    // 传入的参数如果为 overlay camera, 此函数会立即返回; 这些 overlay cameras 会在后续的 stack 内被渲染;
                     RenderCameraStack(renderContext, camera);
                 }
                 else
-                {   // ----- 这些是 editor 中 杂七杂八的 camera -----:
+                {// ----- 这些是 editor 中 杂七杂八的 camera -----:
                     using (new ProfilingScope(null, Profiling.Pipeline.beginCameraRendering))
                     {
                         // --- 回调函数 触发点 ---: 
@@ -336,6 +341,7 @@ namespace UnityEngine.Rendering.Universal
 
                     UpdateVolumeFramework(camera, null);
 
+                    // 调用-1-: 只针对 base camera;
                     RenderSingleCamera(renderContext, camera);
 
                     using (new ProfilingScope(null, Profiling.Pipeline.endCameraRendering))
@@ -373,15 +379,16 @@ namespace UnityEngine.Rendering.Universal
             Standalone camera rendering. Use this to render procedural cameras.
             本函数体内不调用 "BeginCameraRendering()" and "EndCameraRendering()" callbacks.
 
-            只有 base camera 可调用本重载版本;
-            只是调用另一个 同名重载函数;
+            只有 base camera 可调用本重载; 只是另一个重载 的套壳;
+
+            本重载仅被调用一次, 用来处理 editor 中的 "非 Game cameras"
         */
-        /// <param name="context">Render context used to record commands during execution.</param>
-        /// <param name="camera">Camera to render.</param>
-        public static void RenderSingleCamera(ScriptableRenderContext context, Camera camera)// 读完__
-        {
+        public static void RenderSingleCamera(//      读完__
+                                            ScriptableRenderContext context, 
+                                            Camera camera // 必须是 base camera
+        ){
             UniversalAdditionalCameraData additionalCameraData = null;
-            if (IsGameCamera(camera))
+            if (IsGameCamera(camera))// 不会进入此分支...
                 // 尝试获得 camera 所在 go 现成的 additionalCameraData 组件;
                 camera.gameObject.TryGetComponent(out additionalCameraData);
 
@@ -398,13 +405,14 @@ namespace UnityEngine.Rendering.Universal
                 true,                   // 参数 camera 是不是 stack 中的最后一个;
                 out var cameraData      // 输出值
             );
+
 // 如果 package: "com.unity.adaptiveperformance" 版本大于 2.0.0
 #if ADAPTIVE_PERFORMANCE_2_0_0_OR_NEWER
             if (asset.useAdaptivePerformance)
                 ApplyAdaptivePerformance(ref cameraData);
 #endif
             RenderSingleCamera(context, cameraData, cameraData.postProcessEnabled);// -2-
-        }// 函数完__
+        }// 函数完__ -1-
 
 
 
@@ -440,23 +448,31 @@ namespace UnityEngine.Rendering.Universal
 
             base / overlay camera 皆可
         */
-        /// <param name="context">Render context used to record commands during execution.</param>
         /// <param name="cameraData">Camera rendering data. This might contain data inherited from a base camera.</param>
-        /// <param name="anyPostProcessingEnabled">True if at least one camera has post-processing enabled in the stack, false otherwise.</param>
-        static void RenderSingleCamera(
+        /// <param name="anyPostProcessingEnabled">
+        ///     base camera 以及 stack 中的所有 overlay camera, 任意一个支持后处理, 此值即为 true;
+        ///     (若此 base camera 启用了 stack 的话, 才会考虑 overlay cameras)
+        /// </param>
+        static void RenderSingleCamera(//   读完__
                                         ScriptableRenderContext context, 
-                                        CameraData cameraData, 
+                                        CameraData cameraData, // base / overlay camera 皆可
                                         bool anyPostProcessingEnabled
         ){
             Camera camera = cameraData.camera; // base / overlay camera 皆可
-            var renderer = cameraData.renderer; // 比如 "Forward Renderer"
+            var renderer = cameraData.renderer; // 比如 "Forward Renderer", or "Renderer2D"
             if (renderer == null)
             {
-                Debug.LogWarning(string.Format("Trying to render {0} with an invalid renderer. Camera rendering will be skipped.", camera.name));
+                Debug.LogWarning(string.Format("Trying to render {0} with an invalid renderer. Camera rendering will be skipped.", 
+                    camera.name));
                 return;
             }
 
-            if (!TryGetCullingParameters(cameraData, out ScriptableCullingParameters cullingParameters))
+            // 获得 cullingParameters:
+            if( !TryGetCullingParameters(
+                    cameraData, 
+                    out ScriptableCullingParameters cullingParameters)
+            )
+                // 说明目标 camera 无法渲染,  直接放弃
                 return;
 
             ScriptableRenderer.current = renderer;
@@ -495,11 +511,17 @@ namespace UnityEngine.Rendering.Universal
             // 等同于调用 "cmdScope.BeginSample()"
             using (new ProfilingScope(cmdScope, sampler)) 
             {
+
                 renderer.Clear(cameraData.renderType);
 
                 using (new ProfilingScope(cmd, Profiling.Pipeline.Renderer.setupCullingParameters))
                 {
-                    // 为 "参数 cullingParameters" 设置一部分成员数据;
+                    /*
+                        改写 "参数 cullingParameters" 中的一部分数据;
+                        -1- 是否 cull "shadow caster objs"
+                        -2- 设置 maximumVisibleLights 数量 ( main light + add lights 数量 )
+                        -3- 设置 shadowDistance
+                    */ 
                     renderer.SetupCullingParameters(ref cullingParameters, ref cameraData);
                 }
 
@@ -515,6 +537,7 @@ namespace UnityEngine.Rendering.Universal
                 }
 #endif
 
+                // 执行真正的 Cull !!!!!
                 CullingResults cullResults = context.Cull(ref cullingParameters);
 
                 // 初始化 "参数 renderingData" 中的全部数据;
@@ -536,17 +559,21 @@ namespace UnityEngine.Rendering.Universal
             }// 等同于调用 "cmdScope.EndSample()"
 
 
-            cameraData.xr.EndCamera(cmd, cameraData);
-            context.ExecuteCommandBuffer(cmd); // Sends to ScriptableRenderContext all the commands enqueued since cmd.Clear, i.e the "EndSample" command
+            cameraData.xr.EndCamera(cmd, cameraData);// xr
+
+            // Sends to ScriptableRenderContext all the commands enqueued since cmd.Clear, i.e the "EndSample" command
+            context.ExecuteCommandBuffer(cmd); 
             CommandBufferPool.Release(cmd);
 
             using (new ProfilingScope(cmd, Profiling.Pipeline.Context.submit))
             {
-                context.Submit(); // Actually execute the commands that we previously sent to the ScriptableRenderContext context
+                // Actually execute the commands that we previously sent to the ScriptableRenderContext context
+                // 抛开 xr 代码, 这是全局唯一一个 "Submit()" 调用;
+                context.Submit();
             }
 
             ScriptableRenderer.current = null;
-        }// 函数完__
+        }// 函数完__ -2-
 
 
 
@@ -556,37 +583,58 @@ namespace UnityEngine.Rendering.Universal
             Renders a camera stack. This method calls "RenderSingleCamera()" for each valid camera in the stack.
             The last camera resolves the final target to screen.
         */
-        /// <param name="context">Render context used to record commands during execution.</param>
-        /// <param name="camera">Camera to render.</param>
-        static void RenderCameraStack(ScriptableRenderContext context, Camera baseCamera)
-        {
+        /// <param name="baseCamera"> 传入的 camera 可能是 base 或 overlay; 只不过, overlay camera 会在本函数内被剔除掉; </param>
+        static void RenderCameraStack(//        读完__
+                                ScriptableRenderContext context, 
+                                Camera baseCamera 
+        ){
             using var profScope = new ProfilingScope(null, ProfilingSampler.Get(URPProfileId.RenderCameraStack));
 
+            // urp 中, camera 一定自带一个 camera add data 组件;
+            // 只不过, 通常我们不不会手动改写这个 组件中的内容; (当然你可以改写它)
             baseCamera.TryGetComponent<UniversalAdditionalCameraData>(out var baseCameraAdditionalData);
 
             // Overlay cameras will be rendered stacked while rendering base cameras
-            // camera add data 如果不是 base camera, 直接放弃渲染
+            // 若参数 baseCamera 为 overlay, 直接返回;  因为他们将在各个 camera stack 内被渲染;
             if (baseCameraAdditionalData != null && baseCameraAdditionalData.renderType == CameraRenderType.Overlay)
                 return;
+
+            // ----- 接下来, baseCamera 一定代表一个 base camera !!! -----:
 
             // renderer contains a stack if it has additional data and the renderer supports stacking
             var renderer = baseCameraAdditionalData?.scriptableRenderer;// 如 "Forward Renderer"
             
+            // ForwardRenderer 中, 此值为 true;
             bool supportsCameraStacking = renderer != null && renderer.supportedRenderingFeatures.cameraStacking;
+
+            // 原则上此处得到的 stack, 里面存储的都是 overlay camera; (猜测就是 inspector 中手动绑定的那堆)
             List<Camera> cameraStack = (supportsCameraStacking) ? baseCameraAdditionalData?.cameraStack : null;
 
+            // base camera 或 stack 中的任意一个 overlay camera 支持后处理,  此值即为 true 
             bool anyPostProcessingEnabled = baseCameraAdditionalData != null && baseCameraAdditionalData.renderPostProcessing;
 
-            // We need to know the last active camera in the stack to be able to resolve
-            // rendering to screen when rendering it. The last camera in the stack is not
-            // necessarily the last active one as it users might disable it.
+            /*
+                We need to know the "last active camera" in the stack to be able to resolve rendering to screen when rendering it. 
+                The last camera in the stack is not necessarily the last active one as it users might disable it.
+                ---
+                查找 stack 中最后一个 "active camera" 的 idx; 它一定是个 overlay camera;
+                同时把 stack 中所有值为 null 的元素剔除掉;
+                ---
+                tpr:
+                    但是, 此处有个 bug: 在寻找到 lastActiveOverlayCameraIndex 之后, 还可能执行一次 "UpdateCameraStack()", 
+                    它可能删除 stack 中的元素, 进而导致 lastActiveOverlayCameraIndex 不再准确; 到 12.1 中仍未修正;
+            */
+
             int lastActiveOverlayCameraIndex = -1;
             if (cameraStack != null)
             {
+                // Object.GetType(), 得到调用者的 Type 类型实例; 通常为: "ForwardRenderer"
                 var baseCameraRendererType = baseCameraAdditionalData?.scriptableRenderer.GetType();
+
+                // 若在 cameraStack 中找到值为 null 的元素, 此值为 true;
                 bool shouldUpdateCameraStack = false;
 
-                for (int i = 0; i < cameraStack.Count; ++i)
+                for (int i = 0; i < cameraStack.Count; ++i)// 遍历每个 stack 中的 overlay camera
                 {
                     Camera currCamera = cameraStack[i];
                     if (currCamera == null)
@@ -601,11 +649,18 @@ namespace UnityEngine.Rendering.Universal
 
                         if (data == null || data.renderType != CameraRenderType.Overlay)
                         {
+                            // 仅仅是警告并 忽略掉这个 base camera;
                             Debug.LogWarning(string.Format("Stack can only contain Overlay cameras. {0} will skip rendering.", currCamera.name));
                             continue;
                         }
 
+                        // Object.GetType() 通常为: "ForwardRenderer"
                         var currCameraRendererType = data?.scriptableRenderer.GetType();
+
+                        // 如果 base camera 和 stack中的 overlay camera 两者绑定的 renderer 类型不同; 
+                        // 如果两者都是 "ForwardRenderer", 或都是 "Renderer2D", 都能允许; 
+                        // 如果两者中有一个为 "Renderer2D", 另一个未知, 也允许,
+                        // 如果两者 即 "都不是ForwardRenderer", 也 "都不是Renderer2D": 就会曝出警告, 并忽略这个 overlay camera;
                         if (currCameraRendererType != baseCameraRendererType)
                         {
                             var renderer2DType = typeof(Experimental.Rendering.Universal.Renderer2D);
@@ -616,20 +671,25 @@ namespace UnityEngine.Rendering.Universal
                             }
                         }
 
+                        // 现在能确认, currCamera 是一个 active overlay camera;
+
                         anyPostProcessingEnabled |= data.renderPostProcessing;
                         lastActiveOverlayCameraIndex = i;
                     }
                 }
                 if (shouldUpdateCameraStack)
                 {
-                    baseCameraAdditionalData.UpdateCameraStack();
+                    // 此处对 stack 元素的修改, 可能导致 lastActiveOverlayCameraIndex 失效;
+                    // 但是这个 bug 在 12.1 中仍存在;
+                    baseCameraAdditionalData.UpdateCameraStack();// 把 camera stack 中所有值为 null 的元素剔除掉
                 }
             }
 
             // Post-processing not supported in GLES2.
             anyPostProcessingEnabled &= SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2;
 
-            bool isStackedRendering = lastActiveOverlayCameraIndex != -1;
+            bool isStackedRendering = lastActiveOverlayCameraIndex != -1;// 如果 stack 不为空, 此值为 true
+
             using (new ProfilingScope(null, Profiling.Pipeline.beginCameraRendering))
             {
                 // --- 回调函数 触发点 ---: 
@@ -638,8 +698,17 @@ namespace UnityEngine.Rendering.Universal
             }
 
             // Update volumeframework before initializing additional camera data
+            // 配置 base camera 的 Volume: "layerMask 和 trigger(Transform)" 两个信息, 并写入 VolumeManager.instance;
             UpdateVolumeFramework(baseCamera, baseCameraAdditionalData);
-            InitializeCameraData(baseCamera, baseCameraAdditionalData, !isStackedRendering, out var baseCameraData);
+
+            // 新建并初始化 base camera 的 CameraData 实例;
+            InitializeCameraData(
+                baseCamera, 
+                baseCameraAdditionalData, 
+                !isStackedRendering,    // 只要 stack 中存在有效元素, 本 base camera 就不是最后一个
+                out var baseCameraData  // 要装配的 实例;
+            );
+
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             var originalTargetDesc = baseCameraData.cameraTargetDescriptor;
@@ -648,12 +717,10 @@ namespace UnityEngine.Rendering.Universal
             foreach (XRPass xrPass in xrPasses)
             {
                 baseCameraData.xr = xrPass;
-
                 // XRTODO: remove isStereoEnabled in 2021.x
 #pragma warning disable 0618
                 baseCameraData.isStereoEnabled = xrPass.enabled;
 #pragma warning restore 0618
-
                 if (baseCameraData.xr.enabled)
                 {
                     xrActive = true;
@@ -669,7 +736,6 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
 
-
 // 如果 package: "com.unity.visualeffectgraph" 版本大于 0.0.1
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
             //It should be called before culling to prepare material. When there isn't any VisualEffect component, this method has no effect.
@@ -681,7 +747,10 @@ namespace UnityEngine.Rendering.Universal
             if (asset.useAdaptivePerformance)
                 ApplyAdaptivePerformance(ref baseCameraData);
 #endif
+
+            // 调用 -2-:
             RenderSingleCamera(context, baseCameraData, anyPostProcessingEnabled);
+
             using (new ProfilingScope(null, Profiling.Pipeline.endCameraRendering))
             {
                 // --- 回调函数 触发点 ---: 
@@ -691,9 +760,9 @@ namespace UnityEngine.Rendering.Universal
 
             if (isStackedRendering)
             {
-                for (int i = 0; i < cameraStack.Count; ++i)
+                for (int i = 0; i < cameraStack.Count; ++i)// 每个 stack 中的 overlay camera
                 {
-                    var currCamera = cameraStack[i];
+                    var currCamera = cameraStack[i];// overlay camera
                     if (!currCamera.isActiveAndEnabled)
                         continue;
 
@@ -717,17 +786,24 @@ namespace UnityEngine.Rendering.Universal
                         //It should be called before culling to prepare material. When there isn't any VisualEffect component, this method has no effect.
                         VFX.VFXManager.PrepareCamera(currCamera);
 #endif
+                        // 配置 overlay camera 的 Volume: "layerMask 和 trigger(Transform)" 两个信息, 并写入 VolumeManager.instance;
                         UpdateVolumeFramework(currCamera, currCameraData);
 
-                        // 使用 任意 camera (base 或 overlay) 和它的 add data 去初始化参数 cameraData 中的数据;
+                        // 使用 任意 camera (base 或 overlay) 和它的 add data 去初始化最好一个参数 cameraData 中的数据;
                         // -- 仅初始化 非通用数据, (camera stack 中每个camera 都各自独立的数据 )
-                        InitializeAdditionalCameraData(currCamera, currCameraData, lastCamera, ref overlayCameraData);
+                        InitializeAdditionalCameraData(
+                            currCamera,             // 当前的 overlay camera
+                            currCameraData,         // camera add data
+                            lastCamera,             // 是否为 stack 中最后一个 camera
+                            ref overlayCameraData   // "CameraData" 
+                        );
 /*   tpr                      
 #if ENABLE_VR && ENABLE_XR_MODULE
                         if (baseCameraData.xr.enabled)
                             m_XRSystem.UpdateFromCamera(ref overlayCameraData.xr, overlayCameraData);
 #endif
 */
+                        // 调用-2-:
                         RenderSingleCamera(context, overlayCameraData, anyPostProcessingEnabled);
 
                         using (new ProfilingScope(null, Profiling.Pipeline.endCameraRendering))
@@ -766,9 +842,11 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-
-        static void UpdateVolumeFramework(Camera camera, UniversalAdditionalCameraData additionalCameraData)
-        {
+        // 配置 参数camera 的 Volume: "layerMask 和 trigger(Transform)" 两个信息, 并写入 VolumeManager.instance;
+        static void UpdateVolumeFramework(//   读完__
+                            Camera camera, // base or overlay 皆可
+                            UniversalAdditionalCameraData additionalCameraData// 此数据与 参数 camera 相互绑定
+        ){
             using var profScope = new ProfilingScope(null, ProfilingSampler.Get(URPProfileId.UpdateVolumeFramework));
 
             // Default values when there's no additional camera data available
@@ -776,14 +854,16 @@ namespace UnityEngine.Rendering.Universal
             Transform trigger = camera.transform;
 
             if (additionalCameraData != null)
-            {
+            {// ----- 主要分支 -----:
+                // defines which Volumes affect this Camera. 对应 inspector 中 Volumes Mask 一项;
                 layerMask = additionalCameraData.volumeLayerMask;
+                // 对应 inspector 中 Volumes Trigger 一栏; 一般为空 此时本函数返回 null
                 trigger = additionalCameraData.volumeTrigger != null
-                    ? additionalCameraData.volumeTrigger
-                    : trigger;
+                    ? additionalCameraData.volumeTrigger    // 选用用户设置的 trigger transform
+                    : trigger;                              // 选用 camera transform
             }
             else if (camera.cameraType == CameraType.SceneView)
-            {
+            {// ----- editor 分支 -----:
                 // Try to mirror the MainCamera volume layer mask for the scene view - do not mirror the target
                 var mainCamera = Camera.main;
                 UniversalAdditionalCameraData mainAdditionalCameraData = null;
@@ -797,10 +877,12 @@ namespace UnityEngine.Rendering.Universal
             VolumeManager.instance.Update(trigger, layerMask);
         }// 函数完__
 
-        
 
-        // 后处理中: SMAA, DepthOfField, MotionBlur 都需要用到 depth buffer, 此时返回 true;
-        static bool CheckPostProcessForDepth(in CameraData cameraData)// 读完__
+
+        
+        // SMAA, DepthOfField, MotionBlur 这几种后处理 需要用到 depth buffer, 
+        // 若启用任意一种, 本函数返回 true;
+        static bool CheckPostProcessForDepth(in CameraData cameraData)// 读完__ 2遍
         {
             if (!cameraData.postProcessEnabled)
                 return false;
@@ -842,8 +924,9 @@ namespace UnityEngine.Rendering.Universal
         }// 函数完__
 
 
+
         // 为一个 base camera, 新建并初始化它的 CameraData 实例;
-        static void InitializeCameraData(   // 读完__
+        static void InitializeCameraData(   // 读完__  第2遍
                                 Camera camera, // must be base camera
                                 UniversalAdditionalCameraData additionalCameraData, // 和参数 camera 一起的
                                 bool resolveFinalTarget, // 参数 camera 是不是 stack 中的最后一个;
@@ -856,6 +939,7 @@ namespace UnityEngine.Rendering.Universal
             // 使用 Base camera 和它的 add data 去初始化参数 cameraData 中的数据;
             // -- 仅初始化 通用数据, (camera stack 中每个camera 都相同的数据)
             InitializeStackedCameraData(camera, additionalCameraData, ref cameraData);
+
             // 使用 任意 camera (base 或 overlay) 和它的 add data 去初始化参数 cameraData 中的数据;
             // -- 仅初始化 非通用数据, (camera stack 中每个camera 都各自独立的数据 )
             InitializeAdditionalCameraData(camera, additionalCameraData, resolveFinalTarget, ref cameraData);
@@ -869,7 +953,9 @@ namespace UnityEngine.Rendering.Universal
 
             int msaaSamples = 1;
             if (camera.allowMSAA && asset.msaaSampleCount > 1 && rendererSupportsMSAA)
-                msaaSamples = (camera.targetTexture != null) ? camera.targetTexture.antiAliasing : asset.msaaSampleCount;
+                msaaSamples = (camera.targetTexture != null) ? 
+                    camera.targetTexture.antiAliasing : // camera 绑定了 rt, 就使用 rt 的配置
+                    asset.msaaSampleCount;              // 没绑定 rt, 就是用 asset 的数据
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
             // Use XR's MSAA if camera is XR camera. XR MSAA needs special handle here because it is not per Camera.
@@ -905,7 +991,7 @@ namespace UnityEngine.Rendering.Universal
         /// <param name="baseCamera"> "Base camera" to inherit settings from.</param>
         /// <param name="baseAdditionalCameraData">Component that contains additional "base camera" data.</param>
         /// <param name="cameraData">Camera data to initialize setttings.</param>
-        static void InitializeStackedCameraData( // 读完__
+        static void InitializeStackedCameraData( // 读完__ _第2遍_
                 Camera baseCamera, 
                 UniversalAdditionalCameraData baseAdditionalCameraData, 
                 ref CameraData cameraData
@@ -990,7 +1076,6 @@ namespace UnityEngine.Rendering.Universal
             const float kRenderScaleThreshold = 0.05f;
             cameraData.renderScale = (Mathf.Abs(1.0f - settings.renderScale) < kRenderScaleThreshold) ? 1.0f : settings.renderScale;
 
-
 #if ENABLE_VR && ENABLE_XR_MODULE
             /*   tpr
             cameraData.xr = m_XRSystem.emptyPass;
@@ -1011,7 +1096,8 @@ namespace UnityEngine.Rendering.Universal
             bool canSkipFrontToBackSorting = (baseCamera.opaqueSortMode==OpaqueSortMode.Default && hasHSRGPU) || baseCamera.opaqueSortMode==OpaqueSortMode.NoDistanceSort;
 
             cameraData.defaultOpaqueSortFlags = canSkipFrontToBackSorting ? noFrontToBackOpaqueFlags : commonOpaqueFlags;
-            // urp 自身代码中, 并未向向容器写入元素;
+
+            // 似乎和 camera 录屏相关, 暂时忽视此功能;
             cameraData.captureActions = CameraCaptureBridge.GetCaptureActions(baseCamera);
         }// 函数完__
 
@@ -1025,15 +1111,13 @@ namespace UnityEngine.Rendering.Universal
             使用 任意 camera (base 或 overlay) 和它的 add data 去初始化 参数 cameraData 中的数据;
             仅初始化 非通用数据, (camera stack 中每个camera 都各自不同的 数据 )
         */
-        /// <param name="camera">Camera to initialize settings from.</param>
-        /// <param name="additionalCameraData">Additional camera data component to initialize settings from.</param>
         /// <param name="resolveFinalTarget">True if this is the last camera in the stack and rendering should resolve to camera target.</param>
         /// <param name="cameraData">Settings to be initilized.</param>
-        static void InitializeAdditionalCameraData(  //   读完__
+        static void InitializeAdditionalCameraData(  //   读完__   第2遍
                                             Camera camera, 
                                             UniversalAdditionalCameraData additionalCameraData, 
                                             bool resolveFinalTarget,  // 参数 camera 是不是 stack 中的最后一个;
-                                            ref CameraData cameraData
+                                            ref CameraData cameraData // 设置的对象
         ){
             using var profScope = new ProfilingScope(null, Profiling.Pipeline.initializeAdditionalCameraData);
 
@@ -1068,7 +1152,7 @@ namespace UnityEngine.Rendering.Universal
             else if (additionalCameraData != null)
             {// camera 是 game camera;  且 add camera data 存在, 直接延用它的数据:
                 cameraData.renderType = additionalCameraData.renderType;
-                // base camera 一定设为 true, overlay camera 随意;
+                // base camera 一定设为 true, overlay camera 则使用 inspector 中配置的值;
                 cameraData.clearDepth = (additionalCameraData.renderType != CameraRenderType.Base) ? additionalCameraData.clearDepth : true;
                 cameraData.postProcessEnabled = additionalCameraData.renderPostProcessing;
                 cameraData.maxShadowDistance = (additionalCameraData.renderShadows) ? cameraData.maxShadowDistance : 0.0f;
@@ -1089,8 +1173,9 @@ namespace UnityEngine.Rendering.Universal
             // Disables post if GLes2;   GLes2 不支持 后处理;
             cameraData.postProcessEnabled &= SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2;
 
-            // editor scene 窗口使用的 camera, 
-            // 还有后处理中: SMAA, DepthOfField, MotionBlur; 以上这些都需要用到 depth buffer; 
+            // 以下两者情况 一定需要 depth texture
+            // -- editor scene 窗口使用的 camera, 
+            // -- 或启用以下一种后处理中: SMAA, DepthOfField, MotionBlur;
             cameraData.requiresDepthTexture |= isSceneViewCamera || CheckPostProcessForDepth(cameraData);
 
 
@@ -1141,8 +1226,11 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-        
-        //    初始化 "参数 renderingData" 中的全部数据;
+        /*
+            -1- 寻找合适的 main light
+            -2- 分别确定 main light / add lights 是否能 cast shadow;
+            -3- 初始化 "参数 renderingData" 中的全部数据;
+        */
         static void InitializeRenderingData( //   读完__
                                     UniversalRenderPipelineAsset settings, 
                                     ref CameraData cameraData, 
@@ -1152,7 +1240,7 @@ namespace UnityEngine.Rendering.Universal
         ){
             using var profScope = new ProfilingScope(null, Profiling.Pipeline.initializeRenderingData);
 
-            var visibleLights = cullResults.visibleLights;
+            var visibleLights = cullResults.visibleLights;// NativeArray<VisibleLight>
 
             // 若找到合适的 main light, 就返回它在 visibleLights 中的 idx;  没找到就返回 -1;
             int mainLightIndex = GetMainLightIndex(settings, visibleLights);
@@ -1161,11 +1249,11 @@ namespace UnityEngine.Rendering.Universal
 
             if (cameraData.maxShadowDistance > 0.0f)
             {
-                mainLightCastShadows = (mainLightIndex!=-1 && 
-                                        visibleLights[mainLightIndex].light!=null &&
+                mainLightCastShadows = (mainLightIndex!=-1 && // 找到了 main light
+                                        visibleLights[mainLightIndex].light!=null && // 找到了 main light
                                         visibleLights[mainLightIndex].light.shadows!=LightShadows.None);
 
-                // If additional lights are shaded per-pixel they cannot cast shadows
+                // If additional lights are not shaded per-pixel they cannot cast shadows
                 if (settings.additionalLightsRenderingMode == LightRenderingMode.PerPixel)
                 {
                     for (int i = 0; i < visibleLights.Length; ++i)
@@ -1175,7 +1263,7 @@ namespace UnityEngine.Rendering.Universal
 
                         Light light = visibleLights[i].light;
 
-                        // UniversalRP doesn't support additional directional light shadows yet
+                        // urp doesn't support additional directional light shadows yet
                         // urp 暂时不支持 "add 平行光" 的阴影;
                         if( (visibleLights[i].lightType==LightType.Spot || visibleLights[i].lightType==LightType.Point) && 
                             light!=null && 
@@ -1206,7 +1294,7 @@ namespace UnityEngine.Rendering.Universal
 
 
         // 初始化 "参数 shadowData" 中的全部数据, ( 它其实是 renderingData.shadowData )
-        static void InitializeShadowData(      //    读完__
+        static void InitializeShadowData(      //    读完__   第二遍没看细
                                     UniversalRenderPipelineAsset settings, 
                                     NativeArray<VisibleLight> visibleLights, 
                                     bool mainLightCastShadows, 
@@ -1223,7 +1311,7 @@ namespace UnityEngine.Rendering.Universal
                 Light light = visibleLights[i].light;
 
                 // 一个可以绑定到 light go 上的组件, 用户可在脚本中改写这个 组件中的数据;
-                // 这个组件 很可能是不存的; (用户没有绑定它)
+                // 这个组件 很可能是不存在的; (用户没有绑定它)
                 UniversalAdditionalLightData data = null;
                 if (light != null)
                 {
@@ -1309,7 +1397,7 @@ namespace UnityEngine.Rendering.Universal
 
 
         // 初始化 "参数 postProcessingData" 中的全部数据, ( 它其实是 renderingData.postProcessingData )
-        static void InitializePostProcessingData(   // 读完__
+        static void InitializePostProcessingData(   // 读完__  第二遍
                                             UniversalRenderPipelineAsset settings, 
                                             out PostProcessingData postProcessingData
         ){
@@ -1325,7 +1413,7 @@ namespace UnityEngine.Rendering.Universal
 
 
         // 初始化 参数 lightData;  (它是 renderingData.lightData )
-        static void InitializeLightData( // 读完__
+        static void InitializeLightData( // 读完__  第二遍
                                     UniversalRenderPipelineAsset settings, 
                                     NativeArray<VisibleLight> visibleLights, 
                                     int mainLightIndex, 
@@ -1398,8 +1486,7 @@ namespace UnityEngine.Rendering.Universal
         /*
             Main Light is always a directional light
             --
-            寻找 visibleLights 中的 main light;
-            返回值是 目标light 在 visibleLights 中的 idx:
+            寻找 visibleLights 中的 main light; 返回其在 visibleLights 中的 idx:
 
             --  如果 "RenderSettings.sun" 是一个位于 visibleLights 中的平行光, (潜在地说明它是 enable 的)
                 那就选用 sun, 哪怕它并不是 候选者中 最亮的平行光
@@ -1411,7 +1498,7 @@ namespace UnityEngine.Rendering.Universal
             -- 如果以上都不符合, 就说明没找到合适的 main light, 此时返回 -1;
                 比如: 没有手动设置 "sun", 且 visibleLights 中没有平行光;
         */
-        static int GetMainLightIndex(UniversalRenderPipelineAsset settings, NativeArray<VisibleLight> visibleLights)// 读完__
+        static int GetMainLightIndex(UniversalRenderPipelineAsset settings, NativeArray<VisibleLight> visibleLights)// 读完__ 第二遍
         {
             using var profScope = new ProfilingScope(null, Profiling.Pipeline.getMainLightIndex);
 

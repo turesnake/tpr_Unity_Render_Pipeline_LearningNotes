@@ -343,6 +343,7 @@ namespace UnityEngine.Rendering.Universal
             通常是一个 class 继承了 "ScriptableRenderPass", 然后它会覆写本函数;
             ===
             在执行 render pass 之前, 本函数会被 renderer 调用 (比如 Forward Renderer);
+            在 "ScriptableRenderer.ExecuteRenderPass()" 中被调用;
 
             可在本函数体内实现:
             -- configure render targets and their clear state
@@ -380,7 +381,7 @@ namespace UnityEngine.Rendering.Universal
             ------------------------------------------------------------------- +++
             通常是一个 class 继承了 "ScriptableRenderPass", 然后它会覆写本函数;
             ===
-            在完成一个 camera stack 的渲染后, 本函数会被调用;
+            在完成整个 camera stack 的渲染后, 本函数会被调用;
             可在本函数实现体内释放由本 render pass 新建的任何资源;
 
             如果一个 camera 没有显式的 camera stack, 它也被认为是一个 camera stack,

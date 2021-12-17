@@ -13,6 +13,8 @@ namespace UnityEngine.Rendering.Universal
     
     /*
         本类实例专门用来存储 "ScriptableRenderer" 类实例的 数据;
+
+        在 urp 中, ForwardRendererData, Renderer2DData 继承本类;
     */
     [MovedFrom("UnityEngine.Rendering.LWRP")]
     public abstract class ScriptableRendererData//ScriptableRendererData__RR
@@ -25,6 +27,7 @@ namespace UnityEngine.Rendering.Universal
         /*
             创建一个 "ScriptableRenderer" 类实例;
             派生类 必须实现之;
+            可到 ForwardRendererData, Renderer2DData 中寻找;
         */
         protected abstract ScriptableRenderer Create();
         
@@ -53,7 +56,7 @@ namespace UnityEngine.Rendering.Universal
         }
 
 
-        internal ScriptableRenderer InternalCreateRenderer()
+        internal ScriptableRenderer InternalCreateRenderer()//  读完__
         {
             isInvalidated = false;
             return Create();

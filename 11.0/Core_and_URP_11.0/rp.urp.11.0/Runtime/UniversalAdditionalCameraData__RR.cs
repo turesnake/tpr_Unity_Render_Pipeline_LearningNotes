@@ -29,13 +29,11 @@ namespace UnityEngine.Rendering.Universal
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
     public enum CameraOverrideOption//CameraOverrideOption__
     {
-        // 不管 pipeline asset 设置了什么, 都不执行 覆写;
-        Off,
-        // 不管 pipeline asset 设置了什么, 都不执行 覆写;
-        On,
-        // 使用 "UniversalRenderPipelineAsset" 中的数据来决定, 是否覆写;
-        UsePipelineSettings,
+        Off,// 不管 pipeline asset 设置了什么, 都不执行 覆写;
+        On, // 不管 pipeline asset 设置了什么, 都执行 覆写;
+        UsePipelineSettings,// 使用 "UniversalRenderPipelineAsset" 中的数据来决定, 是否覆写;
     }
+
 
     /*    tpr
     //  没看到此 enum 被使用 
@@ -51,6 +49,7 @@ namespace UnityEngine.Rendering.Universal
 
     /*
         Holds information about the "post-processing anti-aliasing" mode.
+        enum: None, "FXAA", "SMAA";
     */
     public enum AntialiasingMode//AntialiasingMode__
     {
@@ -75,21 +74,16 @@ namespace UnityEngine.Rendering.Universal
 
 
     /*
-        一共有两种类型的 camera: 
-        -- "Base Camera"
-        -- "Overlay Camera"
+        enum: Base, Overlay;
     */
     public enum CameraRenderType//CameraRenderType__
     {
         // allows the camera to render to either the screen or to a texture
         Base,
 
-        /*
-            allows the camera to render on top of a previous camera output, thus compositing camera results.
-
-            运行 camera 的渲染结果 写到 上一个 "camera output" 上面去,
-            从而将前后两次 渲染值 合成起来;
-        */
+        //  allows the camera to render on top of a previous camera output, thus compositing camera results.
+        //  运行 camera 的渲染结果 写到 上一个 "camera output" 上面去,
+        //  从而将前后两次 渲染值 合成起来;
         Overlay,
     }
 
@@ -97,6 +91,7 @@ namespace UnityEngine.Rendering.Universal
 
     /*
         Controls SMAA anti-aliasing quality.
+        enum: Low, Medium, High;
     */
     public enum AntialiasingQuality
     {
@@ -177,14 +172,15 @@ namespace UnityEngine.Rendering.Universal
         : MonoBehaviour, ISerializationCallbackReceiver
     {
 
-        [FormerlySerializedAs("renderShadows"), SerializeField]
-        bool m_RenderShadows = true;
+        [FormerlySerializedAs("renderShadows"), SerializeField]bool m_RenderShadows = true;
 
         [SerializeField]CameraOverrideOption m_RequiresDepthTextureOption = CameraOverrideOption.UsePipelineSettings;
 
         [SerializeField]CameraOverrideOption m_RequiresOpaqueTextureOption = CameraOverrideOption.UsePipelineSettings;
 
         [SerializeField] CameraRenderType m_CameraType = CameraRenderType.Base;
+
+        // inspector 中 stack 中的所有 cameras, 只有绑入 overlay camera 才是合理的;
         [SerializeField] List<Camera> m_Cameras = new List<Camera>();
 
         // 值为 -1,  表示使用 asset 的默认值;
@@ -296,47 +292,50 @@ namespace UnityEngine.Rendering.Universal
             get => m_CameraType;
             set => m_CameraType = value;
         }
-
-
-
        
 
         /*  
-            Returns the camera stack. Only valid for "Base cameras".
-            "Overlay cameras" have no stack and will return null.
+            Returns the camera stack. 
+            Only valid for "Base cameras". "Overlay cameras" have no stack and will return null.
+            ---
+            只有当本函数的调用者自己为 base camera 时, 调用本函数才是有效的, 否则返回 null;
+            返回的 stack 中, 存储的都是 overlay camera, (猜测就是 inspector 中手动绑定的那堆)
         */
-        public List<Camera> cameraStack
+        public List<Camera> cameraStack//    读完__
         {
             get
             {
-                // 若发现是 Overlay Camera, 直接警报
+                // 若发现本 camera 为 Overlay Camera, 直接警报
                 if (renderType != CameraRenderType.Base){
                     var camera = gameObject.GetComponent<Camera>();
-                    Debug.LogWarning(string.Format("{0}: This camera is of {1} type. Only Base cameras can have a camera stack.", camera.name, renderType));
+                    Debug.LogWarning(string.Format("{0}: This camera is of {1} type. Only Base cameras can have a camera stack.", 
+                        camera.name, renderType));
                     return null;
                 }
 
-                // 这个 camera 有个 scriptableRenderer, 它不支持 camera stacking;
+                // 若本 camera 有个不支持 camera stacking 的 scriptableRenderer
                 if (scriptableRenderer.supportedRenderingFeatures.cameraStacking == false)
                 {
                     var camera = gameObject.GetComponent<Camera>();
                     Debug.LogWarning(string.Format("{0}: This camera has a ScriptableRenderer that doesn't support camera stacking. Camera stack is null.", camera.name));
                     return null;
                 }
+
+                // 真正的返回
                 return m_Cameras;
             }
         }
 
 
 
-
-        internal void UpdateCameraStack()
+        // 把 camera stack 中所有值为 null 的元素剔除掉
+        internal void UpdateCameraStack()//   读完__
         {
 #if UNITY_EDITOR
             Undo.RecordObject(this, "Update camera stack");
 #endif
             int prev = m_Cameras.Count;
-            m_Cameras.RemoveAll(cam => cam == null);
+            m_Cameras.RemoveAll(cam => cam == null);//剔除掉 stack 中所有的 null 元素;
             int curr = m_Cameras.Count;
             int removedCamsCount = prev - curr;
             if (removedCamsCount != 0)
@@ -359,7 +358,7 @@ namespace UnityEngine.Rendering.Universal
 
         /*
             Returns true if this camera needs to render depth information in a texture. 
-            If enabled, depth texture is available to be bound and read from shaders as _CameraDepthTexture after rendering skybox.
+            If enabled, depth texture is available to be bound and read from shaders as "_CameraDepthTexture" after rendering skybox.
             ---
             
             如果本 camera 会将 depth 数据写入一个 texture 中, 本变量返回 true;
@@ -368,6 +367,8 @@ namespace UnityEngine.Rendering.Universal
             猜测:
                 skybox 往往是 实心物渲染的最后一步, 之后就要渲染 半透明物体了, 而它们不会改写 depth buffer值;
                 所以在这个时间节点后, 此 camera 的 depth texture 就不变了, 可以被访问了;
+
+            这个数据到底是在 depth prepass 阶段, 还是 copy depth 阶段写入的, 不是很清晰...
         */
         public bool requiresDepthTexture
         {
@@ -411,8 +412,6 @@ namespace UnityEngine.Rendering.Universal
         }
 
 
-
-       
         /*
             返回 用来渲染本 camera的 ScriptableRenderer, 如 "Forward Renderer"
         */
@@ -446,7 +445,8 @@ namespace UnityEngine.Rendering.Universal
             m_RendererIndex = index;
         }
 
-        // the Layer Mask that defines which Volumes affect this Camera.
+
+        // defines which Volumes affect this Camera. 对应 inspector 中 Volumes Mask 一项;
         public LayerMask volumeLayerMask
         {
             get => m_VolumeLayerMask;
@@ -459,6 +459,9 @@ namespace UnityEngine.Rendering.Universal
             For example, if your application uses 第三人称角色, set this property to the character's Transform. 
             The Camera then uses the post-processing and Scene settings for Volumes that the character enters. 
             If you do not assign a Transform, the Camera uses its own Transform instead.
+
+            对应 inspector 中 Volumes Trigger 一栏; 
+            一般为空, 此时本函数返回 null, 表示沿用 camera transform
         */
         public Transform volumeTrigger
         {
@@ -466,9 +469,10 @@ namespace UnityEngine.Rendering.Universal
             set => m_VolumeTrigger = value;
         }
 
-        /// <summary>
+
         /// Returns true if this camera should render post-processing.
-        /// </summary>
+        // 猜测: 此值由 camera inspector 设置;
+        // base / overlay camera 皆可独立配置;
         public bool renderPostProcessing
         {
             get => m_RenderPostProcessing;
@@ -476,17 +480,19 @@ namespace UnityEngine.Rendering.Universal
         }
 
        
-        /// Returns the current anti-aliasing mode used by this camera.
+        // Returns the current anti-aliasing mode used by this camera.
+        // enum: None, "FXAA", "SMAA";
         public AntialiasingMode antialiasing
         {
             get => m_Antialiasing;
             set => m_Antialiasing = value;
         }
 
-        /// <summary>
-        /// Returns the current anti-aliasing quality used by this camera.
-        /// <seealso cref="antialiasingQuality"/>.
-        /// </summary>
+        /*
+            Returns the current anti-aliasing quality used by this camera.
+            enum: Low, Medium, High;
+            沿用 inspector 中配置
+        */
         public AntialiasingQuality antialiasingQuality
         {
             get => m_AntialiasingQuality;

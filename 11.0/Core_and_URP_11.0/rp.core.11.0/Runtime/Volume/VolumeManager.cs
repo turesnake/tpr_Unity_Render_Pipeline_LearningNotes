@@ -305,6 +305,7 @@ namespace UnityEngine.Rendering
             Update(stack, trigger, layerMask);
         }
 
+
         /// <summary>
         /// Updates the Volume manager and stores the result in a custom <see cref="VolumeStack"/>.
         /// </summary>
@@ -399,6 +400,8 @@ namespace UnityEngine.Rendering
                 OverrideData(stack, volume.profileRef.components, interpFactor * Mathf.Clamp01(volume.weight));
             }
         }
+
+        
 
         /// <summary>
         /// Get all volumes on a given layer mask sorted by influence.

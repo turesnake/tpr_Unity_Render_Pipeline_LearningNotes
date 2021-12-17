@@ -30,7 +30,7 @@ namespace UnityEngine.Rendering.Universal
         This renderer is supported on all urp supported platforms.
         It uses a "classic forward rendering strategy" with "per-object light culling".
     */ 
-    public sealed class ForwardRenderer//ForwardRenderer__RR
+    public sealed class ForwardRenderer //ForwardRenderer__RR
         : ScriptableRenderer
     {
         const int k_DepthStencilBufferBits = 32;
@@ -877,10 +877,13 @@ namespace UnityEngine.Rendering.Universal
 
 
         /*
-            为 "参数 cullingParameters" 设置一部分成员数据;
-        */
+            改写 "参数 cullingParameters" 中的一部分数据;
+            -1- 是否 cull "shadow caster objs"
+            -2- 设置 maximumVisibleLights 数量 ( main light + add lights 数量 )
+            -3- 设置 shadowDistance
+        */ 
         /// <inheritdoc />
-        public override void SetupCullingParameters( //   读完__
+        public override void SetupCullingParameters( //   读完__  第二遍
                         ref ScriptableCullingParameters cullingParameters,
                         ref CameraData cameraData
         ){
@@ -897,13 +900,15 @@ namespace UnityEngine.Rendering.Universal
 
             // -------------
             // 不再对 shader caster objs 执行 cull 操作, 如果:
-            //   --"shadow casting modes are turned off"
-            //   --"the shadow distance has been turned down to zero"
-            bool isShadowCastingDisabled = !UniversalRenderPipeline.asset.supportsMainLightShadows && !UniversalRenderPipeline.asset.supportsAdditionalLightShadows;
+            //   -- asset inspector 把 main/add light 的 shadow 勾选框都关闭了;
+            //   -- shadow distance 值为 0;
+            bool isShadowCastingDisabled =  !UniversalRenderPipeline.asset.supportsMainLightShadows && 
+                                            !UniversalRenderPipeline.asset.supportsAdditionalLightShadows;
             bool isShadowDistanceZero = Mathf.Approximately(cameraData.maxShadowDistance, 0.0f);
             if (isShadowCastingDisabled || isShadowDistanceZero)
             {
-                cullingParameters.cullingOptions &= ~CullingOptions.ShadowCasters;// 关闭这个 flag
+                // 关闭这个 flag; 不对 shadow caster objs 执行 cull 运算, 也不渲染 shadow;
+                cullingParameters.cullingOptions &= ~CullingOptions.ShadowCasters;
             }
 
             if (this.actualRenderingMode == RenderingMode.Deferred){
@@ -923,7 +928,7 @@ namespace UnityEngine.Rendering.Universal
                 // i.e "ScriptableRenderContext.Cull()" might return  
                 // ( UniversalRenderPipeline.maxVisibleAdditionalLights + 1 ) visible additional lights !
                 // --------
-                // (16, 32, or 256) + 1;
+                // (16, 32, or 256) + 1; 加 1 是为了添上 main light;
                 cullingParameters.maximumVisibleLights = UniversalRenderPipeline.maxVisibleAdditionalLights + 1;
             }
             cullingParameters.shadowDistance = cameraData.maxShadowDistance;

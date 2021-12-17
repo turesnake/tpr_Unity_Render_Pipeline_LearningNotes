@@ -3,8 +3,11 @@
 #define UNITY_UV_STARTS_AT_TOP 1
 #define UNITY_REVERSED_Z 1
 #define UNITY_NEAR_CLIP_VALUE (1.0)
+
 // This value will not go through any matrix projection conversion
+// 这个值不会经过任何矩阵投影转换
 #define UNITY_RAW_FAR_CLIP_VALUE (0.0)
+
 #define VERTEXID_SEMANTIC SV_VertexID
 #define INSTANCEID_SEMANTIC SV_InstanceID
 #define FRONT_FACE_SEMANTIC SV_IsFrontFace

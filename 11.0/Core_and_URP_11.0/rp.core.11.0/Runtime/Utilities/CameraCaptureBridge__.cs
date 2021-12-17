@@ -6,6 +6,12 @@ namespace UnityEngine.Rendering
 
     /*
         Bridge class for camera captures.
+
+        某网页解释:
+            使用反射捕获到UnityEditor.Recorder程序集，在后处理执行后执行录制Pass。 
+            如果没有安装Recorder插件，则获取程序集失败，关闭录制。
+
+        暂时忽视掉这个功能... 
     */
     public static class CameraCaptureBridge//CameraCaptureBridge__
     {

@@ -4,6 +4,7 @@ namespace UnityEngine.Rendering
 {
     
     // Render Textures clear flag.
+    // enum: None, Color, Depth, All;
     [Flags]
     public enum ClearFlag//ClearFlag__
     {

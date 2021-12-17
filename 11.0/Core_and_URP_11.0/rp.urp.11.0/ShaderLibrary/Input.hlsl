@@ -48,8 +48,18 @@ half4 _SubtractiveShadowColor;
 
 #define _InvCameraViewProj unity_MatrixInvVP
 
-// 注: It works the same as _ScreenParams but takes pipeline RenderScale into consideration
+/*
+    这个数据和 "_ScreenParams" 相似, 但是额外考虑进了 "pipeline RenderScale"
+    ----
+    === urp ===:
+        x: scaledCameraWidth   叠加了 renderScale 和 DynamicResolution(如果有)
+        y: scaledCameraHeight  叠加了 renderScale 和 DynamicResolution(如果有)
+        z: 1 + 1/x;
+        w: 1 + 1/y;
+*/
 float4 _ScaledScreenParams;
+
+
 
 float4 _MainLightPosition;
 half4 _MainLightColor;

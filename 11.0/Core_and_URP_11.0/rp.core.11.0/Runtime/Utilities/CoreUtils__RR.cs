@@ -223,7 +223,8 @@ namespace UnityEngine.Rendering
 
 
         /*
-            Set the current render texture.
+           // -------------------------------------------------------------: -1-:
+           Set the current render texture.
 
             -1- 设置 render target
             -2- 设置 viewport
@@ -252,146 +253,169 @@ namespace UnityEngine.Rendering
             depthSlice:
                 Depth slice that should be bound as a render texture if applicable.
         */ 
+        // -------------------------------------------------------------: -2-:
         public static void SetRenderTarget(
-            CommandBuffer cmd, RenderTargetIdentifier buffer, ClearFlag clearFlag, Color clearColor, int miplevel = 0, CubemapFace cubemapFace = CubemapFace.Unknown, int depthSlice = -1
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier buffer, 
+                                        ClearFlag clearFlag, 
+                                        Color clearColor, 
+                                        int miplevel = 0, 
+                                        CubemapFace cubemapFace = CubemapFace.Unknown, 
+                                        int depthSlice = -1
         ){
             depthSlice = FixupDepthSlice(depthSlice, cubemapFace);
             cmd.SetRenderTarget(buffer, miplevel, cubemapFace, depthSlice);
             ClearRenderTarget(cmd, clearFlag, clearColor);
         }
 
-        // 重载
-        public static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier colorBuffer, RenderTargetIdentifier depthBuffer, ClearFlag clearFlag, Color clearColor, int miplevel = 0, CubemapFace cubemapFace = CubemapFace.Unknown, int depthSlice = -1)
-        {
+        // -------------------------------------------------------------: -3-:
+        public static void SetRenderTarget(
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier colorBuffer, 
+                                        RenderTargetIdentifier depthBuffer, 
+                                        ClearFlag clearFlag, 
+                                        Color clearColor, 
+                                        int miplevel = 0, 
+                                        CubemapFace cubemapFace = CubemapFace.Unknown, 
+                                        int depthSlice = -1
+        ){
             depthSlice = FixupDepthSlice(depthSlice, cubemapFace);
             cmd.SetRenderTarget(colorBuffer, depthBuffer, miplevel, cubemapFace, depthSlice);
             ClearRenderTarget(cmd, clearFlag, clearColor);
         }
 
+        
+        // -------------------------------------------------------------: -4-:
         // 重载, 默认参数: Color.clear
-        public static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier buffer, ClearFlag clearFlag = ClearFlag.None, int miplevel = 0, CubemapFace cubemapFace = CubemapFace.Unknown, int depthSlice = -1)
-        {
+        public static void SetRenderTarget(
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier buffer, 
+                                        ClearFlag clearFlag = ClearFlag.None, 
+                                        int miplevel = 0, 
+                                        CubemapFace cubemapFace = CubemapFace.Unknown, 
+                                        int depthSlice = -1
+        ){
             SetRenderTarget(cmd, buffer, clearFlag, Color.clear, miplevel, cubemapFace, depthSlice);
         }
+
+        // -------------------------------------------------------------: -5-:
         // 重载, 
         // 分开设置 colorBuffer, depthBuffer
         // 默认参数: ClearFlag.None, Color.clear
-        public static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier colorBuffer, RenderTargetIdentifier depthBuffer, int miplevel = 0, CubemapFace cubemapFace = CubemapFace.Unknown, int depthSlice = -1)
-        {
+        public static void SetRenderTarget(
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier colorBuffer, 
+                                        RenderTargetIdentifier depthBuffer, 
+                                        int miplevel = 0, 
+                                        CubemapFace cubemapFace = CubemapFace.Unknown, 
+                                        int depthSlice = -1
+        ){
             SetRenderTarget(cmd, colorBuffer, depthBuffer, ClearFlag.None, Color.clear, miplevel, cubemapFace, depthSlice);
         }
+
+        // -------------------------------------------------------------: -6-:
         // 重载, 
         // 分开设置 colorBuffer, depthBuffer
         // 默认参数: Color.clear
-        public static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier colorBuffer, RenderTargetIdentifier depthBuffer, ClearFlag clearFlag, int miplevel = 0, CubemapFace cubemapFace = CubemapFace.Unknown, int depthSlice = -1)
-        {
+        public static void SetRenderTarget(
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier colorBuffer, 
+                                        RenderTargetIdentifier depthBuffer, 
+                                        ClearFlag clearFlag, 
+                                        int miplevel = 0, 
+                                        CubemapFace cubemapFace = CubemapFace.Unknown, 
+                                        int depthSlice = -1
+        ){
             SetRenderTarget(cmd, colorBuffer, depthBuffer, clearFlag, Color.clear, miplevel, cubemapFace, depthSlice);
         }
         
 
-        /// <summary>
-        /// Set the current multiple render texture.
-        /// </summary>
-        /// <param name="cmd">CommandBuffer used for rendering commands.</param>
-        /// <param name="colorBuffers">RenderTargetIdentifier array of the color render textures.</param>
-        /// <param name="depthBuffer">RenderTargetIdentifier of the depth render texture.</param>
-        // Set the current multiple render texture.
-        // 
-        public static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier[] colorBuffers, RenderTargetIdentifier depthBuffer)
-        {
+        // -------------------------------------------------------------: -7-:
+        public static void SetRenderTarget(
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier[] colorBuffers, 
+                                        RenderTargetIdentifier depthBuffer
+        ){
             SetRenderTarget(cmd, colorBuffers, depthBuffer, ClearFlag.None, Color.clear);
         }
 
-        /// <summary>
-        /// Set the current multiple render texture.
-        /// </summary>
-        /// <param name="cmd">CommandBuffer used for rendering commands.</param>
-        /// <param name="colorBuffers">RenderTargetIdentifier array of the color render textures.</param>
-        /// <param name="depthBuffer">RenderTargetIdentifier of the depth render texture.</param>
-        /// <param name="clearFlag">If not set to ClearFlag.None, specifies how to clear the render target after setup.</param>
-        public static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier[] colorBuffers, RenderTargetIdentifier depthBuffer, ClearFlag clearFlag = ClearFlag.None)
-        {
+        // -------------------------------------------------------------: -8-:
+        public static void SetRenderTarget(
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier[] colorBuffers, 
+                                        RenderTargetIdentifier depthBuffer, 
+                                        ClearFlag clearFlag = ClearFlag.None
+        ){
             SetRenderTarget(cmd, colorBuffers, depthBuffer, clearFlag, Color.clear);
         }
 
-        /// <summary>
-        /// Set the current multiple render texture.
-        /// </summary>
-        /// <param name="cmd">CommandBuffer used for rendering commands.</param>
-        /// <param name="colorBuffers">RenderTargetIdentifier array of the color render textures.</param>
-        /// <param name="depthBuffer">RenderTargetIdentifier of the depth render texture.</param>
-        /// <param name="clearFlag">If not set to ClearFlag.None, specifies how to clear the render target after setup.</param>
-        /// <param name="clearColor">If applicable, color with which to clear the render texture after setup.</param>
-        public static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier[] colorBuffers, RenderTargetIdentifier depthBuffer, ClearFlag clearFlag, Color clearColor)
-        {
+
+        // -------------------------------------------------------------: -9-:
+        public static void SetRenderTarget(
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier[] colorBuffers, 
+                                        RenderTargetIdentifier depthBuffer, 
+                                        ClearFlag clearFlag, 
+                                        Color clearColor
+        ){
             cmd.SetRenderTarget(colorBuffers, depthBuffer, 0, CubemapFace.Unknown, -1);
             ClearRenderTarget(cmd, clearFlag, clearColor);
         }
 
+        // -------------------------------------------------------------: -10-:
         // Explicit load and store actions
-        /// <summary>
-        /// Set the current render texture.
-        /// </summary>
-        /// <param name="cmd">CommandBuffer used for rendering commands.</param>
-        /// <param name="buffer">Color buffer RenderTargetIdentifier.</param>
-        /// <param name="loadAction">Load action.</param>
-        /// <param name="storeAction">Store action.</param>
-        /// <param name="clearFlag">If not set to ClearFlag.None, specifies how to clear the render target after setup.</param>
-        /// <param name="clearColor">If applicable, color with which to clear the render texture after setup.</param>
-        public static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier buffer, RenderBufferLoadAction loadAction, RenderBufferStoreAction storeAction, ClearFlag clearFlag, Color clearColor)
-        {
+        // 绑定单个 buffer, 比如单独的 color buffer
+        public static void SetRenderTarget(
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier buffer, 
+                                        RenderBufferLoadAction loadAction, 
+                                        RenderBufferStoreAction storeAction, 
+                                        ClearFlag clearFlag, 
+                                        Color clearColor
+        ){
             cmd.SetRenderTarget(buffer, loadAction, storeAction);
             ClearRenderTarget(cmd, clearFlag, clearColor);
         }
 
-        /// <summary>
-        /// Set the current render texture.
-        /// </summary>
-        /// <param name="cmd">CommandBuffer used for rendering commands.</param>
-        /// <param name="buffer">Color buffer RenderTargetIdentifier.</param>
-        /// <param name="loadAction">Load action.</param>
-        /// <param name="storeAction">Store action.</param>
-        /// <param name="clearFlag">If not set to ClearFlag.None, specifies how to clear the render target after setup.</param>
-        public static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier buffer, RenderBufferLoadAction loadAction, RenderBufferStoreAction storeAction, ClearFlag clearFlag)
-        {
+        // -------------------------------------------------------------: -11-:
+        public static void SetRenderTarget(
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier buffer, 
+                                        RenderBufferLoadAction loadAction, 
+                                        RenderBufferStoreAction storeAction, 
+                                        ClearFlag clearFlag
+        ){
             SetRenderTarget(cmd, buffer, loadAction, storeAction, clearFlag, Color.clear);
         }
 
-        /// <summary>
-        /// Set the current render texture.
-        /// </summary>
-        /// <param name="cmd">CommandBuffer used for rendering commands.</param>
-        /// <param name="colorBuffer">Color buffer RenderTargetIdentifier.</param>
-        /// <param name="colorLoadAction">Color buffer load action.</param>
-        /// <param name="colorStoreAction">Color buffer store action.</param>
-        /// <param name="depthBuffer">Depth buffer RenderTargetIdentifier.</param>
-        /// <param name="depthLoadAction">Depth buffer load action.</param>
-        /// <param name="depthStoreAction">Depth buffer store action.</param>
-        /// <param name="clearFlag">If not set to ClearFlag.None, specifies how to clear the render target after setup.</param>
-        /// <param name="clearColor">If applicable, color with which to clear the render texture after setup.</param>
-        public static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier colorBuffer, RenderBufferLoadAction colorLoadAction, RenderBufferStoreAction colorStoreAction,
-            RenderTargetIdentifier depthBuffer, RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction,
-            ClearFlag clearFlag, Color clearColor)
-        {
+        // -------------------------------------------------------------: -12-:
+        public static void SetRenderTarget(
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier colorBuffer, 
+                                        RenderBufferLoadAction colorLoadAction, 
+                                        RenderBufferStoreAction colorStoreAction,
+                                        RenderTargetIdentifier depthBuffer, 
+                                        RenderBufferLoadAction depthLoadAction, 
+                                        RenderBufferStoreAction depthStoreAction,
+                                        ClearFlag clearFlag, 
+                                        Color clearColor
+        ){
+            // 同时设置了 color buffer 和 depth buffer
             cmd.SetRenderTarget(colorBuffer, colorLoadAction, colorStoreAction, depthBuffer, depthLoadAction, depthStoreAction);
             ClearRenderTarget(cmd, clearFlag, clearColor);
         }
 
-        /// <summary>
-        /// Set the current render texture.
-        /// </summary>
-        /// <param name="cmd">CommandBuffer used for rendering commands.</param>
-        /// <param name="colorBuffer">Color buffer RenderTargetIdentifier.</param>
-        /// <param name="colorLoadAction">Color buffer load action.</param>
-        /// <param name="colorStoreAction">Color buffer store action.</param>
-        /// <param name="depthBuffer">Depth buffer RenderTargetIdentifier.</param>
-        /// <param name="depthLoadAction">Depth buffer load action.</param>
-        /// <param name="depthStoreAction">Depth buffer store action.</param>
-        /// <param name="clearFlag">If not set to ClearFlag.None, specifies how to clear the render target after setup.</param>
-        public static void SetRenderTarget(CommandBuffer cmd, RenderTargetIdentifier colorBuffer, RenderBufferLoadAction colorLoadAction, RenderBufferStoreAction colorStoreAction,
-            RenderTargetIdentifier depthBuffer, RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction,
-            ClearFlag clearFlag)
-        {
+        // -------------------------------------------------------------: -13-:
+        public static void SetRenderTarget(
+                                        CommandBuffer cmd, 
+                                        RenderTargetIdentifier colorBuffer, 
+                                        RenderBufferLoadAction colorLoadAction, 
+                                        RenderBufferStoreAction colorStoreAction,
+                                        RenderTargetIdentifier depthBuffer, 
+                                        RenderBufferLoadAction depthLoadAction, 
+                                        RenderBufferStoreAction depthStoreAction,
+                                        ClearFlag clearFlag
+        ){
             SetRenderTarget(cmd, colorBuffer, colorLoadAction, colorStoreAction, depthBuffer, depthLoadAction, depthStoreAction, clearFlag, Color.clear);
         }
 
@@ -855,12 +879,12 @@ namespace UnityEngine.Rendering
         /*
             Converts the provided sRGB color to the current active color space.
         */
-        /// <param name="color">Input color.</param>
         /// <returns>Linear color if the active color space is ColorSpace.Linear, the original input otherwise.</returns>
-        public static Color ConvertSRGBToActiveColorSpace(Color color)
+        public static Color ConvertSRGBToActiveColorSpace(Color color)//   读完__
         {
             return (QualitySettings.activeColorSpace == ColorSpace.Linear) ? color.linear : color;
         }
+
 
 
         /*

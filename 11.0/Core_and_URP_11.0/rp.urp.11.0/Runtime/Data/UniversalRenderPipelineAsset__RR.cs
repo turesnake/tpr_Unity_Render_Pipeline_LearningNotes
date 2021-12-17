@@ -131,7 +131,7 @@ namespace UnityEngine.Rendering.Universal
         Shader m_DefaultShader;
 
 
-        // 就是 inspector 中的 "Renderer List", 通常放入一个 "Forward Renderer" 实例;
+        // 就是 inspector 中的 "Renderer List", 通常放入一个 "ForwardRenderer" 实例;
         ScriptableRenderer[] m_Renderers = new ScriptableRenderer[1];
 
 
@@ -364,7 +364,7 @@ namespace UnityEngine.Rendering.Universal
             如果运行中途, RenderPipelineAsset 的一个设置发生了改变, unity 会销毁当前的 Render Pipe Instance
             然后在下一帧之前,重新调用本函数
         */
-        protected override RenderPipeline CreatePipeline()
+        protected override RenderPipeline CreatePipeline()//   读完__
         {
             // -----------------------------------:
             // 一些资源 和 version 检测;
@@ -386,8 +386,8 @@ namespace UnityEngine.Rendering.Universal
             }
 
             // ------------------------------------:
-            // 正式创建;
-            CreateRenderers();
+            CreateRenderers();// 创建 renderer 实例
+
             return new UniversalRenderPipeline(this);
         }
 
@@ -399,7 +399,6 @@ namespace UnityEngine.Rendering.Universal
         {
             if (m_Renderers == null)
                 return;
-
             for (int i = 0; i < m_Renderers.Length; i++)
                 DestroyRenderer(ref m_Renderers[i]);
         }
@@ -433,7 +432,7 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-        void CreateRenderers()
+        void CreateRenderers()//   读完__
         {
             DestroyRenderers();
 
@@ -443,6 +442,7 @@ namespace UnityEngine.Rendering.Universal
             for (int i = 0; i < m_RendererDataList.Length; ++i)
             {
                 if (m_RendererDataList[i] != null)
+                    // 创建出 如 ForwardRenderer 的实例
                     m_Renderers[i] = m_RendererDataList[i].InternalCreateRenderer();
             }
         }

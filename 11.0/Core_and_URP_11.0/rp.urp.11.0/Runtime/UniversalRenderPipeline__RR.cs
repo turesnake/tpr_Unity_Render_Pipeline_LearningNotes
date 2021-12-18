@@ -331,14 +331,14 @@ namespace UnityEngine.Rendering.Universal
                         // 触发并执行: 所有绑定到委托 "RenderPipelineManager.beginCameraRendering" 上的 callbacks;
                         BeginCameraRendering(renderContext, camera);
                     }
-
+/*        tpr
 // 如果 package: "com.unity.visualeffectgraph" 版本大于 0.0.1
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
                     //It should be called before culling to prepare material. 
                     //When there isn't any VisualEffect component, this method has no effect.
                     VFX.VFXManager.PrepareCamera(camera);
 #endif
-
+*/
                     UpdateVolumeFramework(camera, null);
 
                     // 调用-1-: 只针对 base camera;
@@ -406,11 +406,13 @@ namespace UnityEngine.Rendering.Universal
                 out var cameraData      // 输出值
             );
 
+/*       tpr
 // 如果 package: "com.unity.adaptiveperformance" 版本大于 2.0.0
 #if ADAPTIVE_PERFORMANCE_2_0_0_OR_NEWER
             if (asset.useAdaptivePerformance)
                 ApplyAdaptivePerformance(ref cameraData);
 #endif
+*/
             RenderSingleCamera(context, cameraData, cameraData.postProcessEnabled);// -2-
         }// 函数完__ -1-
 
@@ -543,12 +545,13 @@ namespace UnityEngine.Rendering.Universal
                 // 初始化 "参数 renderingData" 中的全部数据;
                 InitializeRenderingData(asset, ref cameraData, ref cullResults, anyPostProcessingEnabled, out RenderingData renderingData);
 
+/*         tpr
 // 如果 package: "com.unity.adaptiveperformance" 版本大于 2.0.0
 #if ADAPTIVE_PERFORMANCE_2_0_0_OR_NEWER
                 if (asset.useAdaptivePerformance)
-                    ApplyAdaptivePerformance(ref renderingData);
+                    ApplyAdaptivePerformance(ref renderingData);  
 #endif
-
+*/
                 using (new ProfilingScope(cmd, Profiling.Pipeline.Renderer.setup))
                 {
                     renderer.Setup(context, ref renderingData);
@@ -736,18 +739,21 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
 
+/*      tpr
 // 如果 package: "com.unity.visualeffectgraph" 版本大于 0.0.1
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
             //It should be called before culling to prepare material. When there isn't any VisualEffect component, this method has no effect.
             VFX.VFXManager.PrepareCamera(baseCamera);
 #endif
+*/
 
+/*       tpr
 // 如果 package: "com.unity.adaptiveperformance" 版本大于 2.0.0
 #if ADAPTIVE_PERFORMANCE_2_0_0_OR_NEWER
             if (asset.useAdaptivePerformance)
                 ApplyAdaptivePerformance(ref baseCameraData);
 #endif
-
+*/
             // 调用 -2-:
             RenderSingleCamera(context, baseCameraData, anyPostProcessingEnabled);
 
@@ -780,12 +786,13 @@ namespace UnityEngine.Rendering.Universal
                             // 触发并执行: 所有绑定到委托 "RenderPipelineManager.beginCameraRendering" 上的 callbacks;
                             BeginCameraRendering(context, currCamera);
                         }
-
+/*     tpr
 // 如果 package: "com.unity.visualeffectgraph" 版本大于 0.0.1
 #if VISUAL_EFFECT_GRAPH_0_0_1_OR_NEWER
                         //It should be called before culling to prepare material. When there isn't any VisualEffect component, this method has no effect.
                         VFX.VFXManager.PrepareCamera(currCamera);
 #endif
+*/
                         // 配置 overlay camera 的 Volume: "layerMask 和 trigger(Transform)" 两个信息, 并写入 VolumeManager.instance;
                         UpdateVolumeFramework(currCamera, currCameraData);
 
@@ -1601,6 +1608,7 @@ namespace UnityEngine.Rendering.Universal
 
 // 如果 package: "com.unity.adaptiveperformance" 版本大于 2.0.0
 #if ADAPTIVE_PERFORMANCE_2_0_0_OR_NEWER
+    /*       tpr
         static void ApplyAdaptivePerformance(ref CameraData cameraData)
         {
             var noFrontToBackOpaqueFlags = SortingCriteria.SortingLayer | SortingCriteria.RenderQueue | SortingCriteria.OptimizeStateChanges | SortingCriteria.CanvasOrder;
@@ -1667,7 +1675,7 @@ namespace UnityEngine.Rendering.Universal
             if (AdaptivePerformance.AdaptivePerformanceRenderSettings.LutBias >= 1 && renderingData.postProcessingData.lutSize == 32)
                 renderingData.postProcessingData.lutSize = 16;
         }
-
+    */
 #endif
     }
 }

@@ -22,6 +22,8 @@ namespace UnityEngine.Rendering.Universal
 
 
     /*
+        ========================================< RenderingData >================================================:
+
         "InitializeRenderingData()" 初始化一个完整的 RenderingData 实例;
     */
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
@@ -43,9 +45,10 @@ namespace UnityEngine.Rendering.Universal
     }
 
 
-
+    // =======================================< LightData >============================================:
     // RenderingData 的一个成员
-    [MovedFrom("UnityEngine.Rendering.LWRP")] public struct LightData//LightData__
+    [MovedFrom("UnityEngine.Rendering.LWRP")] 
+    public struct LightData//LightData__
     {
         // 在 "GetMainLightIndex()" 中计算而得; 表示 main light 在 visibleLights 中的 idx; 
         // 若没找到合适的 main light, 此值为 -1;
@@ -88,7 +91,7 @@ namespace UnityEngine.Rendering.Universal
 
     // ========================================< CameraData >====================================:
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
-    public struct CameraData//CameraData__RR
+    public struct CameraData//CameraData__
     {
         // Internal camera data as we are not yet sure how to expose View in stereo context.
         // We might change this API soon.
@@ -104,11 +107,10 @@ namespace UnityEngine.Rendering.Universal
             m_ProjectionMatrix = projectionMatrix;
         }
 
+        
+        //    Returns the camera view-matrix.
 
-        /*
-            Returns the camera view-matrix.
-        */
-        public Matrix4x4 GetViewMatrix(int viewIndex = 0)
+        public Matrix4x4 GetViewMatrix(int viewIndex = 0)// 读完__
         {
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
@@ -120,10 +122,9 @@ namespace UnityEngine.Rendering.Universal
         }
 
 
-        /*
-            Returns the camera projection-matrix.
-        */
-        public Matrix4x4 GetProjectionMatrix(int viewIndex = 0)
+        
+        //    Returns the camera projection-matrix.
+        public Matrix4x4 GetProjectionMatrix(int viewIndex = 0)// 读完__
         {
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
@@ -133,7 +134,6 @@ namespace UnityEngine.Rendering.Universal
 */
             return m_ProjectionMatrix;
         }
-
        
         /*
             Returns the camera "GPU projection-matrix";
@@ -145,7 +145,7 @@ namespace UnityEngine.Rendering.Universal
             和 "GL.GetGPUProjectionMatrix()" 函数相似, 但是本函数会查询 urp内部状态, 
             来得知当前管线 是否正在把渲染结果写入一个 render texture;
         */ 
-        public Matrix4x4 GetGPUProjectionMatrix(int viewIndex = 0)
+        public Matrix4x4 GetGPUProjectionMatrix(int viewIndex = 0)//  读完__
         {
             return GL.GetGPUProjectionMatrix(
                 GetProjectionMatrix(viewIndex), 
@@ -153,8 +153,7 @@ namespace UnityEngine.Rendering.Universal
             );
         }
 
-
-        public Camera camera; // camera 本体, 
+        public Camera camera; // camera 本体; // [++ 各 camera 的数据相互独立 ++]
 
         // enum: Base, Overlay
         public CameraRenderType renderType; // [++ 各 camera 的数据相互独立 ++]
@@ -162,14 +161,14 @@ namespace UnityEngine.Rendering.Universal
 
         // 等于 baseCamera.targetTexture;
         // 此值若为 null, 表示目标为 backbuffer;
-        public RenderTexture targetTexture; // [- stack 中所有 camera 的值都相同 -]
+        public RenderTexture targetTexture; // [-- 全 stack 统一使用 base camera 的值 -]
 
 
         // 此 struct 包含用来创建 RenderTexture 所需的一切信息。
         // 关于这个 变量:
         // -- 要么根据 context 当场新建一个
         // -- 要么沿用 camera.targetTexture 中的数据, 并做适当调整
-        public RenderTextureDescriptor cameraTargetDescriptor; // [++ 各 camera 的数据相互独立 ++]
+        public RenderTextureDescriptor cameraTargetDescriptor; // [-- 全 stack 统一使用 base camera 的值 -]
         
 
         // ---------------------------------------------------:
@@ -177,17 +176,17 @@ namespace UnityEngine.Rendering.Universal
         // overlay camera 的 CameraData 中的数据也等于 base camera 的;
         // 但这不意味着, overlay camera 的 viewport 一定要和 base camera 的一样
         // 那些独立的不一样的值, 被记录在 overlay camera 的 "Camera" class 实例内 
-        internal Rect pixelRect; // [- stack 中所有 camera 的值都相同 -] // = baseCamera.pixelRect
-        internal int pixelWidth; // [- stack 中所有 camera 的值都相同 -] 
-        internal int pixelHeight; // [- stack 中所有 camera 的值都相同 -]
-        internal float aspectRatio; // 横纵比; [- stack 中所有 camera 的值都相同 -]
+        internal Rect pixelRect; // [-- 全 stack 统一使用 base camera 的值 -] // = baseCamera.pixelRect
+        internal int pixelWidth; // [-- 全 stack 统一使用 base camera 的值 -] 
+        internal int pixelHeight; // [-- 全 stack 统一使用 base camera 的值 -]
+        internal float aspectRatio; // 横纵比; [-- 全 stack 统一使用 base camera 的值 -]
 
 
         /*
             渲染区域缩放因子;
             如果 asset.renderScale 十分接近 1.0, 那就设为 1.0;  否则, 沿用 asset.renderScale 的值;
         */
-        public float renderScale;//[- stack 中所有 camera 的值都相同 -]
+        public float renderScale;//[-- 全 stack 统一使用 base camera 的值 -]
 
         /*
             是否清理 depth buffer
@@ -200,16 +199,16 @@ namespace UnityEngine.Rendering.Universal
         
         // == baseCamera.cameraType;
         //   enum: Game, SceneView, Preview, VR, Reflection
-        public CameraType cameraType; // [- stack 中所有 camera 的值都相同 -]
+        public CameraType cameraType; // [-- 全 stack 统一使用 base camera 的值 -]
 
         /*
             猜测: 只有当 viewport 为 全屏时, 才算是 default 的, 此值才为 true; 
         */
-        public bool isDefaultViewport;//[- stack 中所有 camera 的值都相同 -]
+        public bool isDefaultViewport;//[-- 全 stack 统一使用 base camera 的值 -]
 
 
         // = baseCamera.allowHDR && settings.supportsHDR;
-        public bool isHdrEnabled;//[- stack 中所有 camera 的值都相同 -]
+        public bool isHdrEnabled;//[-- 全 stack 统一使用 base camera 的值 -]
 
         /*
             在渲染完 skybox 之后, 是否将 camera 的 depth buffer 复制一份到 "_CameraDepthTexture";
@@ -226,8 +225,6 @@ namespace UnityEngine.Rendering.Universal
         /*
             在渲染完 skybox 之后, 是否将 camera 的不透明物的 color buffer 复制一份到 "_CameraOpaqueTexture"
             overlay camera 中此值一定为 false; (也不支持在 inspector 中改写)
-
-
         */
         public bool requiresOpaqueTexture; // [++ 各 camera 的数据相互独立 ++]
 
@@ -236,7 +233,6 @@ namespace UnityEngine.Rendering.Universal
         public bool xrRendering;
 #endif
 */
-
 
         /*
             如果你选择了 linear 工作流, 同时 backbuffer 并不支持 "自动将 线性颜色转换为 sRGB值" 这个功能,
@@ -258,8 +254,6 @@ namespace UnityEngine.Rendering.Universal
                 return Display.main.requiresSrgbBlitToBackbuffer;
             }
         }
-
-
         
         // True if the camera rendering is for the scene window in the editor
         // 是否为 editor 中 scene窗口 使用的 camera;
@@ -269,8 +263,6 @@ namespace UnityEngine.Rendering.Universal
         
         // True if the camera rendering is for the preview window in the editor
         public bool isPreviewCamera => cameraType==CameraType.Preview;
-
-        
         
         /*
             True if the camera device projection-matrix is flipped;
@@ -287,7 +279,7 @@ namespace UnityEngine.Rendering.Universal
                 简而言之, 如果 平台是 d3d 类的, 同时当前渲染又正在写入 render texture,
                 那么本函数就会返回 true;
         */
-        public bool IsCameraProjectionMatrixFlipped()
+        public bool IsCameraProjectionMatrixFlipped()//   读完__
         {
             // 用户只能在 urp渲染范围内 访问 CameraData, "current renderer" 应该永不为 null;
             var renderer = ScriptableRenderer.current;
@@ -295,6 +287,7 @@ namespace UnityEngine.Rendering.Universal
 
             if (renderer != null)
             {
+                // 为啥右侧信息 就能得出左侧的: "渲染进 backbuffer" 这个信息呢?
                 bool renderingToBackBufferTarget = renderer.cameraColorTarget==BuiltinRenderTextureType.CameraTarget;
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
@@ -318,14 +311,11 @@ namespace UnityEngine.Rendering.Universal
             还有的 camera 出于性能考虑手动关闭了 排序工作
             对于这种情况, 可在 "SortingCriteria.CommonOpaque" 的基础上, 减去 "QuantizedFrontToBack" 排序;
         */
-        public SortingCriteria defaultOpaqueSortFlags;//[- stack 中所有 camera 的值都相同 -]
+        public SortingCriteria defaultOpaqueSortFlags;//[-- 全 stack 统一使用 base camera 的值 -]
 
 
-        /*
-            只要不加载 xr,vr package, xr.enable 就为 false
-            [- stack 中所有 camera 的值都相同 -]
-        */
-        internal XRPass xr;
+        //    只要不加载 xr,vr package, xr.enable 就为 false
+        internal XRPass xr;//[-- 全 stack 统一使用 base camera 的值 -]
 
         /*
         [Obsolete("Please use xr.enabled instead.")]
@@ -346,13 +336,13 @@ namespace UnityEngine.Rendering.Universal
 
         // 元素们 原本存储在 "CameraCaptureBridge" 中;
         // 似乎和 camera 录屏相关, 暂时忽视此功能;
-        public IEnumerator<Action<RenderTargetIdentifier, CommandBuffer>> captureActions;// [- stack 中所有 camera 的值都相同 -]  
+        public IEnumerator<Action<RenderTargetIdentifier, CommandBuffer>> captureActions;// [-- 全 stack 统一使用 base camera 的值 -]  
 
 
         // the Layer Mask that defines which Volumes affect this Camera. 
         // 要么沿用 baseAdditionalCameraData 的, 即 camera inspector 中设置的配置
         // 要么设置为默认值 "Default"
-        public LayerMask volumeLayerMask;// [- stack 中所有 camera 的值都相同 -]
+        public LayerMask volumeLayerMask;// [-- 全 stack 统一使用 base camera 的值 -]
 
         /*
             Assign a Transform that the Volume system uses to handle the position of this Camera. 
@@ -365,38 +355,37 @@ namespace UnityEngine.Rendering.Universal
             要么在 "InitializeStackedCameraData()" 中自动绑定为 camera transform,
             有时也为 null, (仍表示沿用 camera transform)
         */
-        public Transform volumeTrigger;// [- stack 中所有 camera 的值都相同 -]
+        public Transform volumeTrigger;// [-- 全 stack 统一使用 base camera 的值 -]
 
         /*
             暂时将 shaders 中的所有 NaN/Inf 值都替换成一个 黑色pix, 以避免 "中断某个效果";
             开启此功能会影响性能, 只推荐在 修复 NaN bug 时使用, GLES2 平台不支持本功能;
             默认关闭
         */
-        public bool isStopNaNEnabled;//[- stack 中所有 camera 的值都相同 -]
+        public bool isStopNaNEnabled;//[-- 全 stack 统一使用 base camera 的值 -]
 
         /*
             Enable the checkbox to apply 8-bit dithering to the final render. 
             This can help reduce banding on wide gradients and low light areas.
             沿用 inspector 配置数据;
         */
-        public bool isDitheringEnabled;//[- stack 中所有 camera 的值都相同 -]
+        public bool isDitheringEnabled;//[-- 全 stack 统一使用 base camera 的值 -]
 
         /*
             enum: None, "FXAA", "SMAA";
             沿用 inspector 配置数据;
         */ 
-        public AntialiasingMode antialiasing;// [- stack 中所有 camera 的值都相同 -]
+        public AntialiasingMode antialiasing;// [-- 全 stack 统一使用 base camera 的值 -]
 
         /*
             enum: Low, Medium, High;
             沿用 inspector 中配置
         */
-        public AntialiasingQuality antialiasingQuality;// [- stack 中所有 camera 的值都相同 -]
+        public AntialiasingQuality antialiasingQuality;// [-- 全 stack 统一使用 base camera 的值 -]
 
         
         // Returns the current renderer used by this camera.  比如 "Forward Renderer"
         public ScriptableRenderer renderer; // [++ 各 camera 的数据相互独立 ++]
-
 
         /*
             True if this camera is resolving rendering to the final camera render target.
@@ -413,7 +402,7 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-
+    // ========================================< ShadowData >====================================:
     // RenderingData 的一个成员
     [MovedFrom("UnityEngine.Rendering.LWRP")] public struct ShadowData//ShadowData__
     {
@@ -428,7 +417,6 @@ namespace UnityEngine.Rendering.Universal
         public int mainLightShadowmapHeight; // 其实就是 shadow resolution
 
         public int mainLightShadowCascadesCount;// cascade 有几层, 区间[1,4]; (比如: 4个重叠的球体) 
-
         
         //    就是 cascade ratio, 分别定义了 第1,2,3层 cascade 占据的区域的 比例;
         public Vector3 mainLightShadowCascadesSplit;
@@ -442,7 +430,6 @@ namespace UnityEngine.Rendering.Universal
         // -2- main/add light 任意一种支持渲染 shadow 时
         //  本变量就为 true;
         public bool supportsSoftShadows;
-
         
         public int shadowmapDepthBufferBits; // 比如 16: 一个texl 存储消耗 16-bits
 
@@ -456,7 +443,6 @@ namespace UnityEngine.Rendering.Universal
             要么使用 light 的设置, 要么使用 asset 的设置;
         */
         public List<Vector4> bias;
-
 
         /*
             = m_ShadowResolutionData;
@@ -826,6 +812,7 @@ namespace UnityEngine.Rendering.Universal
 
 
         // 拿着现有数据, 新建并初始化一个 RenderTextureDescriptor 实例;
+        // 一个 stack 只有这么一个 descriptor;
         static RenderTextureDescriptor CreateRenderTextureDescriptor(  // 读完__  第2遍
                                         Camera camera,      // must be base camera
                                         float renderScale,
@@ -871,7 +858,7 @@ namespace UnityEngine.Rendering.Universal
                 desc.height = camera.pixelHeight;
                 if (camera.cameraType==CameraType.SceneView  && !isHdrEnabled)
                 {
-                    desc.graphicsFormat = renderTextureFormatDefault;
+                    desc.graphicsFormat = renderTextureFormatDefault;// ldr
                 }
                 /*
                     SystemInfo.SupportsRenderTextureFormat(camera.targetTexture.descriptor.colorFormat)
@@ -887,7 +874,7 @@ namespace UnityEngine.Rendering.Universal
             }
 
             desc.enableRandomWrite = false;
-            desc.bindMS = false;
+            desc.bindMS = false; // 没看懂啥意思
             desc.useDynamicScale = camera.allowDynamicResolution;
 
             /*
@@ -907,7 +894,6 @@ namespace UnityEngine.Rendering.Universal
                 ---
                 As a workaround we disable MSAA to make sure that the results of previous passes are stored. (fix for Case 1247423).
                 ---
-
                 如果目标平台 并不支持 "multisampled RTs", 而且我们需要一个独立的 pass 来见 opaque color 写入 opaque texture 中去,
                 在后续 passes 中执行 "Load" 操作时, 可能因为某些平台的不支持, 而导致之前存储的 数据(可能时 msaa 处理过的数据) 被丢弃,
                 进而加载失败;

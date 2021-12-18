@@ -368,10 +368,9 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-        /*
-            计算并返回, 参数 colorBuffers 中 "有效的 color buffer" 的数据;
-            id值不为0, 就是有效的
-        */
+        
+        //  计算并返回, 参数 colorBuffers 中 "有效的 color buffer" 的数据;
+        //  id值不为0, 就是有效的
         internal static uint GetValidColorBufferCount(RenderTargetIdentifier[] colorBuffers)//  读完__
         {
             uint nonNullColorBuffers = 0;

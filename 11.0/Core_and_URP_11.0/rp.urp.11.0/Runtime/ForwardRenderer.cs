@@ -102,13 +102,16 @@ namespace UnityEngine.Rendering.Universal
         SceneViewDepthCopyPass m_SceneViewDepthCopyPass;
 #endif
 
-        // 要么等于 "_CameraColorTexture", 要么等于 RenderTargetHandle.CameraTarget
+        // 要么等于 "_CameraColorTexture", 
+        // 要么等于 RenderTargetHandle.CameraTarget; 即:"BuiltinRenderTextureType.CameraTarget"                             
         RenderTargetHandle m_ActiveCameraColorAttachment;
 
-        // 要么等于 "_CameraDepthAttachment", 要么等于 RenderTargetHandle.CameraTarget
+        // 要么等于 "_CameraDepthAttachment", 
+        // 要么等于 RenderTargetHandle.CameraTarget;  即:"BuiltinRenderTextureType.CameraTarget"   
         RenderTargetHandle m_ActiveCameraDepthAttachment;
         RenderTargetHandle m_CameraColorAttachment;//"_CameraColorTexture"
         RenderTargetHandle m_CameraDepthAttachment;//"_CameraDepthAttachment"
+
         RenderTargetHandle m_DepthTexture;//"_CameraDepthTexture"
         RenderTargetHandle m_NormalsTexture;//"_CameraNormalsTexture"
         RenderTargetHandle[] m_GBufferHandles;
@@ -271,11 +274,12 @@ namespace UnityEngine.Rendering.Universal
                 m_BlitMaterial      // copyColorMaterial; //"Shaders/Utils/Blit.shader"
             );
 
-
+/*        tpr
 // 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
             if (!UniversalRenderPipeline.asset.useAdaptivePerformance || AdaptivePerformance.AdaptivePerformanceRenderSettings.SkipTransparentObjects == false)
 #endif
+*/
             {
                 m_TransparentSettingsPass = new TransparentSettingsPass(
                     RenderPassEvent.BeforeRenderingTransparents, 
@@ -383,41 +387,58 @@ namespace UnityEngine.Rendering.Universal
             一次只处理一个 camera, (而不是一个 camera stack), base / overlay camera 皆可;
         */
         /// <inheritdoc />
-        public override void Setup(ScriptableRenderContext context, ref RenderingData renderingData)
-        {
+        public override void Setup( //  读完__
+                                ScriptableRenderContext context, 
+                                ref RenderingData renderingData
+        ){
+/*        tpr
 // 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
             bool needTransparencyPass = !UniversalRenderPipeline.asset.useAdaptivePerformance || !AdaptivePerformance.AdaptivePerformanceRenderSettings.SkipTransparentObjects;
 #endif
-
+*/
             Camera camera = renderingData.cameraData.camera; // base / overlay camera 皆可;
             ref CameraData cameraData = ref renderingData.cameraData;
+            // 全 stack 唯一的一个
             RenderTextureDescriptor cameraTargetDescriptor = renderingData.cameraData.cameraTargetDescriptor;
 
             /*
                 ---------------------------------------------------------------------:
                 Special path for "depth only offscreen cameras". Only write opaques + transparents.
-                如果相机有自己得 rt, 且只渲染 depth 值;
-                此处所谓的 "offscreen", 就是 "并不渲染到屏幕上, 而是渲染到 rt 上" 的意思;
+                ("offscreen", 离屏, 即: "不渲染到屏幕上, 而是渲染到 rt 上")
+                ---
+                此段处理一种特殊的 "depth camera", 它有自己的 rt, 且只渲染 depth 数据;
             */
-            bool isOffscreenDepthTexture = cameraData.targetTexture!=null && cameraData.targetTexture.format == RenderTextureFormat.Depth;
+            bool isOffscreenDepthTexture = 
+                        cameraData.targetTexture!=null && // 相机有自己的 rt
+                        cameraData.targetTexture.format == RenderTextureFormat.Depth; // 此 rt 只渲染 depth 数据
             if (isOffscreenDepthTexture)
             {
-                ConfigureCameraTarget(BuiltinRenderTextureType.CameraTarget, BuiltinRenderTextureType.CameraTarget);
+                // 这到底是表示 不绑定, 还是绑定到 CameraTarget ?????
+                // 很迷...
+                ConfigureCameraTarget(
+                    BuiltinRenderTextureType.CameraTarget, 
+                    BuiltinRenderTextureType.CameraTarget
+                );
+                // 将用户自定义在 renderFeature 中的 render passes 全部 EnqueuePass();
+                // (用户可在 自定义代码内 选择要执行的 camera, 否则将参与每一个 camera 的渲染...)
                 AddRenderPasses(ref renderingData);
+
                 EnqueuePass(m_RenderOpaqueForwardPass);
 
                 // TODO: Do we need to inject transparents and skybox when rendering depth only camera? They don't write to depth.
+                // 还需要渲染 skybox 和 半透明物体吗 ? 反正它们也不对 depth 数据做贡献;
                 EnqueuePass(m_DrawSkyboxPass);
+/*        tpr
 // 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
                 if (!needTransparencyPass)
                     return;
 #endif
-
+*/
                 EnqueuePass(m_RenderTransparentForwardPass);
                 return;
-            }
+            }// ---------------------------------------------------------
 
 
 
@@ -447,8 +468,11 @@ namespace UnityEngine.Rendering.Universal
 
             // Add render passes and gather the input requirements
             isCameraColorTargetValid = true;
+            // 将用户自定义在 renderFeature 中的 render passes 全部 EnqueuePass();
+            // (用户可在 自定义代码内 选择要执行的 camera, 否则将参与每一个 camera 的渲染...)
             AddRenderPasses(ref renderingData);
             isCameraColorTargetValid = false;
+            
             RenderPassInputSummary renderPassInputs = GetRenderPassInputs(ref renderingData);
 
             // Should apply post-processing after rendering this camera?
@@ -603,7 +627,10 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
 
-                ConfigureCameraTarget(activeColorRenderTargetId, activeDepthRenderTargetId);
+                ConfigureCameraTarget(
+                    activeColorRenderTargetId, 
+                    activeDepthRenderTargetId
+                );
             }
 
 
@@ -718,11 +745,12 @@ namespace UnityEngine.Rendering.Universal
                 EnqueuePass(m_CopyColorPass);
             }
 
+/*        tpr
 // 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
             if (needTransparencyPass)
 #endif
-
+*/
             {
                 // 只有当 半透明物体 "不能接收 shadow" 时, 此 render pass 才会被渲染;
                 if (transparentsNeedSettingsPass)
@@ -770,7 +798,9 @@ namespace UnityEngine.Rendering.Universal
                 // Post-processing will resolve to final target. No need for final blit pass.
                 if (applyPostProcessing)
                 {
-                    var destination = resolvePostProcessingToCameraTarget ? RenderTargetHandle.CameraTarget : afterPostProcessColor;
+                    var destination = resolvePostProcessingToCameraTarget ? 
+                        RenderTargetHandle.CameraTarget : // 即:"BuiltinRenderTextureType.CameraTarget"
+                        afterPostProcessColor;
 
                     // if resolving to screen we need to be able to perform sRGBConvertion in post-processing if necessary
                     bool doSRGBConvertion = resolvePostProcessingToCameraTarget;
@@ -940,16 +970,16 @@ namespace UnityEngine.Rendering.Universal
         /// <inheritdoc />
         public override void FinishRendering(CommandBuffer cmd)
         {
-            if (m_ActiveCameraColorAttachment != RenderTargetHandle.CameraTarget)
+            if (m_ActiveCameraColorAttachment != RenderTargetHandle.CameraTarget)// 即:"BuiltinRenderTextureType.CameraTarget"
             {
                 cmd.ReleaseTemporaryRT(m_ActiveCameraColorAttachment.id);
-                m_ActiveCameraColorAttachment = RenderTargetHandle.CameraTarget;
+                m_ActiveCameraColorAttachment = RenderTargetHandle.CameraTarget;// 即:"BuiltinRenderTextureType.CameraTarget"
             }
 
-            if (m_ActiveCameraDepthAttachment != RenderTargetHandle.CameraTarget)
+            if (m_ActiveCameraDepthAttachment != RenderTargetHandle.CameraTarget)// 即:"BuiltinRenderTextureType.CameraTarget"
             {
                 cmd.ReleaseTemporaryRT(m_ActiveCameraDepthAttachment.id);
-                m_ActiveCameraDepthAttachment = RenderTargetHandle.CameraTarget;
+                m_ActiveCameraDepthAttachment = RenderTargetHandle.CameraTarget;// 即:"BuiltinRenderTextureType.CameraTarget"
             }
         }// 函数完__
 
@@ -1070,7 +1100,7 @@ namespace UnityEngine.Rendering.Universal
                 if (createColor)
                 {
                     
-                    bool useDepthRenderBuffer = m_ActiveCameraDepthAttachment == RenderTargetHandle.CameraTarget;
+                    bool useDepthRenderBuffer = m_ActiveCameraDepthAttachment==RenderTargetHandle.CameraTarget;// 即:"BuiltinRenderTextureType.CameraTarget"
 
                     var colorDescriptor = descriptor;
                     colorDescriptor.useMipMap = false;

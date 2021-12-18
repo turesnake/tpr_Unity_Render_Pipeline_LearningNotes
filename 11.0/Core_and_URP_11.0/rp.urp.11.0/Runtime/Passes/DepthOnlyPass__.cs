@@ -114,10 +114,10 @@ namespace UnityEngine.Rendering.Universal.Internal
             if (cmd == null)
                 throw new ArgumentNullException("cmd");
 
-            if (depthAttachmentHandle != RenderTargetHandle.CameraTarget)
+            if (depthAttachmentHandle != RenderTargetHandle.CameraTarget)// 即:"BuiltinRenderTextureType.CameraTarget"
             {
                 cmd.ReleaseTemporaryRT(depthAttachmentHandle.id);
-                depthAttachmentHandle = RenderTargetHandle.CameraTarget;
+                depthAttachmentHandle = RenderTargetHandle.CameraTarget;// 即:"BuiltinRenderTextureType.CameraTarget"
             }
         }
     }

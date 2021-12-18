@@ -174,7 +174,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         public void SetupFinalPass(in RenderTargetHandle source)
         {
             m_Source = source;
-            m_Destination = RenderTargetHandle.CameraTarget;
+            m_Destination = RenderTargetHandle.CameraTarget;// 即:"BuiltinRenderTextureType.CameraTarget"
             m_IsFinalPass = true;
             m_HasFinalPass = false;
             m_EnableSRGBConversionIfNeeded = true;
@@ -184,7 +184,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         /// <inheritdoc/>
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
-            if (m_Destination == RenderTargetHandle.CameraTarget)
+            if (m_Destination == RenderTargetHandle.CameraTarget)// 即:"BuiltinRenderTextureType.CameraTarget"
                 return;
 
             // If RenderTargetHandle already has a valid internal render target identifier, we shouldn't request a temp
@@ -496,14 +496,18 @@ namespace UnityEngine.Rendering.Universal.Internal
                 cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, GetSource());//"_SourceTex"
 
                 var colorLoadAction = RenderBufferLoadAction.DontCare;
-                if (m_Destination == RenderTargetHandle.CameraTarget && !cameraData.isDefaultViewport)
+                if( m_Destination == RenderTargetHandle.CameraTarget && // 即:"BuiltinRenderTextureType.CameraTarget"
+                !cameraData.isDefaultViewport
+                )
                     colorLoadAction = RenderBufferLoadAction.Load;
 
                 // Note: We rendering to "camera target" we need to get the cameraData.targetTexture as this will get the targetTexture of the camera stack.
                 // Overlay cameras need to output to the target described in the base camera while doing camera stack.
                 RenderTargetHandle cameraTargetHandle = RenderTargetHandle.GetCameraTarget(cameraData.xr);
                 RenderTargetIdentifier cameraTarget = (cameraData.targetTexture != null && !cameraData.xr.enabled) ? new RenderTargetIdentifier(cameraData.targetTexture) : cameraTargetHandle.Identifier();
-                cameraTarget = (m_Destination == RenderTargetHandle.CameraTarget) ? cameraTarget : m_Destination.Identifier();
+                cameraTarget = (m_Destination == RenderTargetHandle.CameraTarget) ? // 即:"BuiltinRenderTextureType.CameraTarget"
+                    cameraTarget : 
+                    m_Destination.Identifier();
 
                 // With camera stacking we not always resolve post to final screen as we might run post-processing in the middle of the stack.
                 bool finishPostProcessOnScreen = cameraData.resolveFinalTarget || (m_Destination == cameraTargetHandle || m_HasFinalPass == true);
@@ -548,7 +552,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                     cmd.SetRenderTarget(cameraTarget, colorLoadAction, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
                     cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
 
-                    if (m_Destination == RenderTargetHandle.CameraTarget)
+                    if (m_Destination == RenderTargetHandle.CameraTarget)// 即:"BuiltinRenderTextureType.CameraTarget"
                         cmd.SetViewport(cameraData.pixelRect);
 
                     cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, m_Materials.uber);
@@ -635,7 +639,9 @@ namespace UnityEngine.Rendering.Universal.Internal
             // Intermediate targets
             RenderTargetIdentifier stencil; // We would only need stencil, no depth. But Unity doesn't support that.
             int tempDepthBits;
-            if (m_Depth == RenderTargetHandle.CameraTarget || m_Descriptor.msaaSamples > 1)
+            if (m_Depth == RenderTargetHandle.CameraTarget || // 即:"BuiltinRenderTextureType.CameraTarget"
+                m_Descriptor.msaaSamples > 1
+            )
             {
                 // In case m_Depth is CameraTarget it may refer to the backbuffer and we can't use that as an attachment on all platforms
                 stencil = ShaderConstants._EdgeTexture;

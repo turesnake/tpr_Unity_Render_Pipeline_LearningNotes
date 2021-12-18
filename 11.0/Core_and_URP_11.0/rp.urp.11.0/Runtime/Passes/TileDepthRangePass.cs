@@ -61,7 +61,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 throw new ArgumentNullException("cmd");
 
             cmd.ReleaseTemporaryRT(m_DeferredLights.TileDepthInfoTexture.id);
-            m_DeferredLights.TileDepthInfoTexture = RenderTargetHandle.CameraTarget;
+            m_DeferredLights.TileDepthInfoTexture = RenderTargetHandle.CameraTarget;// 即:"BuiltinRenderTextureType.CameraTarget"
         }
     }
 }

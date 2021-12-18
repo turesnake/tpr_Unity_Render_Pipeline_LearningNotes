@@ -39,6 +39,8 @@ namespace UnityEngine.Rendering.Universal
        
         /*
             可以向 "ScriptableRenderer" 实例绑定数个 RendererFeature;
+            --
+            猜测: 沿用 ForwardRenderer inspector 配置数据;
         */
         public List<ScriptableRendererFeature> rendererFeatures
         {

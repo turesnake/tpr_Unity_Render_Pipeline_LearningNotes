@@ -204,6 +204,8 @@ namespace UnityEngine.Rendering.Universal
 
 
         /*
+            本 render pass 是否覆写了 camera 原本设置的 render target; 
+            
             "m_ColorAttachments[0]", "m_DepthAttachment" 最初都被绑定为 "BuiltinRenderTextureType.CameraTarget";
             (即: current camera 的 render target, 注意,这不意味着它一定就是 current active render target);
             此时本值为 false;
@@ -214,9 +216,15 @@ namespace UnityEngine.Rendering.Universal
         internal bool overrideCameraTarget { get; set; }
         internal bool isBlitRenderPass { get; set; }
 
-        // 可以用 "BuiltinRenderTextureType" 去构造一个 RenderTargetIdentifier 实例;
+
+        // 外部代码可使用下文的 "ConfigureTarget()" 来设置本值;
+        // 通常在 render pass 自定义代码内实现, (如在 "OnCameraSetup()" 函数体内)
         RenderTargetIdentifier[] m_ColorAttachments = new RenderTargetIdentifier[] {BuiltinRenderTextureType.CameraTarget};
+
+        // 外部代码可使用下文的 "ConfigureTarget()" 来设置本值;
+        // 通常在 render pass 自定义代码内实现, (如在 "OnCameraSetup()" 函数体内)
         RenderTargetIdentifier m_DepthAttachment = BuiltinRenderTextureType.CameraTarget;
+
         ScriptableRenderPassInput m_Input = ScriptableRenderPassInput.None;
         ClearFlag m_ClearFlag = ClearFlag.None;
         Color m_ClearColor = Color.black;
@@ -249,6 +257,7 @@ namespace UnityEngine.Rendering.Universal
 
 
         /*
+            -1-:
             Configures render targets for this render pass.
 
             用本函数来取代: "CommandBuffer.SetRenderTarget()"
@@ -256,14 +265,14 @@ namespace UnityEngine.Rendering.Universal
             tpr:
                 源码中也看到在 "ScriptableRenderPass.OnCameraSetup()" 体内被调用;
         */
-        public void ConfigureTarget(RenderTargetIdentifier colorAttachment, RenderTargetIdentifier depthAttachment)
+        public void ConfigureTarget(RenderTargetIdentifier colorAttachment, RenderTargetIdentifier depthAttachment)//  读完__
         {
             m_DepthAttachment = depthAttachment;
-            ConfigureTarget(colorAttachment);
+            ConfigureTarget(colorAttachment);// 调用 -3-;
         }
 
-        // 重构
-        public void ConfigureTarget(RenderTargetIdentifier[] colorAttachments, RenderTargetIdentifier depthAttachment)
+        // -2-:
+        public void ConfigureTarget(RenderTargetIdentifier[] colorAttachments, RenderTargetIdentifier depthAttachment)//  读完__
         {
             overrideCameraTarget = true;
 
@@ -271,26 +280,34 @@ namespace UnityEngine.Rendering.Universal
             uint nonNullColorBuffers = RenderingUtils.GetValidColorBufferCount(colorAttachments);
             // 系统只支持 "同时向有限个 rt 输出数据", 不能超过 系统支持的最大值;
             if (nonNullColorBuffers > SystemInfo.supportedRenderTargetCount)
-                Debug.LogError("Trying to set " + nonNullColorBuffers + " renderTargets, which is more than the maximum supported:" + SystemInfo.supportedRenderTargetCount);
+                Debug.LogError("Trying to set " + nonNullColorBuffers + 
+                    " renderTargets, which is more than the maximum supported:" + SystemInfo.supportedRenderTargetCount);
 
             m_ColorAttachments = colorAttachments;
             m_DepthAttachment = depthAttachment;
         }
 
-        // 重构
-        public void ConfigureTarget(RenderTargetIdentifier colorAttachment)
+        // -3-:
+        public void ConfigureTarget(RenderTargetIdentifier colorAttachment)//   读完__
         {
             overrideCameraTarget = true;
 
             m_ColorAttachments[0] = colorAttachment;
             for (int i = 1; i < m_ColorAttachments.Length; ++i)
                 m_ColorAttachments[i] = 0;
+            
+            // 不修改 m_DepthAttachment;
         }
 
-        // 重构
-        public void ConfigureTarget(RenderTargetIdentifier[] colorAttachments)
+        // -4-:
+        public void ConfigureTarget(RenderTargetIdentifier[] colorAttachments)//  读完__
         {
-            ConfigureTarget(colorAttachments, BuiltinRenderTextureType.CameraTarget);
+            // 只改写 color buffers 设置, 
+            // depth buffer 设为 camera 原本绑定的 render target
+            ConfigureTarget(
+                colorAttachments, 
+                BuiltinRenderTextureType.CameraTarget
+            );
         }
 
 
@@ -424,8 +441,15 @@ namespace UnityEngine.Rendering.Universal
         public void Blit(CommandBuffer cmd, RenderTargetIdentifier source, 
                         RenderTargetIdentifier destination, Material material = null, int passIndex = 0
         ){
-            // 其实调用了 "CoreUtils.SetRenderTarget()";
-            ScriptableRenderer.SetRenderTarget(cmd, destination, BuiltinRenderTextureType.CameraTarget, clearFlag, clearColor);
+            // 调用 -1-:
+            // 此版本会强行将 color/depth target 的 RenderBufferStoreAction 设置为 Store;
+            ScriptableRenderer.SetRenderTarget(
+                cmd, 
+                destination, 
+                BuiltinRenderTextureType.CameraTarget, // depth buffer 设为 camera 原本的 render target
+                clearFlag, 
+                clearColor
+            );
             cmd.Blit(source, destination, material, passIndex);
         }
 

@@ -131,12 +131,12 @@ namespace UnityEngine.Rendering.Universal.Internal
                 throw new ArgumentNullException("cmd");
             }
 
-            if (depthHandle != RenderTargetHandle.CameraTarget)
+            if (depthHandle != RenderTargetHandle.CameraTarget)// 即:"BuiltinRenderTextureType.CameraTarget"
             {
                 cmd.ReleaseTemporaryRT(normalHandle.id);
                 cmd.ReleaseTemporaryRT(depthHandle.id);
-                normalHandle = RenderTargetHandle.CameraTarget;
-                depthHandle = RenderTargetHandle.CameraTarget;
+                normalHandle = RenderTargetHandle.CameraTarget;// 即:"BuiltinRenderTextureType.CameraTarget"
+                depthHandle = RenderTargetHandle.CameraTarget;// 即:"BuiltinRenderTextureType.CameraTarget"
             }
         }
     }

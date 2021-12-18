@@ -78,7 +78,13 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             // On Metal iOS, prevent camera attachments to be bound and cleared during this pass.
             //  防止在此 pass 中 "绑定和清除 camera 的 attachments";
-            // 本函数功能类似于: "cmd.SetRenderTarget()"
+
+            /*
+                调用-3-: 仅设置 color Attachment
+                为什么不是设置 depth target ? 查看 "SetRenderPassAttachments()" 中描述; 简而言之:
+                    如果不绑定任何 color Attachment, render pass 将不被渲染;
+                    如果 render pass 只需要渲染 depth 数据, 应该将它写入 color Attachment 中;
+            */
             ConfigureTarget(
                 new RenderTargetIdentifier(
                     destination.Identifier(),// renderTargetIdentifier
@@ -221,7 +227,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             if (this.AllocateRT)
                 cmd.ReleaseTemporaryRT(destination.id);
-            destination = RenderTargetHandle.CameraTarget;
+            destination = RenderTargetHandle.CameraTarget;// 即:"BuiltinRenderTextureType.CameraTarget"
         }
     }
 }

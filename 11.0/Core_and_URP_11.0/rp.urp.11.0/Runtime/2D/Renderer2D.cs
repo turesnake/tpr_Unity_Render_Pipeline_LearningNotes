@@ -101,7 +101,9 @@ namespace UnityEngine.Experimental.Rendering.Universal
 
                 m_CreateDepthTexture = !cameraData.resolveFinalTarget && m_UseDepthStencilBuffer;
 
-                colorTargetHandle = m_CreateColorTexture ? k_ColorTextureHandle : RenderTargetHandle.CameraTarget;
+                colorTargetHandle = m_CreateColorTexture ? 
+                    k_ColorTextureHandle : 
+                    RenderTargetHandle.CameraTarget;// 即:"BuiltinRenderTextureType.CameraTarget"
                 depthTargetHandle = m_CreateDepthTexture ? k_DepthTextureHandle : colorTargetHandle;
 
                 if (m_CreateColorTexture)
@@ -217,7 +219,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
                     depthTargetHandle,
                     colorGradingLutHandle,
                     requireFinalPostProcessPass,
-                    postProcessDestHandle == RenderTargetHandle.CameraTarget);
+                    postProcessDestHandle == RenderTargetHandle.CameraTarget);// 即:"BuiltinRenderTextureType.CameraTarget"
 
                 EnqueuePass(postProcessPass);
                 colorTargetHandle = postProcessDestHandle;
@@ -231,7 +233,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 finalPostProcessPass.SetupFinalPass(colorTargetHandle);
                 EnqueuePass(finalPostProcessPass);
             }
-            else if (lastCameraInStack && colorTargetHandle != RenderTargetHandle.CameraTarget)
+            else if (lastCameraInStack && colorTargetHandle != RenderTargetHandle.CameraTarget)// 即:"BuiltinRenderTextureType.CameraTarget"
             {
                 m_FinalBlitPass.Setup(cameraTargetDescriptor, colorTargetHandle);
                 EnqueuePass(m_FinalBlitPass);

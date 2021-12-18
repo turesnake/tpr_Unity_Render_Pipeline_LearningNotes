@@ -49,16 +49,17 @@ namespace UnityEngine.Rendering.Universal
             ---------------------------------------------------------- +++
             本函数必须被 "ScriptableRendererFeature" 的派生类 覆写;
             ===
-            将 1~N 个 "ScriptableRenderPass" 注入到本 feature 中;
-            比如:
-                renderer.EnqueuePass( m_pass );
-            此处
-            "renderer" 就是本函数提供的的参数;
-            m_pass 就是一个 "ScriptableRenderPass" 或其继承者的 实例;
+            在派生类的实现体中:
+                可将 数个 "ScriptableRenderPass" 注入到本 feature 中;
+                代码:
+                    renderer.EnqueuePass( m_pass );
+                    此处
+                    "renderer" 就是本函数提供的的参数;
+                    m_pass 就是一个 "ScriptableRenderPass" 或其继承者的 实例;
 
             参数:
             renderer:
-
+                如 "ForwardRenderer"
             renderingData:
                 Rendering state. Use this to setup render passes.
         */

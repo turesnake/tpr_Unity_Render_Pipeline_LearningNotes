@@ -86,8 +86,15 @@ namespace UnityEngine.Rendering.Universal.Internal
             {
                 RenderTargetIdentifier opaqueColorRT = destination.Identifier();
 
-                ScriptableRenderer.SetRenderTarget(cmd, opaqueColorRT, BuiltinRenderTextureType.CameraTarget, clearFlag,
-                    clearColor);
+                // 调用-1-:
+                // 此版本会强行将 color/depth target 的 RenderBufferStoreAction 设置为 Store;
+                ScriptableRenderer.SetRenderTarget(
+                    cmd, 
+                    opaqueColorRT, 
+                    BuiltinRenderTextureType.CameraTarget, 
+                    clearFlag,
+                    clearColor
+                );
 
                 bool useDrawProceduleBlit = renderingData.cameraData.xr.enabled;// xr
                 switch (m_DownsamplingMethod)
@@ -120,10 +127,10 @@ namespace UnityEngine.Rendering.Universal.Internal
             if (cmd == null)
                 throw new ArgumentNullException("cmd");
 
-            if (destination != RenderTargetHandle.CameraTarget)
+            if (destination != RenderTargetHandle.CameraTarget)// 即:"BuiltinRenderTextureType.CameraTarget"
             {
                 cmd.ReleaseTemporaryRT(destination.id);
-                destination = RenderTargetHandle.CameraTarget;
+                destination = RenderTargetHandle.CameraTarget;// 即:"BuiltinRenderTextureType.CameraTarget"
             }
         }
     }

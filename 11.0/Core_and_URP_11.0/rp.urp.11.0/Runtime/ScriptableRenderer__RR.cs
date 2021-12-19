@@ -359,7 +359,6 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-
         /*
             Returns the camera color target for this renderer.
             猜测是 oaque color texture;
@@ -387,9 +386,6 @@ namespace UnityEngine.Rendering.Universal
                 return m_CameraColorTarget;
             }
         }
-
-
-
         /*
             Returns the camera depth target for this renderer.
 
@@ -491,12 +487,18 @@ namespace UnityEngine.Rendering.Universal
         
         List<ScriptableRendererFeature> m_RendererFeatures = new List<ScriptableRendererFeature>(10);
 
-        // Clear() 后会被设置为: "BuiltinRenderTextureType.CameraTarget";
-        // 仅在本文件内出现
-        RenderTargetIdentifier m_CameraColorTarget;
+        /*
+            ----------------------------------------------------------------------:
+            每个 renderer 实例持有的值:
 
-        // Clear() 后会被设置为: "BuiltinRenderTextureType.CameraTarget";
-        // 仅在本文件内出现
+            Clear() 后会被设置为: "BuiltinRenderTextureType.CameraTarget";
+            仅在本文件内出现;
+            可以调用本类函数: "ConfigureCameraTarget()", 或 "ConfigureCameraColorTarget()" 设置它们;
+
+            - color rt: 要么设置为 "_CameraColorTexture", 要么保留初始值;
+            - depth rt: 要么设置为 "_CameraDepthAttachment", 要么保留初始值;
+        */
+        RenderTargetIdentifier m_CameraColorTarget;
         RenderTargetIdentifier m_CameraDepthTarget;
 
 
@@ -516,6 +518,7 @@ namespace UnityEngine.Rendering.Universal
         */
         bool m_FirstTimeCameraDepthTargetIsBound = true; 
 
+
         /*
             渲染管线只保证: 只有在管线执行期间, "camera target texture" 是有效的;
             除此之外的时间中, 这些 texture/target 可能已经被 disposed;
@@ -528,15 +531,24 @@ namespace UnityEngine.Rendering.Universal
         */
         internal bool isCameraColorTargetValid = false;
 
+
+
         /*
-            Clear() 后 [0]会被设置为: "BuiltinRenderTextureType.CameraTarget"; 剩余元素设置为 0;
-            tpr:
-                可看到, 最多支持 8 个 color texture
+            -----------------------------------------------------------------------:
+            整个渲染管线中, 当前的 "active color/depth render target" !!!!!!!!!!!!!!!!!
+            此组数据的唯一作用:
+                在 "SetRenderPassAttachments()" 中, 检测 "当前 render pass 需要的 render target" 是否和 和本组数据相同,
+                如果两者不同, 就需要 重新绑定 render target; (顺带同步本组数据)
+            ---------
+            Clear() 后. 
+                m_ActiveColorAttachments[0]会被设置为: "BuiltinRenderTextureType.CameraTarget"; 剩余元素设置为 0;
+                m_ActiveDepthAttachment 会被设置为: "BuiltinRenderTextureType.CameraTarget";
+
+            每次调用: "SetRenderTarget()", 都会同步本变量的数据;
         */
         static RenderTargetIdentifier[] m_ActiveColorAttachments = new RenderTargetIdentifier[] {0, 0, 0, 0, 0, 0, 0, 0 };
-
-        // Clear() 后会被设置为: "BuiltinRenderTextureType.CameraTarget";
         static RenderTargetIdentifier m_ActiveDepthAttachment;
+
 
        
         /*
@@ -626,6 +638,21 @@ namespace UnityEngine.Rendering.Universal
             Configures the camera target.
 
             下文注释中的 "CameraTarget", 仅指: "current camera 的 render target", 但它不一定是: "Currently active render target";
+
+            在 ForwardRenderer 中:
+                被调用两次:
+                -1-:
+                    "offsreen depth camera":
+                    调用本函数时, 传入两个 "BuiltinRenderTextureType.CameraTarget";
+
+                -2-:
+                    常规的 base camera:
+                    调用本函数时, 传入的要么是: "_CameraColorTexture", "_CameraDepthAttachment";
+                    要么是 "BuiltinRenderTextureType.CameraTarget";
+                    如果是 上面两个, 则这两个 rt 是已经被分配好了的;
+
+            在 Renderer2D 中:
+                略...
         */
         /// <param name="colorTarget">Camera color target. 
         ///                           Pass "BuiltinRenderTextureType.CameraTarget" if rendering to backbuffer.
@@ -637,9 +664,6 @@ namespace UnityEngine.Rendering.Universal
         public void ConfigureCameraTarget(RenderTargetIdentifier colorTarget, RenderTargetIdentifier depthTarget)//  读完__
         {
             // 这两个值在 初始状态, 都被设置为了 "BuiltinRenderTextureType.CameraTarget"
-
-            // 猜测: "BuiltinRenderTextureType.CameraTarget" 表的是也许是: 渲染进 backbuffer ???
-
             m_CameraColorTarget = colorTarget;
             m_CameraDepthTarget = depthTarget;
         }
@@ -1125,7 +1149,7 @@ namespace UnityEngine.Rendering.Universal
                 bool needCustomCameraColorClear = false;
                 bool needCustomCameraDepthClear = false;
 
-                // 查找 m_CameraColorTarget 在 容器中的 idx, 若不存在, 返回 -1
+                // 查找 本 renderer 的 color target 是否在 render pass 的 color targets 容器中; 若不存在, 返回 -1
                 int cameraColorTargetIndex = RenderingUtils.IndexOf(renderPass.colorAttachments, m_CameraColorTarget);
                 if (cameraColorTargetIndex != -1 && (m_FirstTimeCameraColorTargetIsBound))
                 {
@@ -1141,6 +1165,7 @@ namespace UnityEngine.Rendering.Universal
                     // But there is still a chance we don't need to issue individual clear() on each render-targets 
                     // if they all have the same clear parameters.
                     // 但如果每个 render target 都具有相同的 clear 参数, 我们仍有可能不需要在每个 render target 上发出单独的 clear()
+
                     needCustomCameraColorClear = (cameraClearFlag & ClearFlag.Color) != (renderPass.clearFlag & ClearFlag.Color)
                         || CoreUtils.ConvertSRGBToActiveColorSpace(camera.backgroundColor) != renderPass.clearColor;
                 }
@@ -1152,6 +1177,7 @@ namespace UnityEngine.Rendering.Universal
                 // { ...
                 // }
 
+                // 
                 if( renderPass.depthAttachment==m_CameraDepthTarget && m_FirstTimeCameraDepthTargetIsBound )
                 {
                     m_FirstTimeCameraDepthTargetIsBound = false;
@@ -1198,7 +1224,13 @@ namespace UnityEngine.Rendering.Universal
                             Debug.LogError("writeIndex and otherTargetsCount values differed. writeIndex:" 
                                 + writeIndex + " otherTargetsCount:" + otherTargetsCount);
                         // 调用 -4-:
-                        SetRenderTarget(cmd, nonCameraAttachments, m_CameraDepthTarget, ClearFlag.Color, renderPass.clearColor);
+                        SetRenderTarget(
+                            cmd, 
+                            nonCameraAttachments, 
+                            m_CameraDepthTarget, 
+                            ClearFlag.Color, 
+                            renderPass.clearColor
+                        );
                     }
                 }
 
@@ -1208,6 +1240,7 @@ namespace UnityEngine.Rendering.Universal
                 finalClearFlag |= needCustomCameraColorClear ? 0 : (renderPass.clearFlag & ClearFlag.Color);
 
                 // Only setup render target if current render pass attachments are different from the active ones.
+                // 只有当: 此次需要的 target 和 当前管线中 active 的 不同时, 才需要 重新绑定;
                 if( !RenderingUtils.SequenceEqual(renderPass.colorAttachments, m_ActiveColorAttachments) || // 若两数组不同
                     renderPass.depthAttachment != m_ActiveDepthAttachment || 
                     finalClearFlag != ClearFlag.None
@@ -1220,7 +1253,13 @@ namespace UnityEngine.Rendering.Universal
                         for (int i = 0; i < rtCount; ++i)
                             trimmedAttachments[i] = renderPass.colorAttachments[i];
                         // 调用 -4-:
-                        SetRenderTarget(cmd, trimmedAttachments, renderPass.depthAttachment, finalClearFlag, renderPass.clearColor);
+                        SetRenderTarget(
+                            cmd, 
+                            trimmedAttachments, 
+                            renderPass.depthAttachment, 
+                            finalClearFlag, 
+                            renderPass.clearColor
+                        );
 /*  tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
                         if (cameraData.xr.enabled)
@@ -1240,7 +1279,8 @@ namespace UnityEngine.Rendering.Universal
             {
                 // Currently in non-MRT case, color attachment can actually be a depth attachment.
 
-                // 右侧这组值: render pass 的自定义代码中, 设定了自己的 render target; 
+                // 本次 render pass 需要绑定的 render target:
+                // (右侧这组值: render pass 的自定义代码中, 设定了自己的 render target;)
                 RenderTargetIdentifier passColorAttachment = renderPass.colorAttachment;
                 RenderTargetIdentifier passDepthAttachment = renderPass.depthAttachment;
 
@@ -1322,6 +1362,7 @@ namespace UnityEngine.Rendering.Universal
                     finalClearFlag |= (renderPass.clearFlag & ClearFlag.Depth);
 
                 // Only setup render target if current render pass attachments are different from the active ones
+                // 只有当: 此次需要的 target 和 当前管线中 active 的 不同时, 才需呀 重新绑定;
                 if( passColorAttachment != m_ActiveColorAttachments[0] || 
                     passDepthAttachment != m_ActiveDepthAttachment || 
                     finalClearFlag != ClearFlag.None
@@ -1348,7 +1389,7 @@ namespace UnityEngine.Rendering.Universal
 */
                 }
             }
-        }//  函数完__
+        }//  函数 SetRenderPassAttachments() 完__
 
 
 
@@ -1395,11 +1436,10 @@ namespace UnityEngine.Rendering.Universal
                                         ClearFlag clearFlag,  // enum: None, Color, Depth, All;
                                         Color clearColor
         ){
-            // ----- 这段感觉仅是 同步数据 ?
+            // ----- 同步数据:
             m_ActiveColorAttachments[0] = colorAttachment;
             for (int i = 1; i < m_ActiveColorAttachments.Length; ++i)
                 m_ActiveColorAttachments[i] = 0;
-
             m_ActiveDepthAttachment = depthAttachment;
             // ------:
 
@@ -1478,7 +1518,7 @@ namespace UnityEngine.Rendering.Universal
                                     ClearFlag clearFlag, 
                                     Color clearColor
         ){
-            // 这段感觉仅仅是 同步数据 ?
+            // ----- 同步数据:
             m_ActiveColorAttachments = colorAttachments;
             m_ActiveDepthAttachment = depthAttachment;
 

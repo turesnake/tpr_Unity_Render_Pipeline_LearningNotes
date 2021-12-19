@@ -39,7 +39,7 @@ namespace UnityEngine.Rendering.Universal
         public bool supportsDynamicBatching; // 动态批处理优化技术, 不建议使用
         public PerObjectData perObjectData;
 
-        //  True if post-processing effect is enabled while rendering the camera stack.
+        // True if post-processing effect is enabled while rendering the camera stack.
         // base /overlay camera 任一启用后处理, 此值即为 true;
         public bool postProcessingEnabled;
     }
@@ -329,7 +329,7 @@ namespace UnityEngine.Rendering.Universal
         public float maxShadowDistance;// [++ 各 camera 的数据相互独立 ++]
 
 
-        // 是否支持 后处理,
+        // camera 是否支持 后处理,
         // 沿用 inspector 的配置值;
         public bool postProcessEnabled;// [++ 各 camera 的数据相互独立 ++]
 

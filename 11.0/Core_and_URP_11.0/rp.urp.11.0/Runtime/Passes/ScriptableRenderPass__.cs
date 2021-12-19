@@ -155,24 +155,15 @@ namespace UnityEngine.Rendering.Universal
 
     */
     [MovedFrom("UnityEngine.Rendering.LWRP")] 
-    public abstract partial class ScriptableRenderPass//ScriptableRenderPass__
+    public abstract partial class ScriptableRenderPass //ScriptableRenderPass__
     {
         public RenderPassEvent renderPassEvent { get; set; } // 设置 render pass 何时执行;
 
-        public RenderTargetIdentifier[] colorAttachments
-        {
-            get => m_ColorAttachments;
-        }
 
-        public RenderTargetIdentifier colorAttachment
-        {
-            get => m_ColorAttachments[0];
-        }
-
-        public RenderTargetIdentifier depthAttachment
-        {
-            get => m_DepthAttachment;
-        }
+        // 只是组 只读访问接口
+        public RenderTargetIdentifier[] colorAttachments { get => m_ColorAttachments; }
+        public RenderTargetIdentifier colorAttachment { get => m_ColorAttachments[0]; }
+        public RenderTargetIdentifier depthAttachment{ get => m_DepthAttachment; }
 
         
         /*
@@ -180,21 +171,12 @@ namespace UnityEngine.Rendering.Universal
             可通过 "ScriptableRenderPass.ConfigureInput()" 函数来设置此值; (见本文下方)
             enum: None, Depth, Normal, Color; flags 可组合;
         */
-        public ScriptableRenderPassInput input
-        {
-            get => m_Input;
-        }
+        public ScriptableRenderPassInput input { get => m_Input; }
+
+        public ClearFlag clearFlag { get => m_ClearFlag; }
+        public Color clearColor { get => m_ClearColor; }
 
 
-        public ClearFlag clearFlag
-        {
-            get => m_ClearFlag;
-        }
-
-        public Color clearColor
-        {
-            get => m_ClearColor;
-        }
         
 
         /*
@@ -217,13 +199,17 @@ namespace UnityEngine.Rendering.Universal
         internal bool isBlitRenderPass { get; set; }
 
 
-        // 外部代码可使用下文的 "ConfigureTarget()" 来设置本值;
-        // 通常在 render pass 自定义代码内实现, (如在 "OnCameraSetup()" 函数体内)
+        /*
+            -------------------------------------------------------:
+            本 render pass 自己设置的 render targets: 可用来覆盖 Forward Renderer 设置的 targets;
+            ---
+            外部代码可使用下文的 "ConfigureTarget()" 来设置本组值;
+            通常在 render pass 自定义代码内实现, (如在 "OnCameraSetup()" 函数体内)
+        */
         RenderTargetIdentifier[] m_ColorAttachments = new RenderTargetIdentifier[] {BuiltinRenderTextureType.CameraTarget};
-
-        // 外部代码可使用下文的 "ConfigureTarget()" 来设置本值;
-        // 通常在 render pass 自定义代码内实现, (如在 "OnCameraSetup()" 函数体内)
         RenderTargetIdentifier m_DepthAttachment = BuiltinRenderTextureType.CameraTarget;
+
+
 
         ScriptableRenderPassInput m_Input = ScriptableRenderPassInput.None;
         ClearFlag m_ClearFlag = ClearFlag.None;
@@ -288,7 +274,7 @@ namespace UnityEngine.Rendering.Universal
         }
 
         // -3-:
-        public void ConfigureTarget(RenderTargetIdentifier colorAttachment)//   读完__
+        public void ConfigureTarget(RenderTargetIdentifier colorAttachment)//   读完__ 第三遍
         {
             overrideCameraTarget = true;
 

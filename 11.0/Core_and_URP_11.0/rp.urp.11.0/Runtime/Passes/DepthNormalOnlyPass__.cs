@@ -2,6 +2,12 @@ using System;
 
 namespace UnityEngine.Rendering.Universal.Internal
 {
+    /*
+
+        
+        在 "BeforeRenderingPrePasses" 时刻, 将 camera 视野中不透明物的 depth 信息, 写入 depth rt: "_CameraDepthTexture";
+        将 normal 信息, 写入 color rt: "_CameraNormalsTexture";
+    */
     public class DepthNormalOnlyPass //DepthNormalOnlyPass__
         : ScriptableRenderPass
     {
@@ -27,7 +33,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         // 构造函数
         public DepthNormalOnlyPass( //  读完__
-                                RenderPassEvent evt, 
+                                RenderPassEvent evt, // "BeforeRenderingPrePasses"
                                 RenderQueueRange renderQueueRange, 
                                 LayerMask layerMask
         ){
@@ -39,7 +45,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         
 
         public void Setup( // 读完__
-                        RenderTextureDescriptor baseDescriptor, // 比如: cameraTargetDescriptor
+                        RenderTextureDescriptor baseDescriptor, // 比如: cameraData.cameraTargetDescriptor
                         RenderTargetHandle depthHandle,  // 比如: "_CameraDepthTexture"
                         RenderTargetHandle normalHandle // 比如: "_CameraNormalsTexture"
         ){
@@ -65,7 +71,11 @@ namespace UnityEngine.Rendering.Universal.Internal
             cmd.GetTemporaryRT(normalHandle.id, normalDescriptor, FilterMode.Point);
             cmd.GetTemporaryRT(depthHandle.id, depthDescriptor, FilterMode.Point);
 
-            // 类似于: "cmd.SetRenderTarget()"
+
+            /*
+                调用-1-: 同时设置 color / depth Attachment
+                类似于: "cmd.SetRenderTarget()";                
+            */
             ConfigureTarget(
                 new RenderTargetIdentifier(
                     normalHandle.Identifier(),  // get a RenderTargetIdentifier: "_CameraNormalsTexture"

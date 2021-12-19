@@ -9,12 +9,17 @@ namespace UnityEngine.Rendering.Universal.Internal
         使用本pass 来复制 depth buffer 数据到 dest 中, 以便后续渲染使用;
         -- 如果 src texture 启用了 MSAA, the pass uses a custom MSAA resolve;
         -- 如果没启用 MSAA, the pass uses a Blit or a Copy Texture operation, (当前平台支持哪个操作, 就用哪个)
+        ------
+        目前仅被 ForwardRenderer 使用过;
+
+        在 "AfterRenderingSkybox" 时刻, 将 "_CameraDepthAttachment" 中的 depth 数据复制到 "_CameraDepthTexture" 中去;
+        
     */ 
     public class CopyDepthPass //CopyDepthPass__
         : ScriptableRenderPass
     {
-        private RenderTargetHandle source { get; set; }
-        private RenderTargetHandle destination { get; set; }
+        private RenderTargetHandle source { get; set; }      // "_CameraDepthAttachment" (一定是)
+        private RenderTargetHandle destination { get; set; } // "_CameraDepthTexture"
 
         internal bool AllocateRT  { get; set; }// 猜测: 是否由本类来分配 dest 的 render texture
         Material m_CopyDepthMaterial;
@@ -22,7 +27,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         // 构造函数
         public CopyDepthPass(//   读完__
-                        RenderPassEvent evt,  // 设置 render pass 何时执行
+                        RenderPassEvent evt,  // 设置 render pass 何时执行: AfterRenderingSkybox
                         Material copyDepthMaterial // 比如: "Shaders/Utils/CopyDepth.shader"
         ){
             base.profilingSampler = new ProfilingSampler(nameof(CopyDepthPass));
@@ -36,8 +41,8 @@ namespace UnityEngine.Rendering.Universal.Internal
             Configure the pass with the source and destination to execute on.
         */
         public void Setup(//  读完__
-                        RenderTargetHandle source,  
-                        RenderTargetHandle destination
+                        RenderTargetHandle source,     // "_CameraDepthAttachment" (一定是)
+                        RenderTargetHandle destination // "_CameraDepthTexture"
         ){
             this.source = source;
             this.destination = destination;
@@ -81,10 +86,14 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             /*
                 调用-3-: 仅设置 color Attachment
+                类似于: "cmd.SetRenderTarget()", 写到 ScriptableRenderPass 的 m_ColorAttachments[0] 上去;
+                ---
                 为什么不是设置 depth target ? 查看 "SetRenderPassAttachments()" 中描述; 简而言之:
                     如果不绑定任何 color Attachment, render pass 将不被渲染;
                     如果 render pass 只需要渲染 depth 数据, 应该将它写入 color Attachment 中;
             */
+
+            // 确立了本 render pass 的 render target, ( 即 shader pass 的写入目标 ) "_CameraDepthTexture"
             ConfigureTarget(
                 new RenderTargetIdentifier(
                     destination.Identifier(),// renderTargetIdentifier

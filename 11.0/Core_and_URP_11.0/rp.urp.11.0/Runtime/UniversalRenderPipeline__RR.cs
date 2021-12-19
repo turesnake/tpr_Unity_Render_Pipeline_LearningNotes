@@ -1188,7 +1188,7 @@ namespace UnityEngine.Rendering.Universal
 
             cameraData.resolveFinalTarget = resolveFinalTarget;
 
-            // Disable depth and color copy. We should add it in the renderer instead to avoid performance pitfalls
+            // Disable depth and color copy. We should add it in the renderer instead to avoid performance pitfalls (陷阱)
             // of camera stacking breaking render pass execution implicitly.
             // ---
             // 直观看就是: overlay camera 不支持 depth buffer 和 opaque buffer 的复制

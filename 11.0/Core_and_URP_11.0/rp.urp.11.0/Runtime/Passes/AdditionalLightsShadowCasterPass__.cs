@@ -730,7 +730,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         }//  函数完__
 
 
-
+        // ret: add lights 是否支持 shadow
         public bool Setup(ref RenderingData renderingData) //    读完__
         {
             using var profScope = new ProfilingScope(null, m_ProfilingSetupSampler);

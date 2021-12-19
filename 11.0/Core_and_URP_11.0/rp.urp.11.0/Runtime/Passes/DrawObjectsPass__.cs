@@ -13,6 +13,10 @@ namespace UnityEngine.Rendering.Universal.Internal
         ---
         如果一个物体的 material/shader 带有名为 "UniversalForward" or "SRPDefaultUnlit" 的pass,
         就能用这个 class 来渲染这个物体;
+        ---
+
+        在 "BeforeRenderingOpaques" 时刻, 
+
 
     */
 
@@ -36,7 +40,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
 
         /*
-            构造函数
+            构造函数 -1-:
         */
         /// <param name="renderQueueRange">
         ///           哪个物体的 Material.renderQueue 值位于此 range 范围内(包含边界), 这个物体就会被渲染; 比如 [0, 2000]
@@ -47,7 +51,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                                 string profilerTag, // 代码分析块的 name
                                 ShaderTagId[] shaderTagIds, 
                                 bool opaque,
-                                RenderPassEvent evt, // 设置 render pass 何时执行
+                                RenderPassEvent evt, // 设置 render pass 何时执行. "BeforeRenderingOpaques"
                                 RenderQueueRange renderQueueRange, 
                                 LayerMask layerMask, 
                                 StencilState stencilState, // shader 中的 "render state": stencil test 部分
@@ -76,9 +80,11 @@ namespace UnityEngine.Rendering.Universal.Internal
         }// 函数完__
 
 
-        // 重载-2-: 
-        //  -- 自动准备了一组 pass id;
-        //  -- 调用重载1
+        /*
+            构造函数 -2-:
+            -- 自动准备了一组 pass id;
+            -- 调用 -1-:
+        */
         public DrawObjectsPass( // 读完__
                                 string profilerTag, 
                                 bool opaque, 

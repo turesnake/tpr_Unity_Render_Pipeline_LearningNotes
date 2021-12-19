@@ -145,7 +145,8 @@ Varyings vert(Attributes input)//  读完__
 
 
 // "_CameraDepthAttachment" 是 src 
-// "_CameraDepthTexture" 是 dest
+// "_CameraDepthTexture"    是 dest
+
 
 float SampleDepth(float2 uv)//   读完__
 {

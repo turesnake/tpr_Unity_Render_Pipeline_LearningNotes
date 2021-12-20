@@ -311,7 +311,7 @@ namespace UnityEngine.Rendering.Universal
             Set shader time variables;
             https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html
 
-            配置了几个与相机 相关的 shader 变量, 并传入 shader 中;
+            配置了几个与时间 相关的 shader 变量, 并传入 shader 中;
         */
         void SetShaderTimeValues(CommandBuffer cmd, float time, float deltaTime, float smoothDeltaTime)//  读完__
         {
@@ -731,8 +731,8 @@ namespace UnityEngine.Rendering.Universal
         /// <param name="context">Use this render context to issue any draw commands during execution.</param>
         /// <param name="renderingData">Current render state information.</param>
         public void Execute(  //  读完__
-                    ScriptableRenderContext context, 
-                    ref RenderingData renderingData)
+                        ScriptableRenderContext context, 
+                        ref RenderingData renderingData)
         {
             m_IsPipelineExecuting = true;
             ref CameraData cameraData = ref renderingData.cameraData;
@@ -772,10 +772,11 @@ namespace UnityEngine.Rendering.Universal
                 float smoothDeltaTime = Time.smoothDeltaTime;
 
                 // Initialize Camera Render State
+                // disable 所有 "逐相机 shader keywords";
                 ClearRenderingState(cmd);
 
                 SetPerCameraShaderVariables(cmd, ref cameraData);// 配置了几个与相机相关的数据, 传入 shader 中;
-                SetShaderTimeValues(cmd, time, deltaTime, smoothDeltaTime);// 配置了几个与相机相关的数据, 并传入 shader 中;
+                SetShaderTimeValues(cmd, time, deltaTime, smoothDeltaTime);// 配置了几个与时间相关的数据, 并传入 shader 中;
 
                 context.ExecuteCommandBuffer(cmd);
                 cmd.Clear();
@@ -897,7 +898,7 @@ namespace UnityEngine.Rendering.Universal
 
                 // editor 中的界面图标 在特效之后;
                 DrawGizmos(context, camera, GizmoSubset.PostImageEffects);
-
+                // 执行清理工作;
                 InternalFinishRendering(context, cameraData.resolveFinalTarget);
             }
 
@@ -1000,7 +1001,7 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-        // 将所有 逐相机 shader keywords 关闭,
+        // disable 所有 "逐相机 shader keywords";
         void ClearRenderingState(CommandBuffer cmd)//  读完__
         {
             using var profScope = new ProfilingScope(cmd, Profiling.clearRenderingState);
@@ -1056,7 +1057,6 @@ namespace UnityEngine.Rendering.Universal
                 var renderPass = m_ActiveRenderPassQueue[currIndex];
                 ExecuteRenderPass(context, renderPass, ref renderingData);
             }
-
             if (submit)
                 // 真正的 "提交" commands
                 // 现有的针对本函数的 4 次调用, 都未 submit;
@@ -1563,6 +1563,7 @@ namespace UnityEngine.Rendering.Universal
         }//   函数完__
 
 
+        // 执行清理工作;
         void InternalFinishRendering(//   读完__
                                 ScriptableRenderContext context, 
                                 bool resolveFinalTarget // 如果这是 stack 中最后一个 camera

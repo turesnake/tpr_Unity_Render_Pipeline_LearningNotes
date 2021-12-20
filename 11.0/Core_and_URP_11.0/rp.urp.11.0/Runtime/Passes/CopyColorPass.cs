@@ -4,9 +4,11 @@ namespace UnityEngine.Rendering.Universal.Internal
 {
     /*
         Copy the given color buffer to the given dest color buffer.
-
         You can use this pass to copy a color buffer to the dest, so you can use it later in rendering.
         For example, you can copy the opaque texture to use it for distortion effects(扭曲效果);
+        ---
+        在 "AfterRenderingSkybox" 时刻, 将 opaque color 数据, 
+        从 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget", 复制到 "_CameraOpaqueTexture";
     */
     public class CopyColorPass //CopyColorPass__RR
         : ScriptableRenderPass
@@ -14,17 +16,17 @@ namespace UnityEngine.Rendering.Universal.Internal
         int m_SampleOffsetShaderHandle;
         Material m_SamplingMaterial;
         Downsampling m_DownsamplingMethod;
-        Material m_CopyColorMaterial;
+        Material m_CopyColorMaterial; // // "Shaders/Utils/Blit.shader"
 
-        private RenderTargetIdentifier source { get; set; }
-        private RenderTargetHandle destination { get; set; }
+        private RenderTargetIdentifier source { get; set; } // "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
+        private RenderTargetHandle destination { get; set; } // "_CameraOpaqueTexture"
 
 
         // 构造函数
         public CopyColorPass(
                         RenderPassEvent evt,  // 设置 render pass 何时执行
                         Material samplingMaterial, 
-                        Material copyColorMaterial = null
+                        Material copyColorMaterial = null // "Shaders/Utils/Blit.shader"
         ){
             base.profilingSampler = new ProfilingSampler(nameof(CopyColorPass));
 
@@ -42,8 +44,8 @@ namespace UnityEngine.Rendering.Universal.Internal
         /// <param name="source">Source Render Target</param>
         /// <param name="destination">Destination Render Target</param>
         public void Setup(
-                        RenderTargetIdentifier source, 
-                        RenderTargetHandle destination, 
+                        RenderTargetIdentifier source,  // "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
+                        RenderTargetHandle destination, // "_CameraOpaqueTexture"
                         Downsampling downsampling
         ){
             this.source = source;
@@ -84,23 +86,34 @@ namespace UnityEngine.Rendering.Universal.Internal
             CommandBuffer cmd = CommandBufferPool.Get();
             using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.CopyColor)))
             {
-                RenderTargetIdentifier opaqueColorRT = destination.Identifier();
+                RenderTargetIdentifier opaqueColorRT = destination.Identifier();// "_CameraOpaqueTexture"
 
                 // 调用-1-:
                 // 此版本会强行将 color/depth target 的 RenderBufferStoreAction 设置为 Store;
                 ScriptableRenderer.SetRenderTarget(
                     cmd, 
-                    opaqueColorRT, 
-                    BuiltinRenderTextureType.CameraTarget, 
-                    clearFlag,
-                    clearColor
+                    opaqueColorRT,                          // colorAttachment, "_CameraOpaqueTexture"
+                    BuiltinRenderTextureType.CameraTarget,  // depthAttachment, 
+                    clearFlag,  // 沿用 base class 的数据
+                    clearColor  // 沿用 base class 的数据
                 );
 
                 bool useDrawProceduleBlit = renderingData.cameraData.xr.enabled;// xr
                 switch (m_DownsamplingMethod)
                 {
                     case Downsampling.None:
-                        RenderingUtils.Blit(cmd, source, opaqueColorRT, m_CopyColorMaterial, 0, useDrawProceduleBlit);
+                        RenderingUtils.Blit(
+                            cmd, 
+                            source,             // src
+                            opaqueColorRT,      // dst
+                            m_CopyColorMaterial, // "Shaders/Utils/Blit.shader"
+                            0,                   // pass idx
+                            useDrawProceduleBlit // false
+                            // -- colorLoadAction = RenderBufferLoadAction.Load
+                            // -- colorStoreAction = RenderBufferStoreAction.Store
+                            // -- depthLoadAction = RenderBufferLoadAction.Load
+                            // -- depthStoreAction = RenderBufferStoreAction.Store
+                        );
                         break;
                     case Downsampling._2xBilinear:
                         RenderingUtils.Blit(cmd, source, opaqueColorRT, m_CopyColorMaterial, 0, useDrawProceduleBlit);

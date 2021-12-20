@@ -214,7 +214,9 @@ namespace UnityEngine.Rendering.Universal
             在渲染完 skybox 之后, 是否将 camera 的 depth buffer 复制一份到 "_CameraDepthTexture";
             overlay camera 中此值一定为 false; (也不支持在 inspector 中改写)
 
-                至于这个数据到底是在 depth prepass 阶段, 还是 copy depth 阶段写入的, 不是很清晰...
+            和 depth prepass 的区别:
+                prepass 会直接将 depth 数据写入 "_CameraDepthTexture", 一步到位;
+                启用 depth prepass 后, 是无需本步的 depth copy 操作的;
 
             使用 camera inspector 配置信息, 或 asset 中配置的信息;
             若 camera 为 editor screne camera, 或者启用了以下一种后处理: SMAA, DepthOfField, MotionBlur;

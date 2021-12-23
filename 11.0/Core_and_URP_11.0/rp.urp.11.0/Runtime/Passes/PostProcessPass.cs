@@ -18,17 +18,20 @@ namespace UnityEngine.Rendering.Universal.Internal
 
     /*
         Renders the post-processing effect stack.
+
+        暂时只考虑在 ForwardRenderer 中的使用
     */
     public class PostProcessPass //PostProcessPass__RR
         : ScriptableRenderPass
     {
 
         // 此 struct 包含用来创建 RenderTexture 所需的一切信息。
+        // 源自 cameraData.cameraTargetDescriptor; 稍作改动
         RenderTextureDescriptor m_Descriptor; 
-        RenderTargetHandle m_Source;
+        RenderTargetHandle m_Source; // color src rt
         RenderTargetHandle m_Destination;
         RenderTargetHandle m_Depth;
-        RenderTargetHandle m_InternalLut;
+        RenderTargetHandle m_InternalLut;//"_InternalGradingLut"
 
 
         const string k_RenderPostProcessingTag = "Render PostProcessing Effects";
@@ -36,8 +39,8 @@ namespace UnityEngine.Rendering.Universal.Internal
         private static readonly ProfilingSampler m_ProfilingRenderPostProcessing = new ProfilingSampler(k_RenderPostProcessingTag);
         private static readonly ProfilingSampler m_ProfilingRenderFinalPostProcessing = new ProfilingSampler(k_RenderFinalPostProcessingTag);
 
-        MaterialLibrary m_Materials;
-        PostProcessData m_Data;
+        MaterialLibrary m_Materials;// 维护一组 material 实例; (见本文件下方)
+        PostProcessData m_Data;// PostProcess 要使用到的 资源对象: shaders, textures
 
         // Builtin effects settings
         DepthOfField m_DepthOfField;
@@ -50,7 +53,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         ColorLookup m_ColorLookup;
         ColorAdjustments m_ColorAdjustments;
         Tonemapping m_Tonemapping;
-        FilmGrain m_FilmGrain;
+        FilmGrain m_FilmGrain; // 胶片颗粒
 
         // Misc
         const int k_MaxPyramidSize = 16;
@@ -61,15 +64,21 @@ namespace UnityEngine.Rendering.Universal.Internal
         Matrix4x4[] m_PrevViewProjM = new Matrix4x4[2];
         bool m_ResetHistory;
         int m_DitheringTextureIndex;
-        RenderTargetIdentifier[] m_MRT2;
+        RenderTargetIdentifier[] m_MRT2; // mnultiSample rt;
         Vector4[] m_BokehKernel;
         int m_BokehHash;
 
         // True when this is the very last pass in the pipeline
         bool m_IsFinalPass;
 
-        // If there's a final post process pass after this pass.
-        // If yes, Film Grain and Dithering are setup in the final pass, otherwise they are setup in this pass.
+        /*
+            If there's a final post process pass after this pass.
+            If yes, Film Grain and Dithering are setup in the final pass, otherwise they are setup in this pass.
+            ---
+            在本 pass 之后, 是否还存在一个 "final post process pass";
+            若为 true:  "Film Grain"(胶片颗粒) and "Dithering"(抖动) 这两项 将被安排在 "final pass" 中执行;
+            若为 false: 那么他们将在 本 pass 中执行;
+        */
         bool m_HasFinalPass;
 
 
@@ -86,18 +95,21 @@ namespace UnityEngine.Rendering.Universal.Internal
         bool m_UseDrawProcedural; // xr
 
         // Use Fast conversions between SRGB and Linear
+        // 快速但不够精确的 sRGB<->Linear 转换函数;
         bool m_UseFastSRGBLinearConversion;
 
-        Material m_BlitMaterial;
+
+        Material m_BlitMaterial; //"Shaders/Utils/Blit.shader"
+
 
         // 构造函数
-        public PostProcessPass(
-                            RenderPassEvent evt, 
-                            PostProcessData data, 
-                            Material blitMaterial
+        public PostProcessPass(//      读完__
+                            RenderPassEvent evt, // render pass 何时执行
+                            PostProcessData data, // PostProcess 要使用到的 资源对象: shaders, textures
+                            Material blitMaterial  //"Shaders/Utils/Blit.shader"
         ){
             base.profilingSampler = new ProfilingSampler(nameof(PostProcessPass));
-            renderPassEvent = evt;
+            renderPassEvent = evt; // base class 中的;
             m_Data = data;
             m_Materials = new MaterialLibrary(data);
             m_BlitMaterial = blitMaterial;
@@ -117,10 +129,12 @@ namespace UnityEngine.Rendering.Universal.Internal
             }
 
             // Only two components are needed for edge render texture, but on some vendors four components may be faster.
-            if (SystemInfo.IsFormatSupported(GraphicsFormat.R8G8_UNorm, FormatUsage.Render) && SystemInfo.graphicsDeviceVendor.ToLowerInvariant().Contains("arm"))
-                m_SMAAEdgeFormat = GraphicsFormat.R8G8_UNorm;
+            if (    SystemInfo.IsFormatSupported(GraphicsFormat.R8G8_UNorm, FormatUsage.Render) 
+                && SystemInfo.graphicsDeviceVendor.ToLowerInvariant().Contains("arm"))
+                m_SMAAEdgeFormat = GraphicsFormat.R8G8_UNorm; // unsigned normalized
             else
                 m_SMAAEdgeFormat = GraphicsFormat.R8G8B8A8_UNorm;
+
 
             if (SystemInfo.IsFormatSupported(GraphicsFormat.R16_UNorm, FormatUsage.Linear | FormatUsage.Render))
                 m_GaussianCoCFormat = GraphicsFormat.R16_UNorm;
@@ -129,10 +143,10 @@ namespace UnityEngine.Rendering.Universal.Internal
             else // Expect CoC banding
                 m_GaussianCoCFormat = GraphicsFormat.R8_UNorm;
 
-            // Bloom pyramid shader ids - can't use a simple stackalloc in the bloom function as we
-            // unfortunately need to allocate strings
-            ShaderConstants._BloomMipUp = new int[k_MaxPyramidSize];
-            ShaderConstants._BloomMipDown = new int[k_MaxPyramidSize];
+
+            // Bloom pyramid shader ids - can't use a simple stackalloc in the bloom function as we unfortunately need to allocate strings;
+            ShaderConstants._BloomMipUp = new int[k_MaxPyramidSize];//16个
+            ShaderConstants._BloomMipDown = new int[k_MaxPyramidSize];//16个
 
             for (int i = 0; i < k_MaxPyramidSize; i++)
             {
@@ -144,18 +158,20 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_ResetHistory = true;
         }//  函数完__
 
+
         public void Cleanup() => m_Materials.Cleanup();
 
 
-
-        public void Setup(
-                    in RenderTextureDescriptor baseDescriptor, 
-                    in RenderTargetHandle source, 
-                    in RenderTargetHandle destination, 
-                    in RenderTargetHandle depth, 
-                    in RenderTargetHandle internalLut, 
-                    bool hasFinalPass, 
-                    bool enableSRGBConversion
+        // 专用于 PostProcessPasses.postProcessPass
+        // 下面这组参数 源自 ForwardRenderer 中的调用
+        public void Setup(//    读完__
+                    in RenderTextureDescriptor baseDescriptor, // cameraData.cameraTargetDescriptor;
+                    in RenderTargetHandle source,       // "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget";
+                    in RenderTargetHandle destination,  // "_AfterPostProcessTexture" 或 "BuiltinRenderTextureType.CameraTarget";
+                    in RenderTargetHandle depth,        // "_CameraDepthAttachment" 或 "BuiltinRenderTextureType.CameraTarget";
+                    in RenderTargetHandle internalLut,  // "_InternalGradingLut"
+                    bool hasFinalPass,                  // 
+                    bool enableSRGBConversion           // 
         ){
             m_Descriptor = baseDescriptor;
             m_Descriptor.useMipMap = false;
@@ -171,9 +187,12 @@ namespace UnityEngine.Rendering.Universal.Internal
 
 
 
-        public void SetupFinalPass(in RenderTargetHandle source)
+        public void SetupFinalPass(in RenderTargetHandle source)//   读完__
         {
+            // 若有后处理, 就指向 "_AfterPostProcessTexture", 
+            // 否则指向 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
             m_Source = source;
+
             m_Destination = RenderTargetHandle.CameraTarget;// 即:"BuiltinRenderTextureType.CameraTarget"
             m_IsFinalPass = true;
             m_HasFinalPass = false;
@@ -181,52 +200,65 @@ namespace UnityEngine.Rendering.Universal.Internal
         }//  函数完__
 
 
+
+    
         /// <inheritdoc/>
-        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)//   读完__
         {
             if (m_Destination == RenderTargetHandle.CameraTarget)// 即:"BuiltinRenderTextureType.CameraTarget"
                 return;
 
             // If RenderTargetHandle already has a valid internal render target identifier, we shouldn't request a temp
+            // 猜测: 说明这个 rt 是在外部分配的
             if (m_Destination.HasInternalRenderTargetId())
                 return;
 
-            var desc = GetCompatibleDescriptor();
-            desc.depthBufferBits = 0;
-            cmd.GetTemporaryRT(m_Destination.id, desc, FilterMode.Point);
+            var desc = GetCompatibleDescriptor();// 在 m_Descriptor 基础上做适当修改后得到: 禁用了 msaa;
+            desc.depthBufferBits = 0; // 不启用 depth
+            cmd.GetTemporaryRT(
+                m_Destination.id, // 能执行到此处, 只能是 "_AfterPostProcessTexture"
+                desc, 
+                FilterMode.Point 
+            );
         }//  函数完__
 
 
+
         /// <inheritdoc/>
-        public override void OnCameraCleanup(CommandBuffer cmd)
+        public override void OnCameraCleanup(CommandBuffer cmd)//   读完__
         {
             if (m_Destination == RenderTargetHandle.CameraTarget)
                 return;
 
             // Logic here matches the if check in OnCameraSetup
+            // 猜测: 说明这个 rt 是在外部分配的
             if (m_Destination.HasInternalRenderTargetId())
                 return;
 
             cmd.ReleaseTemporaryRT(m_Destination.id);
         }
 
-        public void ResetHistory()
+
+
+        public void ResetHistory()//  读完__
         {
             m_ResetHistory = true;
         }
 
-        public bool CanRunOnTile()
+        public bool CanRunOnTile()//  读完__
         {
             // Check builtin & user effects here
+            // 感觉没实现完...
             return false;
         }
 
         /// <inheritdoc/>
-        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)//  读完__
         {
             // Start by pre-fetching all builtin effect settings we need
             // Some of the color-grading settings are only used in the color grading lut pass
             var stack = VolumeManager.instance.stack;
+            // 这些实例都已 预先创建好了, 都维持着默认初始值;
             m_DepthOfField        = stack.GetComponent<DepthOfField>();
             m_MotionBlur          = stack.GetComponent<MotionBlur>();
             m_PaniniProjection    = stack.GetComponent<PaniniProjection>();
@@ -237,7 +269,8 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_ColorLookup         = stack.GetComponent<ColorLookup>();
             m_ColorAdjustments    = stack.GetComponent<ColorAdjustments>();
             m_Tonemapping         = stack.GetComponent<Tonemapping>();
-            m_FilmGrain           = stack.GetComponent<FilmGrain>();
+            m_FilmGrain           = stack.GetComponent<FilmGrain>(); // 胶片颗粒
+
             m_UseDrawProcedural   = renderingData.cameraData.xr.enabled;// xr
             m_UseFastSRGBLinearConversion = renderingData.postProcessingData.useFastSRGBLinearConversion;
 
@@ -252,10 +285,13 @@ namespace UnityEngine.Rendering.Universal.Internal
                 context.ExecuteCommandBuffer(cmd);
                 CommandBufferPool.Release(cmd);
             }
-            else if (CanRunOnTile())
+            else if (CanRunOnTile())// 暂为 false; 
             {
-                // TODO: Add a fast render path if only on-tile compatible effects are used and we're actually running on a platform that supports it
-                // Note: we can still work on-tile if FXAA is enabled, it'd be part of the final pass
+                /*
+                    TODO: Add a fast render path if only on-tile compatible effects are used 
+                    and we're actually running on a platform that supports it;
+                    Note: we can still work on-tile if FXAA is enabled, it'd be part of the final pass
+                */
             }
             else
             {
@@ -276,14 +312,24 @@ namespace UnityEngine.Rendering.Universal.Internal
 
 
 
-        RenderTextureDescriptor GetCompatibleDescriptor()
-            => GetCompatibleDescriptor(m_Descriptor.width, m_Descriptor.height, m_Descriptor.graphicsFormat, m_Descriptor.depthBufferBits);
+        // 相比 m_Descriptor 的改动是: 禁用了 msaa
+        RenderTextureDescriptor GetCompatibleDescriptor()//   读完__
+            => GetCompatibleDescriptor(
+                m_Descriptor.width, 
+                m_Descriptor.height, 
+                m_Descriptor.graphicsFormat, 
+                m_Descriptor.depthBufferBits
+            );
 
-        RenderTextureDescriptor GetCompatibleDescriptor(int width, int height, GraphicsFormat format, int depthBufferBits = 0)
-        {
+        RenderTextureDescriptor GetCompatibleDescriptor(//   读完__
+                                                    int width, 
+                                                    int height, 
+                                                    GraphicsFormat format, 
+                                                    int depthBufferBits = 0
+        ){
             var desc = m_Descriptor;
             desc.depthBufferBits = depthBufferBits;
-            desc.msaaSamples = 1;
+            desc.msaaSamples = 1; // 不开启
             desc.width = width;
             desc.height = height;
             desc.graphicsFormat = format;
@@ -291,7 +337,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         }
 
         // 如果启用了 linear 工作流, 且 backbuffer 不支持 "自动执行 linear->sRGB 转换",
-        // 那么当把 backbuffer 定位一次 Blit() 的目的地时, 
+        // 那么当把 backbuffer 定为一次 Blit() 的目的地时, 
         // 需要启用此 keyword, 并在 shader 中手动执行 "linear->sRGB" 转换;
         bool RequireSRGBConversionBlitToBackBuffer(CameraData cameraData)
         {
@@ -344,26 +390,31 @@ namespace UnityEngine.Rendering.Universal.Internal
         }//  函数完__
 
         
-
-        void Render(CommandBuffer cmd, ref RenderingData renderingData)
+        /*
+            不是 final pass 时, 调用本函数;
+        */
+        void Render(CommandBuffer cmd, ref RenderingData renderingData)//   读完__
         {
             ref var cameraData = ref renderingData.cameraData;
 
-            // Don't use these directly unless you have a good reason to, use GetSource() and
-            // GetDestination() instead
-            bool tempTargetUsed = false;
-            bool tempTarget2Used = false;
+            // Don't use these directly unless you have a good reason to, use GetSource() and GetDestination() instead
+            bool tempTargetUsed = false;  // 若 destination 使用了 "_TempTarget"  即为 true;
+            bool tempTarget2Used = false; // 若 destination 使用了 "_TempTarget2" 即为 true;
             int source = m_Source.id;
-            int destination = -1;
+            int destination = -1; // -1 表示尚未创建, 创建后, 要么是 "_TempTarget", 要么是 "_TempTarget2";
             bool isSceneViewCamera = cameraData.isSceneViewCamera;
 
-            // Utilities to simplify intermediate target management
-            int GetSource() => source;
+            // ----- 一组 内置临时函数 -----:
 
-            int GetDestination()
+            // Utilities to simplify intermediate target management
+            int GetSource() => source; 
+
+            
+            // 创建 destination 的 rt;
+            int GetDestination()//     读完__
             {
                 if (destination == -1)
-                {
+                {   // --- 新建 dest rt ---:
                     cmd.GetTemporaryRT(
                         ShaderConstants._TempTarget, //"_TempTarget"
                         GetCompatibleDescriptor(), 
@@ -374,7 +425,11 @@ namespace UnityEngine.Rendering.Universal.Internal
                 }
                 else if (destination == m_Source.id && m_Descriptor.msaaSamples > 1)
                 {
-                    // Avoid using m_Source.id as new destination, it may come with a depth buffer that we don't want, may have MSAA that we don't want etc
+                    /*
+                        Avoid using m_Source.id as new destination, it may come with a depth buffer that we don't want, 
+                        may have MSAA that we don't want etc;
+                        避免使用 m_Source.id 当作新的 dest, 它可能有 depth buffer 和 msaa, 这些我们不需要;
+                    */
                     cmd.GetTemporaryRT(
                         ShaderConstants._TempTarget2,//"_TempTarget2"
                         GetCompatibleDescriptor(), 
@@ -385,132 +440,218 @@ namespace UnityEngine.Rendering.Universal.Internal
                 }
 
                 return destination;
-            }
+            }//  内置函数完__
+
 
             void Swap() => CoreUtils.Swap(ref source, ref destination);
 
-            // Setup projection matrix for cmd.DrawMesh()
-            cmd.SetGlobalMatrix(ShaderConstants._FullscreenProjMat, GL.GetGPUProjectionMatrix(Matrix4x4.identity, true));
+            // ----- 内置临时函数 end -----:
 
-            // Optional NaN killer before post-processing kicks in
-            // stopNaN may be null on Adreno 3xx. It doesn't support full shader level 3.5, but SystemInfo.graphicsShaderLevel is 35.
-            if (cameraData.isStopNaNEnabled && m_Materials.stopNaN != null)
-            {
+
+            // -------------------------------------------------------------:
+            // Setup projection matrix for cmd.DrawMesh()
+            cmd.SetGlobalMatrix(
+                ShaderConstants._FullscreenProjMat, //"_FullscreenProjMat"
+                // 计算 "最终的投影矩阵" 的样子; 得到的值会和 shader 代码中的 "UNITY_MATRIX_P" 矩阵 一样;
+                // 虽然 参数1 是个单位矩阵, 意味着 投影矩阵啥也没做... 但仍调用此函数, 猜测是为了处理: "y-flip" 和 "reverse z";
+                GL.GetGPUProjectionMatrix(
+                    Matrix4x4.identity, // Source projection matrix, 啥也没转
+                    true                // Will this projection be used for rendering into a RenderTexture?
+                )
+            );
+
+            /*
+                -------------------------------------------------------------:
+                Optional NaN killer before post-processing kicks in
+                "stopNaN" may be null on Adreno 3xx. It doesn't support full shader level 3.5, but SystemInfo.graphicsShaderLevel is 35.
+                ---
+                在 后处理之前做的一道工序: 把 src rt 中, 所有 NaN 或 Inf 颜色值, 简单替换成 (0,0,0)黑色;
+            */
+            if(     cameraData.isStopNaNEnabled // camera inspactor 中开启了
+                && m_Materials.stopNaN != null  // "Shaders/PostProcessing/StopNaN.shader" 是存在的;
+            ){
                 using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.StopNaNs)))
                 {
                     RenderingUtils.Blit(
                         cmd, 
-                        GetSource(), 
-                        GetDestination(), 
-                        m_Materials.stopNaN, 
-                        0, 
-                        m_UseDrawProcedural, // xr
-                        RenderBufferLoadAction.DontCare, 
-                        RenderBufferStoreAction.Store,
-                        RenderBufferLoadAction.DontCare, 
-                        RenderBufferStoreAction.DontCare);
+                        GetSource(),            // src
+                        GetDestination(),       // dest
+                        m_Materials.stopNaN,    // material: "Shaders/PostProcessing/StopNaN.shader"
+                        0,                      // passIndex
+                        m_UseDrawProcedural,    // xr
+                        RenderBufferLoadAction.DontCare,    // colorLoadAction
+                        RenderBufferStoreAction.Store,      // colorStoreAction
+                        RenderBufferLoadAction.DontCare,    // depthLoadAction
+                        RenderBufferStoreAction.DontCare    // depthStoreAction
+                    );
 
                     Swap();
                 }
             }
 
-            // Anti-aliasing
-            if (cameraData.antialiasing == AntialiasingMode.SubpixelMorphologicalAntiAliasing && SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2)
-            {
+            // -------------------------------------------------------------:
+            // Anti-aliasing (SMAA)
+            if(    cameraData.antialiasing == AntialiasingMode.SubpixelMorphologicalAntiAliasing // smaa
+                && SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2 // 平行需要支持 smaa
+            ){
                 using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.SMAA)))
                 {
-                    DoSubpixelMorphologicalAntialiasing(ref cameraData, cmd, GetSource(), GetDestination());
+                    DoSubpixelMorphologicalAntialiasing(
+                        ref cameraData, 
+                        cmd, 
+                        GetSource(), 
+                        GetDestination()
+                    );
                     Swap();
                 }
             }
 
+
+            // -------------------------------------------------------------:
             // Depth of Field
             if (m_DepthOfField.IsActive() && !isSceneViewCamera)
             {
+                // 只是一个 profiling marker
                 var markerName = m_DepthOfField.mode.value == DepthOfFieldMode.Gaussian
                     ? URPProfileId.GaussianDepthOfField
                     : URPProfileId.BokehDepthOfField;
 
                 using (new ProfilingScope(cmd, ProfilingSampler.Get(markerName)))
                 {
-                    DoDepthOfField(cameraData.camera, cmd, GetSource(), GetDestination(), cameraData.pixelRect);
+                    DoDepthOfField(
+                        cameraData.camera, 
+                        cmd, 
+                        GetSource(), 
+                        GetDestination(), 
+                        cameraData.pixelRect
+                    );
                     Swap();
                 }
             }
 
+
+            // -------------------------------------------------------------:
             // Motion blur
             if (m_MotionBlur.IsActive() && !isSceneViewCamera)
             {
                 using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.MotionBlur)))
                 {
-                    DoMotionBlur(cameraData, cmd, GetSource(), GetDestination());
+                    DoMotionBlur(
+                        cameraData, 
+                        cmd, 
+                        GetSource(), 
+                        GetDestination()
+                    );
                     Swap();
                 }
             }
 
-            // Panini projection is done as a fullscreen pass after all depth-based effects are done
-            // and before bloom kicks in
+            // -------------------------------------------------------------:
+            // Panini projection 
+            // is done as a fullscreen pass after all "depth-based effects" are done and before bloom kicks in
+            // 在所有 "depth-based effects" 之后, 在 "Bloom" 之前
             if (m_PaniniProjection.IsActive() && !isSceneViewCamera)
             {
                 using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.PaniniProjection)))
                 {
-                    DoPaniniProjection(cameraData.camera, cmd, GetSource(), GetDestination());
+                    DoPaniniProjection(
+                        cameraData.camera, 
+                        cmd, 
+                        GetSource(), 
+                        GetDestination()
+                    );
                     Swap();
                 }
             }
 
+            // =============================================================:
             // Combined post-processing stack
             using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.UberPostProcess)))
             {
+                
+                // uber: "Shaders/PostProcessing/UberPost.shader"
+
                 // Reset uber keywords
                 m_Materials.uber.shaderKeywords = null;
 
+                // -------------------------------------------------------------:
                 // Bloom goes first
                 bool bloomActive = m_Bloom.IsActive();
                 if (bloomActive)
                 {
                     using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.Bloom)))
-                        SetupBloom(cmd, GetSource(), m_Materials.uber);
+                        SetupBloom(
+                            cmd, 
+                            GetSource(), 
+                            m_Materials.uber
+                        );
                 }
 
+
+                // -------------------------------------------------------------:
                 // Setup other effects constants
                 SetupLensDistortion(m_Materials.uber, isSceneViewCamera);
                 SetupChromaticAberration(m_Materials.uber);
                 SetupVignette(m_Materials.uber);
                 SetupColorGrading(cmd, ref renderingData, m_Materials.uber);
 
+
                 // Only apply dithering & grain if there isn't a final pass.
                 SetupGrain(cameraData, m_Materials.uber);
                 SetupDithering(cameraData, m_Materials.uber);
 
+                // -------------------------------------------------------------:
 
+                // 如果启用了 linear 工作流, 且 backbuffer 不支持 "自动执行 linear->sRGB 转换",
+                // 那么当把 backbuffer 定为一次 Blit() 的目的地时, 
+                // 需要启用此 keyword, 并在 shader 中手动执行 "linear->sRGB" 转换;
                 if (RequireSRGBConversionBlitToBackBuffer(cameraData))
                     m_Materials.uber.EnableKeyword(ShaderKeywordStrings.LinearToSRGBConversion);//"_LINEAR_TO_SRGB_CONVERSION"
+                    
 
                 if (m_UseFastSRGBLinearConversion)
                 {
-                    m_Materials.uber.EnableKeyword(ShaderKeywordStrings.UseFastSRGBLinearConversion);
+                    m_Materials.uber.EnableKeyword(ShaderKeywordStrings.UseFastSRGBLinearConversion);//"_USE_FAST_SRGB_LINEAR_CONVERSION"
                 }
 
                 // Done with Uber, blit it
-                cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, GetSource());//"_SourceTex"
+                cmd.SetGlobalTexture(
+                    ShaderPropertyId.sourceTex, //"_SourceTex"
+                    GetSource()
+                );
 
+                // 设置 colorLoadAction:
                 var colorLoadAction = RenderBufferLoadAction.DontCare;
-                if( m_Destination == RenderTargetHandle.CameraTarget && // 即:"BuiltinRenderTextureType.CameraTarget"
-                !cameraData.isDefaultViewport
+                if(     m_Destination == RenderTargetHandle.CameraTarget // 即:"BuiltinRenderTextureType.CameraTarget"
+                    && !cameraData.isDefaultViewport // camera stack 不渲染向 全屏 viewport;
                 )
                     colorLoadAction = RenderBufferLoadAction.Load;
 
-                // Note: We rendering to "camera target" we need to get the cameraData.targetTexture as this will get the targetTexture of the camera stack.
-                // Overlay cameras need to output to the target described in the base camera while doing camera stack.
+                /*
+                    Note: We rendering to "camera target" we need to get the cameraData.targetTexture 
+                    as this will get the targetTexture of the camera stack.
+                    Overlay cameras need to output to the target described in the base camera while doing camera stack.
+                */
+                // 非 xr程序 直接得到 "RenderTargetHandle.CameraTarget";
                 RenderTargetHandle cameraTargetHandle = RenderTargetHandle.GetCameraTarget(cameraData.xr);
-                RenderTargetIdentifier cameraTarget = (cameraData.targetTexture != null && !cameraData.xr.enabled) ? new RenderTargetIdentifier(cameraData.targetTexture) : cameraTargetHandle.Identifier();
-                cameraTarget = (m_Destination == RenderTargetHandle.CameraTarget) ? // 即:"BuiltinRenderTextureType.CameraTarget"
+
+                RenderTargetIdentifier cameraTarget = 
+                    (cameraData.targetTexture != null && !cameraData.xr.enabled) ? // 如果: camera stack 设置了 rt, 且程序不为 xr;
+                        new RenderTargetIdentifier(cameraData.targetTexture) :  // 使用 camera stack 指定的 rt
+                        cameraTargetHandle.Identifier();                        // 
+
+                // 如果 m_Destination 不为 "BuiltinRenderTextureType.CameraTarget", 
+                // cameraTarget 就被改为 m_Destination;
+                cameraTarget = (m_Destination == RenderTargetHandle.CameraTarget) ?
                     cameraTarget : 
                     m_Destination.Identifier();
 
-                // With camera stacking we not always resolve post to final screen as we might run post-processing in the middle of the stack.
-                bool finishPostProcessOnScreen = cameraData.resolveFinalTarget || (m_Destination == cameraTargetHandle || m_HasFinalPass == true);
+
+                // With camera stacking we not always resolve post to final screen 
+                // as we might run post-processing in the middle of the stack.
+                bool finishPostProcessOnScreen = 
+                        cameraData.resolveFinalTarget //如果这是 stack 中最后一个 camera
+                        || (m_Destination == cameraTargetHandle || m_HasFinalPass == true);// 
 
 /*      tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
@@ -549,26 +690,59 @@ namespace UnityEngine.Rendering.Universal.Internal
 #endif
 */
                 {
-                    cmd.SetRenderTarget(cameraTarget, colorLoadAction, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-                    cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
+                    cmd.SetRenderTarget(
+                        cameraTarget, 
+                        colorLoadAction,                // color load
+                        RenderBufferStoreAction.Store,  // color store
+                        RenderBufferLoadAction.DontCare, // depth load
+                        RenderBufferStoreAction.DontCare // depth store
+                    );
+
+                    cmd.SetViewProjectionMatrices(
+                        Matrix4x4.identity, 
+                        Matrix4x4.identity
+                    );
 
                     if (m_Destination == RenderTargetHandle.CameraTarget)// 即:"BuiltinRenderTextureType.CameraTarget"
                         cmd.SetViewport(cameraData.pixelRect);
 
-                    cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, m_Materials.uber);
+                    cmd.DrawMesh(
+                        RenderingUtils.fullscreenMesh, 
+                        Matrix4x4.identity, // 转换矩阵, (猜测为 OS->WS )
+                        m_Materials.uber    // "Shaders/PostProcessing/UberPost.shader"
+                    );
 
-                    // TODO: We need a proper camera texture swap chain in URP.
-                    // For now, when render post-processing in the middle of the camera stack (not resolving to screen)
-                    // we do an extra blit to ping pong results back to color texture. In future we should allow a Swap of the current active color texture
-                    // in the pipeline to avoid this extra blit.
+                    /*
+                        TODO: We need a proper camera texture swap chain in URP.
+                        For now, when render post-processing in the middle of the camera stack (not resolving to screen)
+                        we do an extra blit to ping pong results back to color texture. 
+                        In future we should allow a Swap of the current active color texture
+                        in the pipeline to avoid this extra blit.
+                    */
                     if (!finishPostProcessOnScreen)
                     {
-                        cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, cameraTarget);//"_SourceTex"
-                        cmd.SetRenderTarget(m_Source.id, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-                        cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, m_BlitMaterial);
+                        cmd.SetGlobalTexture(
+                            ShaderPropertyId.sourceTex, //"_SourceTex"
+                            cameraTarget
+                        );
+                        cmd.SetRenderTarget(
+                            m_Source.id, 
+                            RenderBufferLoadAction.DontCare, // color load
+                            RenderBufferStoreAction.Store,   // color store
+                            RenderBufferLoadAction.DontCare, // depth load
+                            RenderBufferStoreAction.DontCare // depth store
+                        );
+                        cmd.DrawMesh(
+                            RenderingUtils.fullscreenMesh, 
+                            Matrix4x4.identity, // 转换矩阵, (猜测为 OS->WS )
+                            m_BlitMaterial      // "Shaders/Utils/Blit.shader"
+                        );
                     }
 
-                    cmd.SetViewProjectionMatrices(cameraData.camera.worldToCameraMatrix, cameraData.camera.projectionMatrix);
+                    cmd.SetViewProjectionMatrices(
+                        cameraData.camera.worldToCameraMatrix, 
+                        cameraData.camera.projectionMatrix
+                    );
                 }
 
                 // Cleanup
@@ -582,6 +756,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                     cmd.ReleaseTemporaryRT(ShaderConstants._TempTarget2);//"_TempTarget2"
             }
         }//  函数完__
+
 
 
 
@@ -600,11 +775,15 @@ namespace UnityEngine.Rendering.Universal.Internal
         // SMAA
         #region Sub-pixel Morphological Anti-aliasing
 
-        void DoSubpixelMorphologicalAntialiasing(ref CameraData cameraData, CommandBuffer cmd, int source, int destination)
-        {
+        void DoSubpixelMorphologicalAntialiasing(
+                                            ref CameraData cameraData, 
+                                            CommandBuffer cmd, 
+                                            int source, 
+                                            int destination
+        ){
             var camera = cameraData.camera;
             var pixelRect = cameraData.pixelRect;
-            var material = m_Materials.subpixelMorphologicalAntialiasing;
+            var material = m_Materials.subpixelMorphologicalAntialiasing;//"Shaders/PostProcessing/SubpixelMorphologicalAntialiasing.shader"
             const int kStencilBit = 64;
 
             // Globals
@@ -628,11 +807,11 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             switch (cameraData.antialiasingQuality)
             {
-                case AntialiasingQuality.Low: material.EnableKeyword(ShaderKeywordStrings.SmaaLow);
+                case AntialiasingQuality.Low: material.EnableKeyword(ShaderKeywordStrings.SmaaLow);//"_SMAA_PRESET_LOW"
                     break;
-                case AntialiasingQuality.Medium: material.EnableKeyword(ShaderKeywordStrings.SmaaMedium);
+                case AntialiasingQuality.Medium: material.EnableKeyword(ShaderKeywordStrings.SmaaMedium);//"_SMAA_PRESET_MEDIUM"
                     break;
-                case AntialiasingQuality.High: material.EnableKeyword(ShaderKeywordStrings.SmaaHigh);
+                case AntialiasingQuality.High: material.EnableKeyword(ShaderKeywordStrings.SmaaHigh);//"_SMAA_PRESET_HIGH"
                     break;
             }
 
@@ -708,7 +887,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         void DoGaussianDepthOfField(Camera camera, CommandBuffer cmd, int source, int destination, Rect pixelRect)
         {
             int downSample = 2;
-            var material = m_Materials.gaussianDepthOfField;
+            var material = m_Materials.gaussianDepthOfField;//"Shaders/PostProcessing/GaussianDepthOfField.shader"
             int wh = m_Descriptor.width / downSample;
             int hh = m_Descriptor.height / downSample;
             float farStart = m_DepthOfField.gaussianStart.value;
@@ -720,7 +899,11 @@ namespace UnityEngine.Rendering.Universal.Internal
             float maxRadius = m_DepthOfField.gaussianMaxRadius.value * (wh / 1080f);
             maxRadius = Mathf.Min(maxRadius, 2f);
 
-            CoreUtils.SetKeyword(material, ShaderKeywordStrings.HighQualitySampling, m_DepthOfField.highQualitySampling.value);
+            CoreUtils.SetKeyword(
+                material, 
+                ShaderKeywordStrings.HighQualitySampling, //"_HIGH_QUALITY_SAMPLING"
+                m_DepthOfField.highQualitySampling.value
+            );
             material.SetVector(
                 ShaderConstants._CoCParams, //"_CoCParams"
                 new Vector3(farStart, farEnd, maxRadius)
@@ -866,7 +1049,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         void DoBokehDepthOfField(CommandBuffer cmd, int source, int destination, Rect pixelRect)
         {
             int downSample = 2;
-            var material = m_Materials.bokehDepthOfField;
+            var material = m_Materials.bokehDepthOfField;//"Shaders/PostProcessing/BokehDepthOfField.shader"
             int wh = m_Descriptor.width / downSample;
             int hh = m_Descriptor.height / downSample;
 
@@ -878,7 +1061,11 @@ namespace UnityEngine.Rendering.Universal.Internal
             float maxRadius = GetMaxBokehRadiusInPixels(m_Descriptor.height);
             float rcpAspect = 1f / (wh / (float)hh);
 
-            CoreUtils.SetKeyword(material, ShaderKeywordStrings.UseFastSRGBLinearConversion, m_UseFastSRGBLinearConversion);
+            CoreUtils.SetKeyword(
+                material, 
+                ShaderKeywordStrings.UseFastSRGBLinearConversion, //"_USE_FAST_SRGB_LINEAR_CONVERSION"
+                m_UseFastSRGBLinearConversion
+            );
             cmd.SetGlobalVector(
                 ShaderConstants._CoCParams, //"_CoCParams"
                 new Vector4(P, maxCoC, maxRadius, rcpAspect)
@@ -952,7 +1139,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         void DoMotionBlur(CameraData cameraData, CommandBuffer cmd, int source, int destination)
         {
-            var material = m_Materials.cameraMotionBlur;
+            var material = m_Materials.cameraMotionBlur;//"Shaders/PostProcessing/CameraMotionBlur.shader"
 
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
@@ -1029,11 +1216,12 @@ namespace UnityEngine.Rendering.Universal.Internal
             float paniniD = distance;
             float paniniS = Mathf.Lerp(1f, Mathf.Clamp01(scaleF), m_PaniniProjection.cropToFit.value);
 
-            var material = m_Materials.paniniProjection;
+            var material = m_Materials.paniniProjection;//"Shaders/PostProcessing/PaniniProjection.shader"
             material.SetVector(ShaderConstants._Params, new Vector4(viewExtents.x, viewExtents.y, paniniD, paniniS));
             material.EnableKeyword(
                 1f - Mathf.Abs(paniniD) > float.Epsilon
-                ? ShaderKeywordStrings.PaniniGeneric : ShaderKeywordStrings.PaniniUnitDistance
+                ? ShaderKeywordStrings.PaniniGeneric :  //"_GENERIC"
+                ShaderKeywordStrings.PaniniUnitDistance //"_UNIT_DISTANCE"
             );
 
             Blit(cmd, source, BlitDstDiscardContent(cmd, destination), material);
@@ -1110,10 +1298,18 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             // Material setup
             float scatter = Mathf.Lerp(0.05f, 0.95f, m_Bloom.scatter.value);
-            var bloomMaterial = m_Materials.bloom;
+            var bloomMaterial = m_Materials.bloom;//"Shaders/PostProcessing/Bloom.shader"
             bloomMaterial.SetVector(ShaderConstants._Params, new Vector4(scatter, clamp, threshold, thresholdKnee));
-            CoreUtils.SetKeyword(bloomMaterial, ShaderKeywordStrings.BloomHQ, m_Bloom.highQualityFiltering.value);
-            CoreUtils.SetKeyword(bloomMaterial, ShaderKeywordStrings.UseRGBM, m_UseRGBM);
+            CoreUtils.SetKeyword(
+                bloomMaterial, 
+                ShaderKeywordStrings.BloomHQ, //"_BLOOM_HQ"
+                m_Bloom.highQualityFiltering.value
+            );
+            CoreUtils.SetKeyword(
+                bloomMaterial, 
+                ShaderKeywordStrings.UseRGBM, //"_USE_RGBM"
+                m_UseRGBM
+            );
 
             // Prefilter
             var desc = GetCompatibleDescriptor(tw, th, m_DefaultHDRFormat);
@@ -1200,9 +1396,15 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             // Keyword setup - a bit convoluted as we're trying to save some variants in Uber...
             if (m_Bloom.highQualityFiltering.value)
-                uberMaterial.EnableKeyword(dirtIntensity > 0f ? ShaderKeywordStrings.BloomHQDirt : ShaderKeywordStrings.BloomHQ);
+                uberMaterial.EnableKeyword(dirtIntensity > 0f ? 
+                    ShaderKeywordStrings.BloomHQDirt :  //"_BLOOM_HQ_DIRT"
+                    ShaderKeywordStrings.BloomHQ        //"_BLOOM_HQ"
+                );
             else
-                uberMaterial.EnableKeyword(dirtIntensity > 0f ? ShaderKeywordStrings.BloomLQDirt : ShaderKeywordStrings.BloomLQ);
+                uberMaterial.EnableKeyword(dirtIntensity > 0f ? 
+                    ShaderKeywordStrings.BloomLQDirt :  //"_BLOOM_LQ_DIRT"
+                    ShaderKeywordStrings.BloomLQ        //"_BLOOM_LQ"
+                );
         }//  函数完__
         #endregion
 
@@ -1233,7 +1435,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             material.SetVector(ShaderConstants._Distortion_Params2, p2);
 
             if (m_LensDistortion.IsActive() && !isSceneView)
-                material.EnableKeyword(ShaderKeywordStrings.Distortion);
+                material.EnableKeyword(ShaderKeywordStrings.Distortion);//"_DISTORTION"
         }//  函数完__
         #endregion
 
@@ -1246,7 +1448,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             material.SetFloat(ShaderConstants._Chroma_Params, m_ChromaticAberration.intensity.value * 0.05f);
 
             if (m_ChromaticAberration.IsActive())
-                material.EnableKeyword(ShaderKeywordStrings.ChromaticAberration);
+                material.EnableKeyword(ShaderKeywordStrings.ChromaticAberration);//"_CHROMATIC_ABERRATION"
         }
         #endregion
 
@@ -1279,8 +1481,11 @@ namespace UnityEngine.Rendering.Universal.Internal
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Color Grading
 
-        void SetupColorGrading(CommandBuffer cmd, ref RenderingData renderingData, Material material)
-        {
+        void SetupColorGrading(
+                            CommandBuffer cmd, 
+                            ref RenderingData renderingData, 
+                            Material material
+        ){
             ref var postProcessingData = ref renderingData.postProcessingData;
             bool hdr = postProcessingData.gradingMode == ColorGradingMode.HighDynamicRange;
             int lutHeight = postProcessingData.lutSize;
@@ -1301,14 +1506,18 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             if (hdr)
             {
-                material.EnableKeyword(ShaderKeywordStrings.HDRGrading);
+                material.EnableKeyword(ShaderKeywordStrings.HDRGrading);//"_HDR_GRADING"
             }
             else
             {
                 switch (m_Tonemapping.mode.value)
                 {
-                    case TonemappingMode.Neutral: material.EnableKeyword(ShaderKeywordStrings.TonemapNeutral); break;
-                    case TonemappingMode.ACES: material.EnableKeyword(ShaderKeywordStrings.TonemapACES); break;
+                    case TonemappingMode.Neutral: 
+                        material.EnableKeyword(ShaderKeywordStrings.TonemapNeutral); //"_TONEMAP_NEUTRAL"
+                        break;
+                    case TonemappingMode.ACES: 
+                        material.EnableKeyword(ShaderKeywordStrings.TonemapACES); //"_TONEMAP_ACES"
+                        break;
                     default: break; // None
                 }
             }
@@ -1317,18 +1526,23 @@ namespace UnityEngine.Rendering.Universal.Internal
 
 
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
-        #region Film Grain
+        #region Film Grain 
+        // 胶片颗粒
 
+        /*
+            参数 material 可以是: "UberPost.shader" 或 "FinalPost.shader";
+        */
         void SetupGrain(in CameraData cameraData, Material material)
         {
             if (!m_HasFinalPass && m_FilmGrain.IsActive())
             {
-                material.EnableKeyword(ShaderKeywordStrings.FilmGrain);
+                material.EnableKeyword(ShaderKeywordStrings.FilmGrain);//"_FILM_GRAIN"
+
                 PostProcessUtils.ConfigureFilmGrain(
                     m_Data,
                     m_FilmGrain,
                     cameraData.pixelWidth, cameraData.pixelHeight,
-                    material
+                    material// "UberPost.shader" 或 "FinalPost.shader"
                 );
             }
         }
@@ -1343,7 +1557,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         {
             if (!m_HasFinalPass && cameraData.isDitheringEnabled)
             {
-                material.EnableKeyword(ShaderKeywordStrings.Dithering);
+                material.EnableKeyword(ShaderKeywordStrings.Dithering);//"_DITHERING"
                 m_DitheringTextureIndex = PostProcessUtils.ConfigureDithering(
                     m_Data,
                     m_DitheringTextureIndex,
@@ -1358,17 +1572,22 @@ namespace UnityEngine.Rendering.Universal.Internal
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Final pass
 
+
         void RenderFinalPass(CommandBuffer cmd, ref RenderingData renderingData)
         {
             ref var cameraData = ref renderingData.cameraData;
-            var material = m_Materials.finalPass;
+            var material = m_Materials.finalPass;//"Shaders/PostProcessing/FinalPost.shader"
             material.shaderKeywords = null;
 
             // FXAA setup
             if (cameraData.antialiasing == AntialiasingMode.FastApproximateAntialiasing)
-                material.EnableKeyword(ShaderKeywordStrings.Fxaa);
+                material.EnableKeyword(ShaderKeywordStrings.Fxaa);//"_FXAA"
 
-            PostProcessUtils.SetSourceSize(cmd, cameraData.cameraTargetDescriptor);
+            // 设置 gloabl shader 变量: "_SourceSize";
+            PostProcessUtils.SetSourceSize(
+                cmd, 
+                cameraData.cameraTargetDescriptor
+            );
 
             SetupGrain(cameraData, material);
             SetupDithering(cameraData, material);
@@ -1426,20 +1645,33 @@ namespace UnityEngine.Rendering.Universal.Internal
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++:
         #region Internal utilities
 
-        class MaterialLibrary
-        {
-            public readonly Material stopNaN;
-            public readonly Material subpixelMorphologicalAntialiasing;
-            public readonly Material gaussianDepthOfField;
-            public readonly Material bokehDepthOfField;
-            public readonly Material cameraMotionBlur;
-            public readonly Material paniniProjection;
-            public readonly Material bloom;
-            public readonly Material uber;
-            public readonly Material finalPass;
 
-            public MaterialLibrary(PostProcessData data)
+        // 维护一组 material 实例;
+        class MaterialLibrary//MaterialLibrary__
+        {
+            public readonly Material stopNaN;//"Shaders/PostProcessing/StopNaN.shader"
+
+            // smaa
+            public readonly Material subpixelMorphologicalAntialiasing;//"Shaders/PostProcessing/SubpixelMorphologicalAntialiasing.shader"
+
+            // 两种 dof 方式:
+            public readonly Material gaussianDepthOfField;//"Shaders/PostProcessing/GaussianDepthOfField.shader"
+            public readonly Material bokehDepthOfField;//"Shaders/PostProcessing/BokehDepthOfField.shader"
+
+            public readonly Material cameraMotionBlur;//"Shaders/PostProcessing/CameraMotionBlur.shader"
+            public readonly Material paniniProjection;//"Shaders/PostProcessing/PaniniProjection.shader"
+            public readonly Material bloom;//"Shaders/PostProcessing/Bloom.shader"
+
+            // 一口气实现了多种 后处理
+            public readonly Material uber;//"Shaders/PostProcessing/UberPost.shader"
+
+            public readonly Material finalPass;//"Shaders/PostProcessing/FinalPost.shader"
+
+
+            // 构造函数
+            public MaterialLibrary(PostProcessData data)//     读完__
             {
+                // 创建各个 mayerial 实例;
                 stopNaN = Load(data.shaders.stopNanPS);
                 subpixelMorphologicalAntialiasing = Load(data.shaders.subpixelMorphologicalAntialiasingPS);
                 gaussianDepthOfField = Load(data.shaders.gaussianDepthOfFieldPS);
@@ -1451,7 +1683,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 finalPass = Load(data.shaders.finalPostPassPS);
             }
 
-            Material Load(Shader shader)
+            Material Load(Shader shader)//   读完__
             {
                 if (shader == null)
                 {
@@ -1462,12 +1694,12 @@ namespace UnityEngine.Rendering.Universal.Internal
                 {
                     return null;
                 }
-
                 return CoreUtils.CreateEngineMaterial(shader);
             }
 
-            internal void Cleanup()
+            internal void Cleanup()//   读完__
             {
+                // 释放各个 material 实例
                 CoreUtils.Destroy(stopNaN);
                 CoreUtils.Destroy(subpixelMorphologicalAntialiasing);
                 CoreUtils.Destroy(gaussianDepthOfField);
@@ -1478,10 +1710,13 @@ namespace UnityEngine.Rendering.Universal.Internal
                 CoreUtils.Destroy(uber);
                 CoreUtils.Destroy(finalPass);
             }
-        }
+        }//    class 完__
 
-        // Precomputed shader ids to same some CPU cycles (mostly affects mobile)
-        static class ShaderConstants
+
+
+        // Precomputed shader ids to same some CPU cycles (mostly affects mobile 主要影响移动端)
+        // id 变量名 就等于 shader 变量原名;
+        static class ShaderConstants//ShaderConstants__
         {
             public static readonly int _TempTarget         = Shader.PropertyToID("_TempTarget");
             public static readonly int _TempTarget2        = Shader.PropertyToID("_TempTarget2");
@@ -1525,9 +1760,11 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             public static readonly int _FullscreenProjMat  = Shader.PropertyToID("_FullscreenProjMat");
 
-            public static int[] _BloomMipUp;
-            public static int[] _BloomMipDown;
+            public static int[] _BloomMipUp;// "_BloomMipUp" + i
+            public static int[] _BloomMipDown;// "_BloomMipDown" + i
         }
+
+
 
         #endregion
     }

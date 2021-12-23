@@ -2,13 +2,30 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
 {
     HLSLINCLUDE
         #pragma exclude_renderers gles
-        #pragma multi_compile_local_fragment _ _DISTORTION
+
+        // 以下这些 变量, 几乎都在 PostProcessPass.cs 中设置
+
+        // 镜头畸变
+        #pragma multi_compile_local_fragment _ _DISTORTION 
+        // 色差
         #pragma multi_compile_local_fragment _ _CHROMATIC_ABERRATION
+
         #pragma multi_compile_local_fragment _ _BLOOM_LQ _BLOOM_HQ _BLOOM_LQ_DIRT _BLOOM_HQ_DIRT
+
         #pragma multi_compile_local_fragment _ _HDR_GRADING _TONEMAP_ACES _TONEMAP_NEUTRAL
+
+        // 胶片颗粒
         #pragma multi_compile_local_fragment _ _FILM_GRAIN
+
+        // dithering, 抖动, 消除带状伪影
         #pragma multi_compile_local_fragment _ _DITHERING
+
+        // 如果启用了 linear 工作流, 且 backbuffer 不支持 "自动执行 linear->sRGB 转换",
+        // 那么当把 backbuffer 定为一次 Blit() 的目的地时, 
+        // 需要启用此 keyword, 并在 shader 中手动执行 "linear->sRGB" 转换;
         #pragma multi_compile_local_fragment _ _LINEAR_TO_SRGB_CONVERSION
+
+        // 快速但不够精确的 sRGB<->Linear 转换函数;
         #pragma multi_compile_local_fragment _ _USE_FAST_SRGB_LINEAR_CONVERSION
 
         // xr 才启用
@@ -86,9 +103,12 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
         #define DitheringScale          _Dithering_Params.xy
         #define DitheringOffset         _Dithering_Params.zw
 
+
+        // 处理 镜头畸变 导致的 uv 改变;
         float2 DistortUV(float2 uv)
         {
             // Note: this variant should never be set with XR
+            // 只有镜头发生畸变时, 才会触发
             #if _DISTORTION
             {
                 uv = (uv - 0.5) * DistScale + 0.5;
@@ -113,15 +133,18 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
             return uv;
         }
 
+
+
         half4 Frag(Varyings input) : SV_Target
         {
             /*UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);    tpr */
             /*float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);   tpr */
             float2 uv = input.uv;
-            float2 uvDistorted = DistortUV(uv);
+            float2 uvDistorted = DistortUV(uv);// 镜头畸变
 
-            half3 color = (0.0).xxx;
+            half3 color = (0.0).xxx; // 等于 (0,0,0)
 
+            // -------------------------------------------------:
             #if _CHROMATIC_ABERRATION
             {
                 // Very fast version of chromatic aberration from HDRP using 3 samples and hardcoded
@@ -142,6 +165,7 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
             }
             #endif
 
+            
             // Gamma space... Just do the rest of Uber in linear and convert back to sRGB at the end
             #if UNITY_COLORSPACE_GAMMA
             {
@@ -149,6 +173,7 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
             }
             #endif
 
+            // -------------------------------------------------:
             #if defined(BLOOM)
             {
                 #if _BLOOM_HQ && !defined(SHADER_API_GLES)
@@ -184,6 +209,7 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
             }
             #endif
 
+            // -------------------------------------------------:
             // To save on variants we'll use an uniform branch for vignette. Lower end platforms
             // don't like these but if we're running Uber it means we're running more expensive
             // effects anyway. Lower-end devices would limit themselves to on-tile compatible effect
@@ -194,11 +220,13 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
                 color = ApplyVignette(color, uvDistorted, VignetteCenter, VignetteIntensity, VignetteRoundness, VignetteSmoothness, VignetteColor);
             }
 
+            // -------------------------------------------------:
             // Color grading is always enabled when post-processing/uber is active
             {
                 color = ApplyColorGrading(color, PostExposure, TEXTURE2D_ARGS(_InternalLut, sampler_LinearClamp), LutParams, TEXTURE2D_ARGS(_UserLut, sampler_LinearClamp), UserLutParams, UserLutContribution);
             }
 
+            // -------------------------------------------------:
             #if _FILM_GRAIN
             {
                 color = ApplyGrain(color, uv, TEXTURE2D_ARGS(_Grain_Texture, sampler_LinearRepeat), GrainIntensity, GrainResponse, GrainScale, GrainOffset);
@@ -212,6 +240,7 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
             }
             #endif
 
+            // -------------------------------------------------:
             #if _DITHERING
             {
                 color = ApplyDithering(color, uv, TEXTURE2D_ARGS(_BlueNoise_Texture, sampler_PointRepeat), DitheringScale, DitheringOffset);
@@ -219,7 +248,8 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
             #endif
 
             return half4(color, 1.0);
-        }
+        }// 函数 Frag 完__
+
 
     ENDHLSL
 
@@ -234,8 +264,8 @@ Shader "Hidden/Universal Render Pipeline/UberPost"
             Name "UberPost"
 
             HLSLPROGRAM
-                #pragma vertex FullscreenVert
-                #pragma fragment Frag
+                #pragma vertex      FullscreenVert
+                #pragma fragment    Frag
             ENDHLSL
         }
     }

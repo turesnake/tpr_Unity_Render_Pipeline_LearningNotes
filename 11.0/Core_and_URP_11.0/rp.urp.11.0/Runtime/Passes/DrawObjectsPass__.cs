@@ -14,9 +14,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         如果一个物体的 material/shader 带有名为 "UniversalForward" or "SRPDefaultUnlit" 的pass,
         就能用这个 class 来渲染这个物体;
         ---
-
-        在 "BeforeRenderingOpaques" 时刻, 
-
+        目前仅在 ForwardRenderer 中被使用;
 
     */
 

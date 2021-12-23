@@ -34,7 +34,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         // 构造函数
         public DepthNormalOnlyPass( //  读完__
                                 RenderPassEvent evt, // "BeforeRenderingPrePasses"
-                                RenderQueueRange renderQueueRange, 
+                                RenderQueueRange renderQueueRange, // renderQueue 区间值, 比如 "opaque"
                                 LayerMask layerMask
         ){
             base.profilingSampler = new ProfilingSampler(nameof(DepthNormalOnlyPass));

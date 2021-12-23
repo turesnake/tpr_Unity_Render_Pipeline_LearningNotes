@@ -23,16 +23,18 @@ namespace UnityEngine.Rendering.Universal
             new ShaderTagId("VertexLM"),
         };
 
+        
         static Mesh s_FullscreenMesh = null;
-
         /*
             Returns a mesh that you can use with: ""CommandBuffer.DrawMesh(Mesh, Matrix4x4, Material);""
             to render full-screen effects.
 
-            posWS.xy: [-1,1]
-            uv.xy:    [0,1] 左下角起步
+            一个理想的 quad mesh:
+                posOS.xy: [-1,1]
+                posOS.z:  0
+                uv.xy:    [0,1] 左下角起步
         */
-        public static Mesh fullscreenMesh
+        public static Mesh fullscreenMesh//fullscreenMesh__
         {
             get
             {
@@ -60,6 +62,8 @@ namespace UnityEngine.Rendering.Universal
                 });
 
                 s_FullscreenMesh.SetIndices(new[] { 0, 1, 2, 2, 1, 3 }, MeshTopology.Triangles, 0, false);
+
+                // 立刻更新 mesh 数据, 参数true 意味着以后再也不更新本 mesh 的数据了;
                 s_FullscreenMesh.UploadMeshData(true);
                 return s_FullscreenMesh;
             }
@@ -206,7 +210,7 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
 
-        internal static void Blit(
+        internal static void Blit(//   读完__
             CommandBuffer cmd,
             RenderTargetIdentifier source,
             RenderTargetIdentifier destination,
@@ -218,9 +222,12 @@ namespace UnityEngine.Rendering.Universal
             RenderBufferLoadAction depthLoadAction = RenderBufferLoadAction.Load,
             RenderBufferStoreAction depthStoreAction = RenderBufferStoreAction.Store)
         {
-            cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, source);
-            if (useDrawProcedural)
-            {
+            cmd.SetGlobalTexture(
+                ShaderPropertyId.sourceTex, //"_SourceTex"
+                source
+            );
+            if (useDrawProcedural) // xr 专用,
+            {   /*      tpr
                 // x=1: 不执行texture uv 值得 "y-flip", 
                 Vector4 scaleBias =   new Vector4( 1, 1, 0, 0 );
                 Vector4 scaleBiasRt = new Vector4( 1, 1, 0, 0 );
@@ -231,11 +238,23 @@ namespace UnityEngine.Rendering.Universal
                 cmd.SetRenderTarget(new RenderTargetIdentifier(destination, 0, CubemapFace.Unknown, -1),
                     colorLoadAction, colorStoreAction, depthLoadAction, depthStoreAction);
                 cmd.DrawProcedural(Matrix4x4.identity, material, passIndex, MeshTopology.Quads, 4, 1, null);
+                */
             }
             else
             {
-                cmd.SetRenderTarget(destination, colorLoadAction, colorStoreAction, depthLoadAction, depthStoreAction);
-                cmd.Blit(source, BuiltinRenderTextureType.CurrentActive, material, passIndex);
+                cmd.SetRenderTarget(
+                    destination, 
+                    colorLoadAction, 
+                    colorStoreAction, 
+                    depthLoadAction, 
+                    depthStoreAction
+                );
+                cmd.Blit(
+                    source, //"_SourceTex"
+                    BuiltinRenderTextureType.CurrentActive, // 就是上一行刚设置的新 render target
+                    material, 
+                    passIndex
+                );
             }
         }// 函数完__
 

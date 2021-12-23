@@ -45,7 +45,6 @@ Shader "Hidden/Universal Render Pipeline/Blit"
             // 那么当把 backbuffer 定位一次 Blit() 的目的地时, 
             // 需要启用此 keyword, 并在 shader 中手动执行 "linear->sRGB" 转换;
              #ifdef _LINEAR_TO_SRGB_CONVERSION
-             
                 col = LinearToSRGB(col);
              #endif
 

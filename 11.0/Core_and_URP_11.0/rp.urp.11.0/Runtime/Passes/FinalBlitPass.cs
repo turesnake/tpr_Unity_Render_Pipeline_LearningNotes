@@ -2,13 +2,18 @@ namespace UnityEngine.Rendering.Universal.Internal
 {
     /*
         Copy the given color target to the current camera target
-
         You can use this pass to copy the result of rendering to the camera target.
         The pass takes the screen viewport into consideration.
+        ---
+
+        暂时只关心在 ForwardRenderer 中的使用;
     */
     public class FinalBlitPass //FinalBlitPass__RR
         : ScriptableRenderPass
     {
+
+        // 若有后处理, 就指向 "_AfterPostProcessTexture", 
+        // 否则指向 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
         RenderTargetHandle m_Source;
         Material m_BlitMaterial; // 如: "Shaders/Utils/Blit.shader"
 
@@ -29,7 +34,8 @@ namespace UnityEngine.Rendering.Universal.Internal
   
         public void Setup(//   读完__
                     RenderTextureDescriptor baseDescriptor, 
-                    RenderTargetHandle colorHandle
+                    RenderTargetHandle colorHandle  // 若有后处理, 就传入 "_AfterPostProcessTexture", 
+                                                    // 否则传入 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
         ){
             m_Source = colorHandle;
         }
@@ -53,9 +59,10 @@ namespace UnityEngine.Rendering.Universal.Internal
                 base camera 的 "targetTexture"; 也是整个 stack 的 render target;
             */
             ref CameraData cameraData = ref renderingData.cameraData;
+
             RenderTargetIdentifier cameraTarget = (cameraData.targetTexture != null) ? 
-                        new RenderTargetIdentifier(cameraData.targetTexture) : 
-                        BuiltinRenderTextureType.CameraTarget;//仅指: "current camera 的 render target", 但它不一定是: "Currently active render target";
+                    new RenderTargetIdentifier(cameraData.targetTexture) : 
+                    BuiltinRenderTextureType.CameraTarget;
 
 
             bool isSceneViewCamera = cameraData.isSceneViewCamera;// 是否为 editor 中 scene窗口 使用的 camera;
@@ -68,7 +75,12 @@ namespace UnityEngine.Rendering.Universal.Internal
                 CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.LinearToSRGBConversion,//"_LINEAR_TO_SRGB_CONVERSION"
                     cameraData.requireSrgbConversion);
 
-                cmd.SetGlobalTexture(ShaderPropertyId.sourceTex, m_Source.Identifier());//"_SourceTex"
+                cmd.SetGlobalTexture(
+                    ShaderPropertyId.sourceTex, //"_SourceTex"
+                    // 若有后处理, 就指向 "_AfterPostProcessTexture", 
+                    // 否则指向 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
+                    m_Source.Identifier()
+                );
 
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
@@ -100,20 +112,40 @@ namespace UnityEngine.Rendering.Universal.Internal
                 else
 #endif
 */
-
+                // isDefaultViewport: 猜测:只有当 viewport 为 全屏时, 才算是 default 的;
                 if (isSceneViewCamera || cameraData.isDefaultViewport)
                 {
                     // This set render target is necessary so we change the LOAD state to DontCare.
-                    cmd.SetRenderTarget(BuiltinRenderTextureType.CameraTarget,
-                        RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store, // color
-                        RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare); // depth
-                    cmd.Blit(m_Source.Identifier(), cameraTarget, m_BlitMaterial);
+                    cmd.SetRenderTarget(
+                        BuiltinRenderTextureType.CameraTarget, // rt
+                        RenderBufferLoadAction.DontCare,  // colorLoadAction
+                        RenderBufferStoreAction.Store,    // colorStoreAction
+                        RenderBufferLoadAction.DontCare,  // depthLoadAction
+                        RenderBufferStoreAction.DontCare  // depthStoreAction
+                    ); // depth
+                    cmd.Blit(
+                        // src:
+                        // 若有后处理, 就指向 "_AfterPostProcessTexture", 
+                        // 否则指向 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
+                        m_Source.Identifier(),
+                        cameraTarget,   // dst: 要么是 camera上绑定的 rt, 要么是 backbuffer;
+                        m_BlitMaterial  // "Shaders/Utils/Blit.shader"
+                    );
                 }
                 else
-                {
-                    // TODO: Final blit pass should always blit to backbuffer. The first time we do we don't need to Load contents to tile.
-                    // We need to keep in the pipeline of first render pass to each render target to properly set load/store actions.
-                    // meanwhile we set to load so split screen case works.
+                {// ----- 存在 viewport 的缩放 -----:
+
+                    /*
+                        TODO: Final blit pass should always blit to backbuffer. 
+                        The first time we do we don't need to Load contents to tile;
+                        We need to keep in the pipeline of first render pass to each render target to properly set load/store actions.
+                        meanwhile we set to load so split screen case works.
+                        ---
+                        Final blit pass 总是应该 blit 到 backbuffer 上去;
+                        第一次时, 我们不需要将内容加载到 tile;
+                        我们需要保留第一次 render pass 中 "到每个 render target" 的管线, 以便正确地设置 load/store 动作;
+                        同时我们设置为 load, 以便分屏情况起作用。
+                    */
                     CoreUtils.SetRenderTarget(
                         cmd,
                         cameraTarget,
@@ -123,9 +155,24 @@ namespace UnityEngine.Rendering.Universal.Internal
                         Color.black);
 
                     Camera camera = cameraData.camera;
+
                     cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
+
                     cmd.SetViewport(cameraData.pixelRect);
-                    cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, m_BlitMaterial);
+
+                    /*
+                        (一个手动的 Blit 操作)
+                        绘制一个 full screen quad mesh; 工作内容:
+                            -- 从 "_SourceTex" 中采样数据 half4 col, 
+                            -- 可能对数据手动执行 LinearToSRGB() 转换;
+                            -- 将数据 写入 render target: "要么是 camera上绑定的 rt, 要么是 backbuffer";
+                    */
+                    cmd.DrawMesh(
+                        RenderingUtils.fullscreenMesh,  // full screen quad mesh
+                        Matrix4x4.identity,             // 变换矩阵(应该是 OS->WS), 不做任何变换
+                        m_BlitMaterial                  // "Shaders/Utils/Blit.shader"
+                    );
+
                     cmd.SetViewProjectionMatrices(camera.worldToCameraMatrix, camera.projectionMatrix);
                 }
             }

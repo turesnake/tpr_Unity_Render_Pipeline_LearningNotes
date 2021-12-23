@@ -547,8 +547,7 @@ namespace UnityEngine.Rendering.Universal
     public struct PostProcessingData//PostProcessingData__
     {
         // 颜色渐变模式; enum: LowDynamicRange, HighDynamicRange
-        // 若 asset 支持 hdr, 则沿用 asset inspector 中配置值;
-        // 否则使用 LowDynamicRange;
+        // 若 asset 支持 hdr, 则沿用 asset inspector 中配置值; 否则使用 LowDynamicRange;
         public ColorGradingMode gradingMode;
 
         // 沿用 asset inspector 中配置值;

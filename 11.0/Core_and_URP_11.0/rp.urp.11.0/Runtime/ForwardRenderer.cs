@@ -24,7 +24,6 @@ namespace UnityEngine.Rendering.Universal
 
 
 
-
     /*
         Default renderer for urp
         This renderer is supported on all urp supported platforms.
@@ -82,12 +81,13 @@ namespace UnityEngine.Rendering.Universal
             "渲染不透明物" 的 render pass 
             始终创建此 render pass, 就算在 延迟渲染模式 也创建此 render pass, 因为:(1) editor 中的线框模式, (2) 绘制到 depth render texture 的 camera, 都要用到它;
             ---
+            在 "BeforeRenderingOpaques" 时刻,
             color / depth 可能被渲染到默认的: "BuiltinRenderTextureType.CameraTarget",
             也可能被渲染到: "_CameraColorTexture", "_CameraDepthAttachment"
         */
         DrawObjectsPass m_RenderOpaqueForwardPass;
 
-        /*
+        /* 
             在 "BeforeRenderingSkybox" 时刻, 渲染 skybox:
             ---
             color / depth 可能被渲染到默认的: "BuiltinRenderTextureType.CameraTarget",
@@ -101,9 +101,17 @@ namespace UnityEngine.Rendering.Universal
         // 在 "AfterRenderingSkybox" 时刻, 将 opaque color 数据, 
         // 从 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget", 复制到 "_CameraOpaqueTexture";
         CopyColorPass m_CopyColorPass;
+        
         TransparentSettingsPass m_TransparentSettingsPass;
+
+        /*
+            在 "BeforeRenderingTransparents" 时刻 渲染;
+        */
         DrawObjectsPass m_RenderTransparentForwardPass;
         InvokeOnRenderObjectCallbackPass m_OnRenderObjectCallbackPass;// 看完
+
+        /*
+        */
         FinalBlitPass m_FinalBlitPass;
         CapturePass m_CapturePass;
 /*   tpr
@@ -161,8 +169,8 @@ namespace UnityEngine.Rendering.Universal
         RenderTargetHandle m_TileDepthInfoTexture;//"_TileDepthInfoTexture"
 
 
-        ForwardLights m_ForwardLights;
-        DeferredLights m_DeferredLights;
+        ForwardLights m_ForwardLights; 
+        DeferredLights m_DeferredLights; 
         RenderingMode m_RenderingMode; // 初始值 Forward
         StencilState m_DefaultStencilState;// 直接源自 Forward Renderer inspector 中设置的 stencil 部分 的数据;
 
@@ -178,8 +186,9 @@ namespace UnityEngine.Rendering.Universal
         internal ColorGradingLutPass colorGradingLutPass { get => m_PostProcessPasses.colorGradingLutPass; }
         internal PostProcessPass postProcessPass { get => m_PostProcessPasses.postProcessPass; }
         internal PostProcessPass finalPostProcessPass { get => m_PostProcessPasses.finalPostProcessPass; }
-        internal RenderTargetHandle afterPostProcessColor { get => m_PostProcessPasses.afterPostProcessColor; }
-        internal RenderTargetHandle colorGradingLut { get => m_PostProcessPasses.colorGradingLut; }
+
+        internal RenderTargetHandle afterPostProcessColor { get => m_PostProcessPasses.afterPostProcessColor; }//"_AfterPostProcessTexture"
+        internal RenderTargetHandle colorGradingLut { get => m_PostProcessPasses.colorGradingLut; }//"_InternalGradingLut"
 
 
 
@@ -330,7 +339,7 @@ namespace UnityEngine.Rendering.Universal
                     URPProfileId.DrawTransparentObjects,        // 分析代码块的 name
                     // ----------                               // 参数2被省略, 使用一组预定义 ShaderTagIds
                     false,                                      // 本 render pass 渲染的是 半透明物体
-                    RenderPassEvent.BeforeRenderingTransparents,// 设置 render pass 执行时间: 在渲染 Transparents 之前,
+                    RenderPassEvent.BeforeRenderingTransparents,// 设置 render pass 执行时间: 
                     RenderQueueRange.transparent,               // renderQueue 值位于此区间内的物体, 可被渲染, 比如 [2000,2500]
                     data.transparentLayerMask,                  // Forward Renderer inspector 中设置
                     m_DefaultStencilState,                      // 替换 render state 中的 stencil 部分
@@ -341,7 +350,7 @@ namespace UnityEngine.Rendering.Universal
             m_OnRenderObjectCallbackPass = new InvokeOnRenderObjectCallbackPass(RenderPassEvent.BeforeRenderingPostProcessing);
 
             m_PostProcessPasses = new PostProcessPasses(
-                data.postProcessData, 
+                data.postProcessData, // PostProcess 要使用到的 资源对象: shaders, textures
                 m_BlitMaterial//"Shaders/Utils/Blit.shader"
             );
 
@@ -759,7 +768,7 @@ namespace UnityEngine.Rendering.Universal
 
             if (generateColorGradingLUT)
             {
-                colorGradingLutPass.Setup(colorGradingLut);
+                colorGradingLutPass.Setup(colorGradingLut);//"_InternalGradingLut"
                 EnqueuePass(colorGradingLutPass);
             }
 
@@ -901,40 +910,49 @@ namespace UnityEngine.Rendering.Universal
                 if (applyPostProcessing)
                 {
                     var destination = resolvePostProcessingToCameraTarget ? 
-                        RenderTargetHandle.CameraTarget : // 即:"BuiltinRenderTextureType.CameraTarget"
-                        afterPostProcessColor;
+                        RenderTargetHandle.CameraTarget :   // 即:"BuiltinRenderTextureType.CameraTarget"
+                        afterPostProcessColor;              // "_AfterPostProcessTexture"
 
                     // if resolving to screen we need to be able to perform sRGBConvertion in post-processing if necessary
                     bool doSRGBConvertion = resolvePostProcessingToCameraTarget;
 
                     postProcessPass.Setup(
-                        cameraTargetDescriptor, 
-                        m_ActiveCameraColorAttachment, 
-                        destination, 
-                        m_ActiveCameraDepthAttachment, 
-                        colorGradingLut, 
-                        applyFinalPostProcessing, 
-                        doSRGBConvertion
+                        cameraTargetDescriptor,         // baseDescriptor:
+                        m_ActiveCameraColorAttachment,  // src:  "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget";
+                        destination,                    // dest:  "_AfterPostProcessTexture" 或 "BuiltinRenderTextureType.CameraTarget";
+                        m_ActiveCameraDepthAttachment,  // depth: "_CameraDepthAttachment" 或 "BuiltinRenderTextureType.CameraTarget";
+                        colorGradingLut,                // internalLut: "_InternalGradingLut"
+                        applyFinalPostProcessing,       // hasFinalPass: 
+                        doSRGBConvertion                // enableSRGBConversion: 
                     );
                     EnqueuePass(postProcessPass);
                 }
 
 
-                // if we applied post-processing for this camera it means current active texture is m_AfterPostProcessColor
+                // if we applied post-processing for this camera it means current active texture is "_AfterPostProcessTexture"
+                // 检查后发现, 可能为下方三种 rt 中的任意一种...
                 var sourceForFinalPass = (applyPostProcessing) ? 
-                        afterPostProcessColor : 
-                        m_ActiveCameraColorAttachment;
+                        afterPostProcessColor :         // "_AfterPostProcessTexture"
+                        m_ActiveCameraColorAttachment;  // "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
 
                 // Do FXAA or any other final post-processing effect that might need to run after AA.
                 if (applyFinalPostProcessing)
                 {
-                    finalPostProcessPass.SetupFinalPass(sourceForFinalPass);
+                    finalPostProcessPass.SetupFinalPass(
+                        // 若有后处理, 就指向 "_AfterPostProcessTexture", 
+                        // 否则指向 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
+                        sourceForFinalPass 
+                    );
                     EnqueuePass(finalPostProcessPass);
                 }
 
                 if (renderingData.cameraData.captureActions != null)
                 {
-                    m_CapturePass.Setup(sourceForFinalPass);
+                    m_CapturePass.Setup(
+                        // 若有后处理, 就指向 "_AfterPostProcessTexture", 
+                        // 否则指向 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
+                        sourceForFinalPass
+                    );
                     EnqueuePass(m_CapturePass);
                 }
 
@@ -953,7 +971,8 @@ namespace UnityEngine.Rendering.Universal
                 {
                     m_FinalBlitPass.Setup(
                         cameraTargetDescriptor, // 此参数似乎没有被使用
-                        sourceForFinalPass
+                        sourceForFinalPass      // src: 若有后处理, 就指向 "_AfterPostProcessTexture", 
+                                                //      否则指向 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
                     );
                     EnqueuePass(m_FinalBlitPass);
                 }
@@ -975,7 +994,15 @@ namespace UnityEngine.Rendering.Universal
             // stay in RT so we resume rendering on stack after post-processing
             else if (applyPostProcessing)
             {
-                postProcessPass.Setup(cameraTargetDescriptor, m_ActiveCameraColorAttachment, afterPostProcessColor, m_ActiveCameraDepthAttachment, colorGradingLut, false, false);
+                postProcessPass.Setup(
+                    cameraTargetDescriptor, 
+                    m_ActiveCameraColorAttachment, 
+                    afterPostProcessColor,          //"_AfterPostProcessTexture"
+                    m_ActiveCameraDepthAttachment,  
+                    colorGradingLut,                //"_InternalGradingLut"
+                    false, 
+                    false
+                );
                 EnqueuePass(postProcessPass);
             }
 

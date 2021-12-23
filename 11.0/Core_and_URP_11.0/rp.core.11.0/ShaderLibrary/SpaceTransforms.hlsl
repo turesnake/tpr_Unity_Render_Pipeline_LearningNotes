@@ -96,12 +96,20 @@ float3 TransformWorldToView(float3 positionWS)
     return mul(GetWorldToViewMatrix(), float4(positionWS, 1.0)).xyz;
 }
 
+
+
 // Transforms position from object space to homogenous space
-float4 TransformObjectToHClip(float3 positionOS)
+float4 TransformObjectToHClip(float3 positionOS)//  读完__
 {
     // More efficient than computing M*VP matrix product
-    return mul(GetWorldToHClipMatrix(), mul(GetObjectToWorldMatrix(), float4(positionOS, 1.0)));
+    // 为啥这样算就更有效 ???
+    return mul(
+        GetWorldToHClipMatrix(),
+        mul(GetObjectToWorldMatrix(), float4(positionOS, 1.0))
+    );
 }
+
+
 
 // Tranforms position from world space to homogenous space
 float4 TransformWorldToHClip(float3 positionWS)

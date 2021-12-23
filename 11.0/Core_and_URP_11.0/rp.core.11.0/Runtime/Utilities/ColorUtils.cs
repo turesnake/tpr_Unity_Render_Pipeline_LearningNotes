@@ -58,14 +58,21 @@ namespace UnityEngine.Rendering
             return new Vector3(L, M, S);
         }
 
-        /// <summary>
-        /// Converts white balancing parameter to LMS coefficients.
-        /// </summary>
+        /*
+            Converts white balancing parameter to LMS coefficients.
+            LMS: 它将颜色描述为人眼中 三种感光锥细胞 的反应。
+            ---
+            两参数主要源自 后处理模块 WhiteBalance 的:
+                - whiteBalance.temperature.value, 
+                - whiteBalance.tint.value
+        */
         /// <param name="temperature">A temperature offset, in range [-100;100].</param>
         /// <param name="tint">A tint offset, in range [-100;100].</param>
         /// <returns>LMS coefficients.</returns>
         public static Vector3 ColorBalanceToLMSCoeffs(float temperature, float tint)
         {
+            // 具体算法 没细看...
+
             // Range ~[-1.5;1.5] works best
             float t1 = temperature / 65f;
             float t2 = tint / 65f;
@@ -80,6 +87,9 @@ namespace UnityEngine.Rendering
             var w2 = CIExyToLMS(x, y);
             return new Vector3(w1.x / w2.x, w1.y / w2.y, w1.z / w2.z);
         }
+
+
+
 
         /// <summary>
         /// Pre-filters shadows, midtones and highlights trackball values for shader use.

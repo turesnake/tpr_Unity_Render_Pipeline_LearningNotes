@@ -960,18 +960,21 @@ namespace UnityEngine.Rendering
             return (mask.ToUInt32(null) & flag.ToUInt32(null)) != 0;
         }
 
-        /// <summary>
+
+
+
         /// Swaps two values.
-        /// </summary>
         /// <typeparam name="T">Type of the values</typeparam>
         /// <param name="a">First value.</param>
         /// <param name="b">Second value.</param>
-        public static void Swap<T>(ref T a, ref T b)
+        public static void Swap<T>(ref T a, ref T b)// 读完__
         {
             var tmp = a;
             a = b;
             b = tmp;
         }
+
+
 
         /// <summary>
         /// Set a global keyword using a CommandBuffer
@@ -1019,9 +1022,7 @@ namespace UnityEngine.Rendering
 
         
 
-        /// <summary>
         /// Destroys a UnityObject safely.
-        /// </summary>
         /// <param name="obj">Object to be destroyed.</param>
         public static void Destroy(UnityObject obj)
         {
@@ -1038,6 +1039,7 @@ namespace UnityEngine.Rendering
             }
         }
 
+
         static IEnumerable<Type> m_AssemblyTypes;
 
         /// <summary>
@@ -1048,8 +1050,8 @@ namespace UnityEngine.Rendering
         {
             if (m_AssemblyTypes == null)
             {
-                m_AssemblyTypes = AppDomain.CurrentDomain.GetAssemblies()
-                    .SelectMany(t =>
+                m_AssemblyTypes = AppDomain.CurrentDomain.GetAssemblies().SelectMany(
+                    t =>
                     {
                         // Ugly hack to handle mis-versioned dlls
                         var innerTypes = new Type[0];
@@ -1059,25 +1061,34 @@ namespace UnityEngine.Rendering
                         }
                         catch {}
                         return innerTypes;
-                    });
+                    }
+                );
             }
 
             return m_AssemblyTypes;
         }
 
-        /// <summary>
-        /// Returns a list of types that inherit from the provided type.
-        /// </summary>
+
+
+        /*
+            Returns a list of types that inherit from the provided type.
+            ---
+            能一口气把当前系统中, 所有继承自 参数 Type 的 类型信息, 都收集起来并返回;
+        */
         /// <typeparam name="T">Parent Type</typeparam>
         /// <returns>A list of types that inherit from the provided type.</returns>
-        public static IEnumerable<Type> GetAllTypesDerivedFrom<T>()
+        public static IEnumerable<Type> GetAllTypesDerivedFrom<T>()//  读完__
         {
 #if UNITY_EDITOR && UNITY_2019_2_OR_NEWER
             return UnityEditor.TypeCache.GetTypesDerivedFrom<T>();
 #else
-            return GetAllAssemblyTypes().Where(t => t.IsSubclassOf(typeof(T)));
+            return GetAllAssemblyTypes().Where(
+                t => t.IsSubclassOf(typeof(T))
+            );
 #endif
         }
+
+
 
         /// <summary>
         /// Safely release a Compute Buffer.

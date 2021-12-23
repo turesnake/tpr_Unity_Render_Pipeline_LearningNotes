@@ -22,7 +22,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         private RenderTargetHandle destination { get; set; } // "_CameraDepthTexture"
 
         internal bool AllocateRT  { get; set; }// 猜测: 是否由本类来分配 dest 的 render texture
-        Material m_CopyDepthMaterial;
+        Material m_CopyDepthMaterial;//"Shaders/Utils/CopyDepth.shader"
 
 
         // 构造函数
@@ -118,7 +118,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         */
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
-            if (m_CopyDepthMaterial == null)
+            if (m_CopyDepthMaterial == null)//"Shaders/Utils/CopyDepth.shader"
             {
                 Debug.LogErrorFormat("Missing {0}. {1} render pass will not execute. Check for missing reference in the renderer resources.", m_CopyDepthMaterial, GetType().Name);
                 return;
@@ -210,11 +210,17 @@ namespace UnityEngine.Rendering.Universal.Internal
                         : new Vector4(flipSign, 0.0f, 1.0f, 1.0f);
                     cmd.SetGlobalVector(ShaderPropertyId.scaleBiasRt, scaleBiasRt);//"_ScaleBiasRt"
 
-                    // 执行 Blit 工作, (也许还带有 MSAA 滤波)
+                   
+                    /*
+                        绘制 full screen quad; 工作内容:
+                            -- 采样 "_CameraDepthAttachment" 中的数据(存储的是 depth), 
+                            -- 对数据执行 msaa 滤波后 (也可能不滤波)
+                            -- 将数据写入 render target: "_CameraDepthTexture"
+                    */  
                     cmd.DrawMesh(
                         RenderingUtils.fullscreenMesh,  // 一个 全屏 quad mesh
-                        Matrix4x4.identity,             // 变换矩阵, 不做任何变换
-                        m_CopyDepthMaterial             // material
+                        Matrix4x4.identity,             // 变换矩阵(应该是 OS->WS), 不做任何变换
+                        m_CopyDepthMaterial             // material, //"Shaders/Utils/CopyDepth.shader"
                     );
                 }
             }//using end

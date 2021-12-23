@@ -9,23 +9,19 @@ namespace UnityEngine.Rendering
     using UnityObject = UnityEngine.Object;
 
     /*
-        A global manager that tracks all the Volumes in the currently loaded Scenes and does all the
-        interpolation work.
+        A global manager that tracks all the Volumes in the currently loaded Scenes and does all the interpolation work.
+
+
     */
     public sealed class VolumeManager//VolumeManager__RR
     {
         static readonly Lazy<VolumeManager> s_Instance = new Lazy<VolumeManager>(() => new VolumeManager());
 
-        /// <summary>
-        /// The current singleton instance of <see cref="VolumeManager"/>.
-        /// </summary>
+        /// The current singleton instance of "VolumeManager".
         public static VolumeManager instance => s_Instance.Value;
 
-
-        /// <summary>
-        /// A reference to the main <see cref="VolumeStack"/>.
-        /// </summary>
-        /// <seealso cref="VolumeStack"/>
+       
+        // A reference to the main "VolumeStack".
         public VolumeStack stack { get; private set; }
 
 
@@ -45,7 +41,8 @@ namespace UnityEngine.Rendering
         }
         */
 
-
+        // 存储: 当前系统中, 所有继承自 VolumeComponent 的 类型 的信息;
+        // 比如 "Bloom", "ChannelMixer" 等
         public Type[] baseComponentTypeArray { get; private set; }
 
         // Max amount of layers available in Unity
@@ -60,14 +57,22 @@ namespace UnityEngine.Rendering
         // Keep track of sorting states for layer masks
         readonly Dictionary<int, bool> m_SortNeeded;
 
-        // Internal list of default state for each component type - this is used to reset component
-        // states on update instead of having to implement a Reset method on all components (which
-        // would be error-prone)
+        /*
+            Internal list of default state for each component type - 
+            this is used to reset component states on update 
+            instead of having to implement a Reset method on all components 
+            (which would be error-prone)
+            ---
+            存储了每一种 VolumeComponent 派生类型的 instance, 它们都处于: default state; 
+            以便在 update() 运行时可以重置 component 的 states, 而不需要为每一个 component 实现一个 Reset() 方法;
+        */
         readonly List<VolumeComponent> m_ComponentsDefaultState;
+
 
         // Recycled list used for volume traversal
         readonly List<Collider> m_TempColliders;
 
+        // 构造函数
         VolumeManager()
         {
             m_SortedVolumes = new Dictionary<int, List<Volume>>();
@@ -79,7 +84,8 @@ namespace UnityEngine.Rendering
             ReloadBaseTypes();
 
             stack = CreateStack();
-        }
+        }//   函数完__
+
 
         /// <summary>
         /// Creates and returns a new <see cref="VolumeStack"/> to use when you need to store
@@ -95,6 +101,7 @@ namespace UnityEngine.Rendering
             return stack;
         }
 
+
         /// <summary>
         /// Destroy a Volume Stack
         /// </summary>
@@ -104,26 +111,42 @@ namespace UnityEngine.Rendering
             stack.Dispose();
         }
 
-        // This will be called only once at runtime and everytime script reload kicks-in in the
-        // editor as we need to keep track of any compatible component in the project
-        void ReloadBaseTypes()
+
+        /*
+            This will be called only once at runtime and everytime script reload kicks-in in the
+            editor as we need to keep track of any compatible component in the project
+        */
+        void ReloadBaseTypes()//   读完__   反射用的有点多, 部分细节没看仔细...
         {
             m_ComponentsDefaultState.Clear();
 
             // Grab all the component types we can find
+            // 一口气把当前系统中, 所有继承自 VolumeComponent 的 类型的信息, 都收集起来并返回;
+            // 比如 "Bloom", "ChannelMixer" 等
             baseComponentTypeArray = CoreUtils.GetAllTypesDerivedFrom<VolumeComponent>()
-                .Where(t => !t.IsAbstract).ToArray();
+                .Where(t => !t.IsAbstract).ToArray(); // 不能是抽象类
 
-            var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
-            // Keep an instance of each type to be used in a virtual lowest priority global volume
-            // so that we have a default state to fallback to when exiting volumes
+            var flags =   System.Reflection.BindingFlags.Static 
+                        | System.Reflection.BindingFlags.Public 
+                        | System.Reflection.BindingFlags.NonPublic;
+            
+            /*
+                Keep an instance of each type to be used in a virtual lowest priority global volume
+                so that we have a default state to fallback to when exiting volumes
+                ---
+                在一个虚拟的 低优先级的 global volume 中, 保留每个类型的实例, 
+                以便在从一个 volume 中离开时, 我们可以回退到一个 default state;
+            */
             foreach (var type in baseComponentTypeArray)
             {
+                // 注意此处的 ?, 只有找到了 Init() 方法, 才会调用之;
                 type.GetMethod("Init", flags)?.Invoke(null, null);
                 var inst = (VolumeComponent)ScriptableObject.CreateInstance(type);
                 m_ComponentsDefaultState.Add(inst);
             }
-        }
+        }//   函数完__
+
+
 
         /// <summary>
         /// Registers a new Volume in the manager. Unity does this automatically when a new Volume is
@@ -146,7 +169,8 @@ namespace UnityEngine.Rendering
             }
 
             SetLayerDirty(layer);
-        }
+        }//   函数完__
+
 
         /// <summary>
         /// Unregisters a Volume from the manager. Unity does this automatically when a Volume is
@@ -168,7 +192,8 @@ namespace UnityEngine.Rendering
 
                 kvp.Value.Remove(volume);
             }
-        }
+        }//   函数完__
+
 
         /// <summary>
         /// Checks if a <see cref="VolumeComponent"/> is active in a given LayerMask.
@@ -198,7 +223,8 @@ namespace UnityEngine.Rendering
             }
 
             return false;
-        }
+        }//   函数完__
+
 
         internal void SetLayerDirty(int layer)
         {
@@ -211,7 +237,7 @@ namespace UnityEngine.Rendering
                 if ((mask & (1 << layer)) != 0)
                     m_SortNeeded[mask] = true;
             }
-        }
+        }//   函数完__
 
         internal void UpdateVolumeLayer(Volume volume, int prevLayer, int newLayer)
         {
@@ -250,19 +276,26 @@ namespace UnityEngine.Rendering
                     }
                 }
             }
-        }
+        }//   函数完__
 
-        /// <summary>
-        /// Checks the state of the base type library. This is only used in the editor to handle
-        /// entering and exiting of play mode and domain reload.
-        /// </summary>
+
+        /*
+            Checks the state of the base type library. This is only used in the editor 
+            to handle entering and exiting of play mode and domain reload.
+            ---
+            仅在 editor 中被使用;
+        */
         [Conditional("UNITY_EDITOR")]
         public void CheckBaseTypes()
         {
             // Editor specific hack to work around serialization doing funky things when exiting
-            if (m_ComponentsDefaultState == null || (m_ComponentsDefaultState.Count > 0 && m_ComponentsDefaultState[0] == null))
+            if(     m_ComponentsDefaultState == null 
+                || (m_ComponentsDefaultState.Count > 0 && m_ComponentsDefaultState[0] == null)
+            )
                 ReloadBaseTypes();
         }
+
+
 
         /// <summary>
         /// Checks the state of a given stack. This is only used in the editor to handle entering
@@ -290,7 +323,9 @@ namespace UnityEngine.Rendering
                     return;
                 }
             }
-        }
+        }//   函数完__
+
+
 
         /// <summary>
         /// Updates the global state of the Volume manager. Unity usually calls this once per Camera
@@ -399,7 +434,7 @@ namespace UnityEngine.Rendering
                 // No need to clamp01 the interpolation factor as it'll always be in [0;1[ range
                 OverrideData(stack, volume.profileRef.components, interpFactor * Mathf.Clamp01(volume.weight));
             }
-        }
+        }//   函数完__
 
         
 
@@ -445,7 +480,8 @@ namespace UnityEngine.Rendering
             }
 
             return list;
-        }
+        }//   函数完__
+
 
         // Stable insertion sort. Faster than List<T>.Sort() for our needs.
         static void SortByPriority(List<Volume> volumes)
@@ -466,7 +502,7 @@ namespace UnityEngine.Rendering
 
                 volumes[j + 1] = temp;
             }
-        }
+        }//   函数完__
 
         static bool IsVolumeRenderedByCamera(Volume volume, Camera camera)
         {

@@ -314,8 +314,8 @@ real RotateHue(real value, real low, real hi)
                 : value;
 }
 
-// Soft-light blending mode use for split-toning. Works in HDR as long as `blend` is [0;1] which is
-// fine for our use case.
+// Soft-light blending mode use for split-toning. 
+// Works in HDR as long as `blend` is [0;1] which is fine for our use case.
 float3 SoftLight(float3 base, float3 blend)
 {
     float3 r1 = 2.0 * base * blend + base * base * (1.0 - 2.0 * blend);
@@ -323,6 +323,8 @@ float3 SoftLight(float3 base, float3 blend)
     float3 t = step(0.5, blend);
     return r2 * t + (1.0 - t) * r1;
 }
+
+
 
 // SMPTE ST.2084 (PQ) transfer functions
 // 1.0 = 100nits, 100.0 = 10knits
@@ -552,50 +554,88 @@ real3 ApplyLut2D(TEXTURE2D_PARAM(tex, samplerTex), float3 uvw, float3 scaleOffse
     return uvw;
 }
 
+
 /*
     Returns the default value for a given position on a 2D strip-format color lookup table
     ---
-    在一个 2D条状颜色 LUT 中, (3D LUT 的每一层, 横着排列在一张 2D texture 上)
-    获得其 uv 位置的 "原始值". 
+    ===== LUT 技术原理 =====:
+        在一个 2D条状颜色 LUT 中, (3D LUT 的每一层, 横着排列在一张 2D texture 上)获得其 uv 位置的 "原始颜色值". 
 
-    3D LUT 涵盖了 整个 LDR线性颜色空间, x->Red, y->Green, z(很多层)->Blue. 
-    三根轴, 每根都是 [0,1] 区间.
-    (即: 调用此函数返回的值, 各通道一定在 [0,1] 区间) 
+        3D LUT 涵盖了 整个 LDR线性颜色空间, x->Red, y->Green, z(很多层)->Blue. 
+        三根轴, 每根都是 [0,1] 区间. (即: 调用此函数返回的值, 各通道一定在 [0,1] 区间) 
 
-    由于无法直接操作 3D LUT, 此处使用一个 2D LUT 来模拟它. 
+        由于无法直接操作 3D LUT, 此处使用一个 2D LUT 来模拟它. 
+        通过参数 uv, 就能在这个 LUT 中计算出对应坐标的 颜色值. 
+        ---
+        LUT 技术被用来 节省 post-processing 运算开制:
+            对一整张 framebuffer 进行很多道 post-processing, 计算成本是很高的.
+            可以转而对 "所有的颜色" 进行多道计算, 这"所有的颜色" 被存储在一个 LUT 中,
+            随着每一道 post-processing 计算, LUT 本身每一个 texel 都在发生变化.
 
-    通过参数 uv, 就能在这个 LUT 中计算出对应坐标的 颜色值. 
+            最后针对 framebuffer 上的每个frag, 去这个 LUT 中采样.
+
+            LUT 的边长尺寸可以为: 16 / 32 / 64 
+            即便是 64x64x64, 也只要 64*6096 = 26万 个像素, 仍少于 整个屏幕的像素个数
+            (1920x1080= 200万像素) 
+
+    ===== 本函数工作内容 =====:
+        目标 shader pass 的计算任务就是生成一张 lut 表, (假设精度为32), 
+        一个 w=1024, h=32 的 texture;
+        在 fs 中, 每个 fragment 的 uv值:
+            x: [ 0.5/1024, 1023.5/1024 ]
+            y: [ 0.5/32,   31.5/32 ]
+        
+        传入这个 uv 值, 本函数能计算出它的颜色值 rgb: [0/31, 31/31];
+        (这些颜色值能直接组成一张 lut 表)
+
     ---
-    LUT 技术被用来 节省 post-processing 运算开制:
-        对一整张 framebuffer 进行很多道 post-processing, 计算成本是很高的.
-        可以转而对 "所有的颜色" 进行多道计算, 这"所有的颜色" 被存储在一个 LUT 中,
-        随着每一道 post-processing 计算, LUT 本身每一个 texel 都在发生变化.
+    LUT 与 rgb 三轴的对应关系:
+        r轴: lut texture 中, 单个 slice 的 x方向;
+        g轴: lut texture 中, 单个 slice 的 y方向;
+        b轴: slice 层数
 
-        最后针对 framebuffer 上的每个frag, 去这个 LUT 中采样.
-
-        LUT 的边长尺寸可以为: 16 / 32 / 64 
-        即便是 64x64x64, 也只要 64*6096 = 26万 个像素, 仍少于 整个屏幕的像素个数
-        (1920x1080= 200万像素) 
-
-   ---
-   参数: params
-        x -- LUT.h
-        y -- 0.5 / LUT.w
-        z -- 0.5 / LUT.h
-        w -- LUT.h / (LUT.h-1)
+    =============:
+    参数: 
+        uv: 
+            一个 (w=1024,h=32) 的 quad 中的每个像素点, 的 uv值; (假设 lut 精度为 32)
+                x: [ 0.5/1024, 1023.5/1024 ]
+                y: [ 0.5/32,   31.5/32 ]
+        params:
+            x -- LUT.h -- 像素个数, 比如为 32;
+            y -- 0.5 / LUT.w
+            z -- 0.5 / LUT.h
+            w -- LUT.h / (LUT.h-1)
 */
-real3 GetLutStripValue(float2 uv, float4 params)
+real3 GetLutStripValue(float2 uv, float4 params)//    读完__
 {
-    // 每个 uv 值, 都指向一个 texel 的正中心, 用它剪去 半个 texel长度, 
-    // 使 uv 指向 texel 的左下角, 以便后续计算
+    /*
+        每个 uv 值, 都指向一个 texel 的正中心, 用它剪去 半个 texel长度, 
+        使 uv 指向 texel 的左下角, 以便后续计算;
+        ---
+        此时 uv 值区间为:
+            x: [ 0/1024, 1023/1024 ]
+            y: [ 0/32,   31/32 ]
+    */ 
     uv -= params.yz;
-    // 计算出 原 uv 所在 texel 的颜色值
+
     real3 color;
-    color.r = frac(uv.x * params.x);
+
+    // 计算 uv 在自己所在的 lut slice 内的, x方向的 偏移值; [0, 31/32]
+    color.r = frac(// 函数返回参数的 小数部分
+        uv.x *   // [ 0/1024, 1023/1024 ] , 
+        params.x // 32
+    );
+
+    // 计算 uv 在自己所在的 lut slice 内的, y方向的 偏移值; [0, 31/32]
+    color.g = uv.y; // [ 0/32, 31/32 ]
+
+    // 计算 uv 位于的 slice 的层数, [0, 31/32]
     color.b = uv.x - color.r / params.x;
-    color.g = uv.y;
+    
+    // 将 rgb 三值的区间, 从 [0,31/32] 转换为 [0/31, 31/31];
     return color * params.w;
 }
+
 
 
 
@@ -696,6 +736,7 @@ real3 CustomTonemap(real3 x, real3 curve, real4 toeSegmentA, real2 toeSegmentB, 
 // Input is ACES2065-1 (AP0 w/ linear encoding)
 #define TONEMAPPING_USE_FULL_ACES 0
 
+
 float3 AcesTonemap(float3 aces)
 {
 #if TONEMAPPING_USE_FULL_ACES
@@ -777,6 +818,9 @@ float3 AcesTonemap(float3 aces)
 
 #endif
 }
+
+
+
 
 // RGBM encode/decode
 static const float kRGBMRange = 8.0;

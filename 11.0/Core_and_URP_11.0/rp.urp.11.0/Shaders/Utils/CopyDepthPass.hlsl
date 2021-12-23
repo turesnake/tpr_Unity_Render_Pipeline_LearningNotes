@@ -22,7 +22,7 @@ struct Attributes
     uint vertexID     : SV_VertexID;
     */
 #else
-    float4 positionHCS : POSITION;
+    float4 positionHCS : POSITION; // 其实应该是 posOS, 当直接当成 posCS 来使用
     float2 uv         : TEXCOORD0;
 #endif
     UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -60,13 +60,21 @@ Varyings vert(Attributes input)//  读完__
         -   All good.
 
         If URP is NOT rendering to RT neither rendering with OpenGL:
-        - Source Depth is NOT fliped. We CANNOT flip when copying depth and don't flip when sampling. (ProjectionParams.x == 1)
+        - Source Depth is NOT fliped. We CANNOT flip when copying depth and don't flip when sampling. (_ProjectionParams.x == 1)
         ----------------------------------
         注意:
         本 pass 开始时处理的 就是一个位于 Clip-space 的 mesh, 所以不需要做任何转换, 就能得到 posCS;
-
-        现在所有 shader 都是用 "_ProjectionParams.x" 来处理 y-flip 问题;
-        (但是通过下方代码可知, 本pass 似乎没有直接用这个 参数)
+        tpr: 
+            准确的说, 本pass 绘制的是一个 full screen quad mesh:
+                posOS.xy: [-1,1]
+                posOS.z:  0
+                uv.xy:    [0,1] 左下角起步
+            且 mesh 上设置的 OS->WS 矩阵为 单位矩阵, 
+            而且本 pass 自动忽略了 camera 信息, 假象了一个 "正对着 quad 的 camera", 
+            因此可以直接把 posOS 当成 posCS 来看待;
+    
+        -----
+        所有 shader 都用 "_ProjectionParams.x" 来处理 y-flip 问题; 本pass 也需要解决此问题 (但用了另一种办法)
 
         当: (1)在 "非 opengl 平台", (2)同时需要渲染到一个 render texture 时, unity 会翻转 projection矩阵;
         如果 urp 正在渲染进 rt:
@@ -114,6 +122,8 @@ Varyings vert(Attributes input)//  读完__
     #define DEPTH_TEXTURE_MS(name, samples) Texture2DMS<float, samples> name
     #define DEPTH_TEXTURE(name) TEXTURE2D_FLOAT(name)
     #define LOAD(uv, sampleIndex) LOAD_TEXTURE2D_MSAA(_CameraDepthAttachment, uv, sampleIndex)
+    
+    // 就是获得 texture 的 r通道数据;
     #define SAMPLE(uv) SAMPLE_DEPTH_TEXTURE(_CameraDepthAttachment, sampler_CameraDepthAttachment, uv)
 #endif
 

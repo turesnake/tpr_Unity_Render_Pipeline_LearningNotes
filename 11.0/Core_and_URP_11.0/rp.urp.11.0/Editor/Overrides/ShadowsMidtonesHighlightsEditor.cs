@@ -5,8 +5,12 @@ using UnityEngine.Rendering.Universal;
 namespace UnityEditor.Rendering.Universal
 {
     // TODO: handle retina / EditorGUIUtility.pixelsPerPoint
+    /*
+        其实 后处理 inspector 中存在对应的 模块, 但不知是否由本 class 控制;
+    */
     [VolumeComponentEditor(typeof(ShadowsMidtonesHighlights))]
-    sealed class ShadowsMidtonesHighlightsEditor : VolumeComponentEditor
+    sealed class ShadowsMidtonesHighlightsEditor//ShadowsMidtonesHighlightsEditor__RR
+        : VolumeComponentEditor
     {
         SerializedDataParameter m_Shadows;
         SerializedDataParameter m_Midtones;

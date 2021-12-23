@@ -1,5 +1,8 @@
 namespace UnityEngine.Rendering.Universal
 {
+    /*
+        感觉是专门用于 editor: scenne窗口的 camera 的;
+    */
     internal class SceneViewDepthCopyPass //SceneViewDepthCopyPass__RR
         : ScriptableRenderPass
     {

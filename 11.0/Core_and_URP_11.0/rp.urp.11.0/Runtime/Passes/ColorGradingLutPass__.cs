@@ -9,10 +9,14 @@ namespace UnityEngine.Rendering.Universal.Internal
         本 render pass 不能和 post-processing 在同一时间执行, 而是要先于 post-processing, 
         以防我们正在执行 "on-tile color grading"
 
+        暂时只关心在 ForwardRenderer 中的使用;
+
+        在 "BeforeRenderingPrePasses" 时刻执行;
+
     */
 
     // Renders a color grading LUT texture.
-    public class ColorGradingLutPass //ColorGradingLutPass__RR
+    public class ColorGradingLutPass //ColorGradingLutPass__
         : ScriptableRenderPass
     {
         
@@ -23,13 +27,13 @@ namespace UnityEngine.Rendering.Universal.Internal
         readonly GraphicsFormat m_HdrLutFormat;//R16G16B16A16_SFloat, 或 B10G11R11_UFloatPack32, 或 R8G8B8A8_UNorm
         readonly GraphicsFormat m_LdrLutFormat;//R8G8B8A8_UNorm
 
-        RenderTargetHandle m_InternalLut;
+        RenderTargetHandle m_InternalLut;//"_InternalGradingLut"
 
 
         // 构造函数
-        public ColorGradingLutPass(//   读完__
-                            RenderPassEvent evt, // 设置 render pass 何时执行
-                            PostProcessData data
+        public ColorGradingLutPass(//      读完__  第二遍
+                            RenderPassEvent evt, // 设置 render pass 何时执行; "BeforeRenderingPrePasses"
+                            PostProcessData data // PostProcess 要使用到的 资源对象: shaders, textures
         ){
             base.profilingSampler = new ProfilingSampler(nameof(ColorGradingLutPass));
             renderPassEvent = evt;// base class 中的
@@ -37,7 +41,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             // 此值为 true 意味着: 用户要调用 "ConfigureTarget()" 重新设置了 camera 的 color 和 depth target, 
             overrideCameraTarget = true;// base class 中的
 
-            // 局部函数
+            // 这是个 "局部函数";
             Material Load(Shader shader)
             {
                 if (shader == null)
@@ -54,6 +58,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_LutBuilderHdr = Load(data.shaders.lutBuilderHdrPS);//"Shaders/PostProcessing/LutBuilderHdr.shader"
 
             // Warm up lut format as IsFormatSupported adds GC pressure...
+
             /*
                 HDR texture 需要支持的功能:
                 -----
@@ -83,8 +88,8 @@ namespace UnityEngine.Rendering.Universal.Internal
         }//  函数完__
 
 
-
-        public void Setup(in RenderTargetHandle internalLut)
+        // ForwardRenderer 中被调用
+        public void Setup(in RenderTargetHandle internalLut)//"_InternalGradingLut"
         {
             m_InternalLut = internalLut;
         }
@@ -98,43 +103,85 @@ namespace UnityEngine.Rendering.Universal.Internal
         */
         /// <param name="context">Use this render context to issue(发射) any draw commands during execution</param>
         /// <param name="renderingData">Current rendering state information</param>
-        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)//   读完__
         {
+
             var cmd = CommandBufferPool.Get();
             using (new ProfilingScope(cmd, ProfilingSampler.Get(URPProfileId.ColorGradingLUT)))
             {
                 // Fetch all color grading settings
-                var stack = VolumeManager.instance.stack;
-                var channelMixer = stack.GetComponent<ChannelMixer>();
-                var colorAdjustments = stack.GetComponent<ColorAdjustments>();
-                var curves = stack.GetComponent<ColorCurves>();
-                var liftGammaGain = stack.GetComponent<LiftGammaGain>();
+                var stack = VolumeManager.instance.stack;// 后处理容器, 用户启用的后处理模块, 都存于此
+
+                // 下面这些变量, 很可能是 null; (用户未启用对应模块)
+                var channelMixer = stack.GetComponent<ChannelMixer>(); // 调整 rgb 三通道的 混合;
+                var colorAdjustments = stack.GetComponent<ColorAdjustments>();// 调整画面的整体颜色
+                var curves = stack.GetComponent<ColorCurves>(); // 使用一组曲线来控制 整个画面的颜色
+                var liftGammaGain = stack.GetComponent<LiftGammaGain>(); // Lift, Gamma, Gain; 分别控制 暗/中/亮 三个区域的颜色
                 var shadowsMidtonesHighlights = stack.GetComponent<ShadowsMidtonesHighlights>();
-                var splitToning = stack.GetComponent<SplitToning>();
-                var tonemapping = stack.GetComponent<Tonemapping>();
-                var whiteBalance = stack.GetComponent<WhiteBalance>();
+                var splitToning = stack.GetComponent<SplitToning>(); // 分别控制 阴影/亮区 的颜色;
+                var tonemapping = stack.GetComponent<Tonemapping>(); // 控制 hdr 颜色是符合转换到 sRGB 颜色的;
+                var whiteBalance = stack.GetComponent<WhiteBalance>(); // 白平衡
+
 
                 ref var postProcessingData = ref renderingData.postProcessingData;
+
+                // gradingMode:
+                // 颜色渐变模式; enum: LowDynamicRange, HighDynamicRange
+                // 若 asset 支持 hdr, 则沿用 asset inspector 中配置值; 否则使用 LowDynamicRange;
+
                 bool hdr = postProcessingData.gradingMode == ColorGradingMode.HighDynamicRange;
 
-                // Prepare texture & material
-                int lutHeight = postProcessingData.lutSize;
-                int lutWidth = lutHeight * lutHeight;
+                // ----- Prepare texture & material -----:
+                int lutHeight = postProcessingData.lutSize; // 沿用 asset inspector 中配置值; 通常为 32
+                int lutWidth = lutHeight * lutHeight; // 32*32 = 1024
                 var format = hdr ? m_HdrLutFormat : m_LdrLutFormat;
                 var material = hdr ? 
                     m_LutBuilderHdr : //"Shaders/PostProcessing/LutBuilderHdr.shader"
                     m_LutBuilderLdr;  //"Shaders/PostProcessing/LutBuilderLdr.shader"
 
-                var desc = new RenderTextureDescriptor(lutWidth, lutHeight, format, 0);
+                var desc = new RenderTextureDescriptor(
+                    lutWidth, lutHeight, 
+                    format, // colorFormat
+                    0       // The number of bits to use for the depth buffer.
+                );
                 desc.vrUsage = VRTextureUsage.None; // We only need one for both eyes in VR
-                cmd.GetTemporaryRT(m_InternalLut.id, desc, FilterMode.Bilinear);
 
-                // Prepare data
+                // 分配一个 render texture; (w=1024,h=32)
+                cmd.GetTemporaryRT(
+                    m_InternalLut.id, //"_InternalGradingLut"
+                    desc, 
+                    FilterMode.Bilinear
+                );
+
+                // ----- Prepare data -----:
+
+                // Converts white balancing parameter to LMS coefficients.
                 var lmsColorBalance = ColorUtils.ColorBalanceToLMSCoeffs(whiteBalance.temperature.value, whiteBalance.tint.value);
-                var hueSatCon = new Vector4(colorAdjustments.hueShift.value / 360f, colorAdjustments.saturation.value / 100f + 1f, colorAdjustments.contrast.value / 100f + 1f, 0f);
-                var channelMixerR = new Vector4(channelMixer.redOutRedIn.value / 100f, channelMixer.redOutGreenIn.value / 100f, channelMixer.redOutBlueIn.value / 100f, 0f);
-                var channelMixerG = new Vector4(channelMixer.greenOutRedIn.value / 100f, channelMixer.greenOutGreenIn.value / 100f, channelMixer.greenOutBlueIn.value / 100f, 0f);
-                var channelMixerB = new Vector4(channelMixer.blueOutRedIn.value / 100f, channelMixer.blueOutGreenIn.value / 100f, channelMixer.blueOutBlueIn.value / 100f, 0f);
+
+                var hueSatCon = new Vector4(
+                    colorAdjustments.hueShift.value / 360f, 
+                    colorAdjustments.saturation.value / 100f + 1f, 
+                    colorAdjustments.contrast.value / 100f + 1f, 
+                    0f
+                );
+                var channelMixerR = new Vector4(
+                    channelMixer.redOutRedIn.value / 100f, 
+                    channelMixer.redOutGreenIn.value / 100f, 
+                    channelMixer.redOutBlueIn.value / 100f, 
+                    0f
+                );
+                var channelMixerG = new Vector4(
+                    channelMixer.greenOutRedIn.value / 100f, 
+                    channelMixer.greenOutGreenIn.value / 100f, 
+                    channelMixer.greenOutBlueIn.value / 100f, 
+                    0f
+                );
+                var channelMixerB = new Vector4(
+                    channelMixer.blueOutRedIn.value / 100f, 
+                    channelMixer.blueOutGreenIn.value / 100f, 
+                    channelMixer.blueOutBlueIn.value / 100f, 
+                    0f
+                );
 
                 var shadowsHighlightsLimits = new Vector4(
                     shadowsMidtonesHighlights.shadowsStart.value,
@@ -161,10 +208,14 @@ namespace UnityEngine.Rendering.Universal.Internal
                     splitToning.balance.value
                 );
 
-                var lutParameters = new Vector4(lutHeight, 0.5f / lutWidth, 0.5f / lutHeight,
-                    lutHeight / (lutHeight - 1f));
+                var lutParameters = new Vector4(
+                    lutHeight,       // 像素个数, 比如为 32;
+                    0.5f / lutWidth, 
+                    0.5f / lutHeight,
+                    lutHeight / (lutHeight - 1f)
+                );
 
-                // Fill in constants
+                // ----- Fill in constants -----:
                 material.SetVector(ShaderConstants._Lut_Params, lutParameters);
                 material.SetVector(ShaderConstants._ColorBalance, lmsColorBalance);
                 material.SetVector(ShaderConstants._ColorFilter, colorAdjustments.colorFilter.value.linear);
@@ -183,12 +234,14 @@ namespace UnityEngine.Rendering.Universal.Internal
                 material.SetVector(ShaderConstants._SplitHighlights, splitHighlights);
 
                 // YRGB curves
+                // 将曲线转换为 texture2d, 传入 shader
                 material.SetTexture(ShaderConstants._CurveMaster, curves.master.value.GetTexture());
                 material.SetTexture(ShaderConstants._CurveRed, curves.red.value.GetTexture());
                 material.SetTexture(ShaderConstants._CurveGreen, curves.green.value.GetTexture());
                 material.SetTexture(ShaderConstants._CurveBlue, curves.blue.value.GetTexture());
 
                 // Secondary curves
+                // 将曲线转换为 texture2d, 传入 shader
                 material.SetTexture(ShaderConstants._CurveHueVsHue, curves.hueVsHue.value.GetTexture());
                 material.SetTexture(ShaderConstants._CurveHueVsSat, curves.hueVsSat.value.GetTexture());
                 material.SetTexture(ShaderConstants._CurveLumVsSat, curves.lumVsSat.value.GetTexture());
@@ -197,22 +250,34 @@ namespace UnityEngine.Rendering.Universal.Internal
                 // Tonemapping (baked into the lut for HDR)
                 if (hdr)
                 {
+                    // An array containing the "names of the local shader keywords" that are currently enabled for this material.
                     material.shaderKeywords = null;
 
                     switch (tonemapping.mode.value)
                     {
-                        case TonemappingMode.Neutral: material.EnableKeyword(ShaderKeywordStrings.TonemapNeutral); break;
-                        case TonemappingMode.ACES: material.EnableKeyword(ShaderKeywordStrings.TonemapACES); break;
+                        case TonemappingMode.Neutral: 
+                            material.EnableKeyword(ShaderKeywordStrings.TonemapNeutral); //"_TONEMAP_NEUTRAL"
+                            break;
+                        case TonemappingMode.ACES: 
+                            material.EnableKeyword(ShaderKeywordStrings.TonemapACES); // "_TONEMAP_NEUTRAL"
+                            break;
                         default: break; // None
                     }
                 }
 
-                renderingData.cameraData.xr.StopSinglePass(cmd);
+                renderingData.cameraData.xr.StopSinglePass(cmd);// xr
 
                 // Render the lut
-                cmd.Blit(null, m_InternalLut.id, material);
+                // 本质上就是在绘制一个 (w=1024,h=32) 的 quad, 一共4个顶点;
+                cmd.Blit(
+                    null,               // src:  猜测: 不依赖 src数据, 仅使用 参数 material 的 shader pass 去生成数据
+                                        //       最后写入 参数 dest 中;
+                    m_InternalLut.id,   // dest: "_InternalGradingLut"
+                    material            // "Shaders/PostProcessing/LutBuilderHdr.shader"
+                                        // "Shaders/PostProcessing/LutBuilderLdr.shader"
+                );
 
-                renderingData.cameraData.xr.StartSinglePass(cmd);
+                renderingData.cameraData.xr.StartSinglePass(cmd);// xr
             }
 
             context.ExecuteCommandBuffer(cmd);

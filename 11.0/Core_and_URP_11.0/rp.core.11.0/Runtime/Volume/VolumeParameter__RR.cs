@@ -738,10 +738,9 @@ namespace UnityEngine.Rendering
         }
     }
 
-    /// <summary>
-    /// A <see cref="VolumeParameter"/> that holds a <c>float</c> value clamped between a minimum and a
-    /// maximum value.
-    /// </summary>
+    /*
+        that holds a "float" value clamped between a minimum and a maximum value.
+    */
     /// <seealso cref="FloatParameter"/>
     /// <seealso cref="MinFloatParameter"/>
     /// <seealso cref="MaxFloatParameter"/>
@@ -754,22 +753,16 @@ namespace UnityEngine.Rendering
     [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
     public class ClampedFloatParameter : FloatParameter
     {
-        /// <summary>
+
         /// The minimum value to clamp this parameter to.
-        /// </summary>
         public float min;
 
-        /// <summary>
         /// The maximum value to clamp this parameter to.
-        /// </summary>
         public float max;
 
-        /// <summary>
+
         /// The value that this parameter stores.
-        /// </summary>
-        /// <remarks>
         /// You can override this property to define custom behaviors when the value is changed.
-        /// </remarks>
         public override float value
         {
             get => m_Value;
@@ -790,6 +783,8 @@ namespace UnityEngine.Rendering
             this.max = max;
         }
     }
+
+
 
     /// <summary>
     /// A <see cref="VolumeParameter"/> that holds a non-interpolating <c>float</c> value clamped between
@@ -971,25 +966,21 @@ namespace UnityEngine.Rendering
     }
 
     /// <summary>
-    /// A <see cref="VolumeParameter"/> that holds a <c>Color</c> value.
+    /// A "VolumeParameter" that holds a Color< value.
     /// </summary>
     /// <seealso cref="NoInterpColorParameter"/>
     [Serializable, DebuggerDisplay(k_DebuggerDisplay)]
-    public class ColorParameter : VolumeParameter<Color>
+    public class ColorParameter 
+        : VolumeParameter<Color>
     {
-        /// <summary>
+
         /// Is this color HDR?
-        /// </summary>
         public bool hdr = false;
 
-        /// <summary>
         /// Should the alpha channel be editable in the editor?
-        /// </summary>
         public bool showAlpha = true;
 
-        /// <summary>
         /// Should the eye dropper be visible in the editor?
-        /// </summary>
         public bool showEyeDropper = true;
 
         /// <summary>
@@ -1038,6 +1029,8 @@ namespace UnityEngine.Rendering
             m_Value.a = from.a + (to.a - from.a) * t;
         }
     }
+
+
 
     /// <summary>
     /// A <see cref="VolumeParameter"/> that holds a non-interpolating <c>Color</c> value.

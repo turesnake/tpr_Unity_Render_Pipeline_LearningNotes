@@ -3,6 +3,7 @@
 
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+
 /*      tpr
 #if _USE_DRAW_PROCEDURAL
     void GetProceduralQuad(in uint vertexID, out float4 positionCS, out float2 uv)
@@ -14,6 +15,8 @@
 #endif
 */
 
+
+
 struct Attributes
 {
 // xr 才启用
@@ -22,11 +25,13 @@ struct Attributes
     uint vertexID     : SV_VertexID;
     */
 #else
-    float4 positionOS : POSITION;
-    float2 uv         : TEXCOORD0;
+    float4 positionOS : POSITION;  // posOS
+    float2 uv         : TEXCOORD0; 
 #endif
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
+
+
 
 struct Varyings
 {
@@ -35,7 +40,9 @@ struct Varyings
     /*UNITY_VERTEX_OUTPUT_STEREO   tpr  */
 };
 
-Varyings FullscreenVert(Attributes input)
+
+// 没看出来有啥 特殊点 ...
+Varyings FullscreenVert(Attributes input)// 读完__
 {
     Varyings output;
     UNITY_SETUP_INSTANCE_ID(input);
@@ -55,6 +62,8 @@ Varyings FullscreenVert(Attributes input)
 
     return output;
 }
+
+
 
 Varyings Vert(Attributes input)
 {

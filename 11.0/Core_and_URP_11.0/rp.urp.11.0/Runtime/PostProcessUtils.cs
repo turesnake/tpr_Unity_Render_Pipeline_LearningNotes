@@ -54,9 +54,19 @@ namespace UnityEngine.Rendering.Universal
         }
         */
 
-        // TODO: Add API docs
-        public static void ConfigureFilmGrain(PostProcessData data, FilmGrain settings, int cameraPixelWidth, int cameraPixelHeight, Material material)
-        {
+        /*
+            TODO: Add API docs;
+
+
+
+        */
+        public static void ConfigureFilmGrain(
+                                        PostProcessData data, 
+                                        FilmGrain settings, 
+                                        int cameraPixelWidth, 
+                                        int cameraPixelHeight, 
+                                        Material material // "UberPost.shader" 或 "FinalPost.shader"
+        ){
             var texture = settings.texture.value;
 
             if (settings.type.value != FilmGrainLookup.Custom)
@@ -74,11 +84,25 @@ namespace UnityEngine.Rendering.Universal
                 ? Vector4.zero
                 : new Vector4(cameraPixelWidth / (float)texture.width, cameraPixelHeight / (float)texture.height, offsetX, offsetY);
 
-            material.SetTexture(ShaderConstants._Grain_Texture, texture);
-            material.SetVector(ShaderConstants._Grain_Params, new Vector2(settings.intensity.value * 4f, settings.response.value));
-            material.SetVector(ShaderConstants._Grain_TilingParams, tilingParams);
+            material.SetTexture(
+                ShaderConstants._Grain_Texture, //"_Grain_Texture"
+                texture
+            );
+            material.SetVector(
+                ShaderConstants._Grain_Params, //"_Grain_Params"
+                new Vector2(
+                    settings.intensity.value * 4f, 
+                    settings.response.value
+                )
+            );
+            material.SetVector(
+                ShaderConstants._Grain_TilingParams, //"_Grain_TilingParams
+                tilingParams
+            );
         }
 
+
+        // 设置 gloabl shader 变量: "_SourceSize";
         internal static void SetSourceSize(CommandBuffer cmd, RenderTextureDescriptor desc)
         {
             float width = desc.width;
@@ -88,8 +112,18 @@ namespace UnityEngine.Rendering.Universal
                 width *= ScalableBufferManager.widthScaleFactor;
                 height *= ScalableBufferManager.heightScaleFactor;
             }
-            cmd.SetGlobalVector(ShaderConstants._SourceSize, new Vector4(width, height, 1.0f / width, 1.0f / height));
+            cmd.SetGlobalVector(
+                ShaderConstants._SourceSize, // "_SourceSize"
+                new Vector4(
+                    width, 
+                    height, 
+                    1.0f / width, 
+                    1.0f / height
+                )
+            );
         }
+
+
 
         // Precomputed shader ids to same some CPU cycles (mostly affects mobile)
         static class ShaderConstants

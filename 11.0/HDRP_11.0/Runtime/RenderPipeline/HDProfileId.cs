@@ -207,8 +207,10 @@ namespace UnityEngine.Rendering.HighDefinition
 
         AOVExecute,
         AOVOutput,
+/*    tpr
 #if ENABLE_VIRTUALTEXTURES
         VTFeedbackDownsample,
 #endif
+*/
     }
 }

@@ -64,6 +64,8 @@ namespace UnityEngine.Rendering.Universal
 
         // 在 "BeforeRenderingPrePasses" 时刻, 将 camera 视野中不透明物的 depth 信息, 写入 rt: "_CameraDepthTexture";
         DepthOnlyPass m_DepthPrepass;
+
+        // 在 "BeforeRenderingPrePasses" 时刻,
         DepthNormalOnlyPass m_DepthNormalPrepass;
         MainLightShadowCasterPass m_MainLightShadowCasterPass;
         AdditionalLightsShadowCasterPass m_AdditionalLightsShadowCasterPass;
@@ -102,18 +104,23 @@ namespace UnityEngine.Rendering.Universal
         // 从 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget", 复制到 "_CameraOpaqueTexture";
         CopyColorPass m_CopyColorPass;
         
+        // 在 "BeforeRenderingTransparents" 时刻,
         TransparentSettingsPass m_TransparentSettingsPass;
 
-        /*
-            在 "BeforeRenderingTransparents" 时刻 渲染;
-        */
+        // 在 "BeforeRenderingTransparents" 时刻,
         DrawObjectsPass m_RenderTransparentForwardPass;
+
+        // 在 "BeforeRenderingPostProcessing" 时刻,
         InvokeOnRenderObjectCallbackPass m_OnRenderObjectCallbackPass;// 看完
 
         /*
+            在 "AfterRendering + 1" 时刻,
         */
         FinalBlitPass m_FinalBlitPass;
+
+        // 在 "AfterRendering" 时刻, 忽略此功能;
         CapturePass m_CapturePass;
+
 /*   tpr
 #if ENABLE_VR && ENABLE_XR_MODULE
         XROcclusionMeshPass m_XROcclusionMeshPass;
@@ -183,8 +190,14 @@ namespace UnityEngine.Rendering.Universal
         Material m_StencilDeferredMaterial = null;//"Shaders/Utils/StencilDeferred.shader"
 
         PostProcessPasses m_PostProcessPasses;
+
+        // 在 "BeforeRenderingPrePasses" 时刻;
         internal ColorGradingLutPass colorGradingLutPass { get => m_PostProcessPasses.colorGradingLutPass; }
+
+        // 在 "BeforeRenderingPostProcessing" 时刻, 
         internal PostProcessPass postProcessPass { get => m_PostProcessPasses.postProcessPass; }
+
+        // 在 "AfterRendering + 1" 时刻, 
         internal PostProcessPass finalPostProcessPass { get => m_PostProcessPasses.finalPostProcessPass; }
 
         internal RenderTargetHandle afterPostProcessColor { get => m_PostProcessPasses.afterPostProcessColor; }//"_AfterPostProcessTexture"
@@ -417,7 +430,7 @@ namespace UnityEngine.Rendering.Universal
 
 
         /// <inheritdoc />
-        protected override void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)//  读完__
         {
             m_PostProcessPasses.Dispose();
 
@@ -874,20 +887,20 @@ namespace UnityEngine.Rendering.Universal
             // 在 "BeforeRenderingPostProcessing" 时刻, 调用所有 "MonoBehaviour.OnRenderObject()" callbacks;
             EnqueuePass(m_OnRenderObjectCallbackPass);
 
-
-            bool lastCameraInTheStack = cameraData.resolveFinalTarget;
+            bool lastCameraInTheStack = cameraData.resolveFinalTarget; // 本 camera 是光杆 base camera, 或者是 stack 中最后一个 camera;
 
             // 存在 actions 且是 stack 中最后一个 camera;
             // 暂时忽略此功能
             bool hasCaptureActions = renderingData.cameraData.captureActions != null && lastCameraInTheStack;
 
 
-            // 可否理解为: 
-            // 
+            // && stack 中至少有一个 camera 需要后处理;
+            // && 本 camera 是光杆 base camera, 或者是 stack 中最后一个 camera;
+            // && base camera 开启了 FXAA;
             bool applyFinalPostProcessing = 
-                anyPostProcessing && 
-                lastCameraInTheStack &&
-                renderingData.cameraData.antialiasing == AntialiasingMode.FastApproximateAntialiasing;// FXAA 自己就是个 PostProcessing
+                anyPostProcessing &&  // stack 中至少有一个 camera 需要 后处理
+                lastCameraInTheStack && // 本 camera 是光杆 base camera, 或者是 stack 中最后一个 camera;
+                renderingData.cameraData.antialiasing == AntialiasingMode.FastApproximateAntialiasing;// base camera 必须开启 FXAA
 
             /*
                 When post-processing is enabled we can use the stack to resolve rendering to camera target (screen or RT).
@@ -904,10 +917,11 @@ namespace UnityEngine.Rendering.Universal
                 !applyFinalPostProcessing;          // 
 
 
+            // 本 camera 是光杆 base camera, 或者是 stack 中最后一个 camera;
             if (lastCameraInTheStack)
             {
                 // Post-processing will resolve to final target. No need for final blit pass.
-                if (applyPostProcessing)
+                if (applyPostProcessing) // 本 camera 是否需要 后处理
                 {
                     var destination = resolvePostProcessingToCameraTarget ? 
                         RenderTargetHandle.CameraTarget :   // 即:"BuiltinRenderTextureType.CameraTarget"
@@ -922,7 +936,7 @@ namespace UnityEngine.Rendering.Universal
                         destination,                    // dest:  "_AfterPostProcessTexture" 或 "BuiltinRenderTextureType.CameraTarget";
                         m_ActiveCameraDepthAttachment,  // depth: "_CameraDepthAttachment" 或 "BuiltinRenderTextureType.CameraTarget";
                         colorGradingLut,                // internalLut: "_InternalGradingLut"
-                        applyFinalPostProcessing,       // hasFinalPass: 
+                        applyFinalPostProcessing,       // hasFinalPass:  在本 pass 之后, 是否还存在一个 "final post process pass";
                         doSRGBConvertion                // enableSRGBConversion: 
                     );
                     EnqueuePass(postProcessPass);
@@ -931,11 +945,15 @@ namespace UnityEngine.Rendering.Universal
 
                 // if we applied post-processing for this camera it means current active texture is "_AfterPostProcessTexture"
                 // 检查后发现, 可能为下方三种 rt 中的任意一种...
-                var sourceForFinalPass = (applyPostProcessing) ? 
+                var sourceForFinalPass = (applyPostProcessing) ? // 本 camera 是否需要 后处理
                         afterPostProcessColor :         // "_AfterPostProcessTexture"
                         m_ActiveCameraColorAttachment;  // "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
 
                 // Do FXAA or any other final post-processing effect that might need to run after AA.
+                // ---
+                // && stack 中至少有一个 camera 需要后处理;
+                // && 本 camera 是光杆 base camera, 或者是 stack 中最后一个 camera;
+                // && base camera 开启了 FXAA;
                 if (applyFinalPostProcessing)
                 {
                     finalPostProcessPass.SetupFinalPass(
@@ -946,6 +964,7 @@ namespace UnityEngine.Rendering.Universal
                     EnqueuePass(finalPostProcessPass);
                 }
 
+                // 忽略此功能
                 if (renderingData.cameraData.captureActions != null)
                 {
                     m_CapturePass.Setup(
@@ -956,23 +975,45 @@ namespace UnityEngine.Rendering.Universal
                     EnqueuePass(m_CapturePass);
                 }
 
-                // if post-processing then we already resolved to camera target while doing post.
-                // Also only do final blit if camera is not rendering to RT.
+                /*
+                    if post-processing then we already resolved to camera target while doing post.
+                    Also only do final blit if camera is not rendering to RT.
+                    ---
+                    不会触发 m_FinalBlitPass 的几种情况;
+                */
                 bool cameraTargetResolved =
                     // final PP always blit to camera target
+                    // ---
+                    // && stack 中至少有一个 camera 需要后处理;
+                    // && 本 camera 是光杆 base camera, 或者是 stack 中最后一个 camera;
+                    // && base camera 开启了 FXAA;
                     applyFinalPostProcessing ||
                     // no final PP but we have PP stack. In that case it blit unless there are render pass after PP
+                    // 没有后处理, 但存在 后处理 stack; 此时, 除非存在 后处理之后的 render pass, 否则就要执行 blit;
+                    // --
+                    // -1- 本 camera 需要 后处理
+                    // -2- 不存在 "晚于 PostProcessing" 的 render pass;
                     (applyPostProcessing && !hasPassesAfterPostProcessing) ||
+
                     // offscreen camera rendering to a texture, we don't need a blit pass to resolve to screen
+                    // 离屏 camera 渲染进一个 texture, 无需使用 blit pass 来解析 screen;
+
+                    // 本 camera 不是 离屏 camera;
+                    // (对于 "非 xr 程序" 来说, 此函数直接得到 "RenderTargetHandle.CameraTarget")
                     m_ActiveCameraColorAttachment == RenderTargetHandle.GetCameraTarget(cameraData.xr);
 
-                // We need final blit to resolve to screen
+                /*
+                    We need final blit to resolve to screen
+                    ---
+                    实测: 当 base + stack 中所有 cameras 都关闭了 后处理时, 触发 m_FinalBlitPass;
+                */
                 if (!cameraTargetResolved)
                 {
                     m_FinalBlitPass.Setup(
                         cameraTargetDescriptor, // 此参数似乎没有被使用
                         sourceForFinalPass      // src: 若有后处理, 就指向 "_AfterPostProcessTexture", 
                                                 //      否则指向 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
+                                                // 实测下来, 只发现为: "_CameraColorTexture"
                     );
                     EnqueuePass(m_FinalBlitPass);
                 }
@@ -991,17 +1032,18 @@ namespace UnityEngine.Rendering.Universal
 #endif
 */
             }
-            // stay in RT so we resume rendering on stack after post-processing
+            // stay in RT so we resume(恢复) rendering on stack after post-processing
             else if (applyPostProcessing)
-            {
+            {// ----- "不是 stack 中最后一个 camera" && "本 camera 需要 后处理" -----
+
                 postProcessPass.Setup(
-                    cameraTargetDescriptor, 
-                    m_ActiveCameraColorAttachment, 
-                    afterPostProcessColor,          //"_AfterPostProcessTexture"
-                    m_ActiveCameraDepthAttachment,  
-                    colorGradingLut,                //"_InternalGradingLut"
-                    false, 
-                    false
+                    cameraTargetDescriptor,         // baseDescriptor:
+                    m_ActiveCameraColorAttachment,  // src:   "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget";
+                    afterPostProcessColor,          // dest:  "_AfterPostProcessTexture"
+                    m_ActiveCameraDepthAttachment,  // depth: "_CameraDepthAttachment" 或 "BuiltinRenderTextureType.CameraTarget";
+                    colorGradingLut,                // internalLut:  "_InternalGradingLut"
+                    false,                          // hasFinalPass:  在本 pass 之后, 是否还存在一个 "final post process pass";
+                    false                           // enableSRGBConversion: 
                 );
                 EnqueuePass(postProcessPass);
             }
@@ -1097,7 +1139,7 @@ namespace UnityEngine.Rendering.Universal
 
 
         /// <inheritdoc />
-        public override void FinishRendering(CommandBuffer cmd)
+        public override void FinishRendering(CommandBuffer cmd)//   读完__
         {
             if (m_ActiveCameraColorAttachment != RenderTargetHandle.CameraTarget)// 即:"BuiltinRenderTextureType.CameraTarget"
             {
@@ -1213,9 +1255,8 @@ namespace UnityEngine.Rendering.Universal
 
 
         /*
-            根据需求创建 color render texture 和 depth render texture, 分别绑定到:
-                m_ActiveCameraColorAttachment 
-                m_ActiveCameraDepthAttachment
+            ? 创建 color render texture, 绑定到 "_CameraColorTexture";
+            ? 创建 depth render texture, 绑定到 "_CameraDepthAttachment";
         */
         void CreateCameraRenderTarget(//   读完__
                                     ScriptableRenderContext context, 

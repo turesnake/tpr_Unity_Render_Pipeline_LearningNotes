@@ -393,7 +393,7 @@ namespace UnityEngine.Rendering.Universal
             True if this camera is resolving rendering to the final camera render target.
             When rendering a stack of cameras only the last camera in the stack will resolve to camera target.
 
-            如果这是 stack 中最后一个 camera, 则为 true;
+            测试表明, 当: "本 camera 是光杆 base camera, 或者是 stack 中最后一个 camera" 时, 本值为 true:
         */
         public bool resolveFinalTarget; // [++ 各 camera 的数据相互独立 ++]
 

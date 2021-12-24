@@ -663,6 +663,7 @@ namespace UnityEngine.Rendering.HighDefinition
             }
         }
 
+/*    tpr
 #if ENABLE_VIRTUALTEXTURES
         class PushFullScreenVTDebugPassData
         {
@@ -700,6 +701,7 @@ namespace UnityEngine.Rendering.HighDefinition
         }
 
 #endif
+*/
 
         TextureHandle PushColorPickerDebugTexture(RenderGraph renderGraph, TextureHandle input)
         {

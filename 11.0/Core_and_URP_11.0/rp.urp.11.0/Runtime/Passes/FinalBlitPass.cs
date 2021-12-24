@@ -14,6 +14,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         // 若有后处理, 就指向 "_AfterPostProcessTexture", 
         // 否则指向 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
+        // 实测下来, 只发现为: "_CameraColorTexture"; 
         RenderTargetHandle m_Source;
         Material m_BlitMaterial; // 如: "Shaders/Utils/Blit.shader"
 
@@ -36,6 +37,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                     RenderTextureDescriptor baseDescriptor, 
                     RenderTargetHandle colorHandle  // 若有后处理, 就传入 "_AfterPostProcessTexture", 
                                                     // 否则传入 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
+                                                    // 实测下来, 只发现为: "_CameraColorTexture"; 
         ){
             m_Source = colorHandle;
         }
@@ -59,7 +61,6 @@ namespace UnityEngine.Rendering.Universal.Internal
                 base camera 的 "targetTexture"; 也是整个 stack 的 render target;
             */
             ref CameraData cameraData = ref renderingData.cameraData;
-
             RenderTargetIdentifier cameraTarget = (cameraData.targetTexture != null) ? 
                     new RenderTargetIdentifier(cameraData.targetTexture) : 
                     BuiltinRenderTextureType.CameraTarget;
@@ -79,6 +80,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                     ShaderPropertyId.sourceTex, //"_SourceTex"
                     // 若有后处理, 就指向 "_AfterPostProcessTexture", 
                     // 否则指向 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
+                    // 实测下来, 只发现为: "_CameraColorTexture"; 
                     m_Source.Identifier()
                 );
 
@@ -117,16 +119,18 @@ namespace UnityEngine.Rendering.Universal.Internal
                 {
                     // This set render target is necessary so we change the LOAD state to DontCare.
                     cmd.SetRenderTarget(
-                        BuiltinRenderTextureType.CameraTarget, // rt
+                        BuiltinRenderTextureType.CameraTarget, // rt; 写入本 camera stack 的终极目标;
                         RenderBufferLoadAction.DontCare,  // colorLoadAction
                         RenderBufferStoreAction.Store,    // colorStoreAction
                         RenderBufferLoadAction.DontCare,  // depthLoadAction
                         RenderBufferStoreAction.DontCare  // depthStoreAction
-                    ); // depth
+                    );
+
                     cmd.Blit(
                         // src:
                         // 若有后处理, 就指向 "_AfterPostProcessTexture", 
                         // 否则指向 "_CameraColorTexture" 或 "BuiltinRenderTextureType.CameraTarget"
+                        // 实测下来, 只发现为: "_CameraColorTexture"; 
                         m_Source.Identifier(),
                         cameraTarget,   // dst: 要么是 camera上绑定的 rt, 要么是 backbuffer;
                         m_BlitMaterial  // "Shaders/Utils/Blit.shader"
@@ -173,6 +177,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                         m_BlitMaterial                  // "Shaders/Utils/Blit.shader"
                     );
 
+                    // 再次设置回来
                     cmd.SetViewProjectionMatrices(camera.worldToCameraMatrix, camera.projectionMatrix);
                 }
             }

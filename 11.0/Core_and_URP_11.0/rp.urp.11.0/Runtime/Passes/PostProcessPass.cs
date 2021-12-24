@@ -170,7 +170,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                     in RenderTargetHandle destination,  // "_AfterPostProcessTexture" 或 "BuiltinRenderTextureType.CameraTarget";
                     in RenderTargetHandle depth,        // "_CameraDepthAttachment" 或 "BuiltinRenderTextureType.CameraTarget";
                     in RenderTargetHandle internalLut,  // "_InternalGradingLut"
-                    bool hasFinalPass,                  // 
+                    bool hasFinalPass,                  // 在本 pass 之后, 是否还存在一个 "final post process pass";
                     bool enableSRGBConversion           // 
         ){
             m_Descriptor = baseDescriptor;
@@ -389,6 +389,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             }
         }//  函数完__
 
+        
         
         /*
             不是 final pass 时, 调用本函数;
@@ -1240,27 +1241,29 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         Vector2 CalcCropExtents(Camera camera, float d)
         {
-            // given
-            //    S----------- E--X-------
-            //    |    `  ~.  /,´
-            //    |-- ---    Q
-            //    |        ,/    `
-            //  1 |      ,´/       `
-            //    |    ,´ /         ´
-            //    |  ,´  /           ´
-            //    |,`   /             ,
-            //    O    /
-            //    |   /               ,
-            //  d |  /
-            //    | /                ,
-            //    |/                .
-            //    P
-            //    |              ´
-            //    |         , ´
-            //    +-    ´
-            //
-            // have X
-            // want to find E
+            /*
+               given
+                  S----------- E--X-------
+                  |    `  ~.  /,´
+                  |-- ---    Q
+                  |        ,/    `
+                1 |      ,´/       `
+                  |    ,´ /         ´
+                  |  ,´  /           ´
+                  |,`   /             ,
+                  O    /
+                  |   /               ,
+                d |  /
+                  | /                ,
+                  |/                .
+                  P
+                  |              ´
+                  |         , ´
+                  +-    ´
+             
+               have X
+               want to find E
+            */
 
             float viewDist = 1f + d;
 
@@ -1573,7 +1576,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         #region Final pass
 
 
-        void RenderFinalPass(CommandBuffer cmd, ref RenderingData renderingData)
+        void RenderFinalPass(CommandBuffer cmd, ref RenderingData renderingData)//   读完__
         {
             ref var cameraData = ref renderingData.cameraData;
             var material = m_Materials.finalPass;//"Shaders/PostProcessing/FinalPost.shader"
@@ -1600,6 +1603,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
             var colorLoadAction = cameraData.isDefaultViewport ? RenderBufferLoadAction.DontCare : RenderBufferLoadAction.Load;
 
+            // 对于非 xr 程序, 等于得到 "RenderTargetHandle.CameraTarget"
             RenderTargetHandle cameraTargetHandle = RenderTargetHandle.GetCameraTarget(cameraData.xr);
 
 /*    tpr
@@ -1627,15 +1631,38 @@ namespace UnityEngine.Rendering.Universal.Internal
 #endif
 */
             {
-                // Note: We need to get the cameraData.targetTexture as this will get the targetTexture of the camera stack.
-                // Overlay cameras need to output to the target described in the base camera while doing camera stack.
-                RenderTargetIdentifier cameraTarget = (cameraData.targetTexture != null) ? new RenderTargetIdentifier(cameraData.targetTexture) : cameraTargetHandle.Identifier();
+                /*
+                    Note: We need to get the cameraData.targetTexture as this will get the targetTexture of the camera stack.
+                    Overlay cameras need to output to the target described in the base camera while doing camera stack.
+                */
+                RenderTargetIdentifier cameraTarget = 
+                    (cameraData.targetTexture != null) ? 
+                        new RenderTargetIdentifier(cameraData.targetTexture) : // 
+                        cameraTargetHandle.Identifier();    // "RenderTargetHandle.CameraTarget"
 
-                cmd.SetRenderTarget(cameraTarget, colorLoadAction, RenderBufferStoreAction.Store, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-                cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
+                cmd.SetRenderTarget(
+                    cameraTarget, 
+                    colorLoadAction,                // color load
+                    RenderBufferStoreAction.Store,  // color store
+                    RenderBufferLoadAction.DontCare,// depth load
+                    RenderBufferStoreAction.DontCare// depth store
+                );
+                cmd.SetViewProjectionMatrices(
+                    Matrix4x4.identity, 
+                    Matrix4x4.identity
+                );
                 cmd.SetViewport(cameraData.pixelRect);
-                cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, material);
-                cmd.SetViewProjectionMatrices(cameraData.camera.worldToCameraMatrix, cameraData.camera.projectionMatrix);
+
+                cmd.DrawMesh(
+                    RenderingUtils.fullscreenMesh, 
+                    Matrix4x4.identity, // 转换矩阵, (猜测为 OS->WS )
+                    material            // "Shaders/PostProcessing/FinalPost.shader"
+                );
+                // 设置回去
+                cmd.SetViewProjectionMatrices(
+                    cameraData.camera.worldToCameraMatrix, 
+                    cameraData.camera.projectionMatrix
+                );
             }
         }//  函数完__
         #endregion

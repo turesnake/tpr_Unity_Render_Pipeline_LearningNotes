@@ -508,9 +508,11 @@ namespace UnityEngine.Rendering.HighDefinition
 #endif
                 }), 3);
 
+/*    tpr
 #if ENABLE_VIRTUALTEXTURES
             passData.gbufferRT[currentIndex++] = builder.UseColorBuffer(vtFeedbackBuffer, 4);
 #endif
+*/
 
             prepassOutput.gbuffer.lightLayersTextureIndex = -1;
             prepassOutput.gbuffer.shadowMaskTextureIndex = -1;

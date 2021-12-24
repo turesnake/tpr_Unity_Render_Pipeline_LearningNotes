@@ -7,21 +7,24 @@ using UnityEngine.Experimental.GlobalIllumination;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Experimental.Rendering.RenderGraphModule;
 #if UNITY_EDITOR
-using UnityEditorInternal;
-using UnityEditor.Rendering;
+    using UnityEditorInternal;
+    using UnityEditor.Rendering;
 #endif
 
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
-using UnityEngine.Rendering.VirtualTexturing;
+    using UnityEngine.Rendering.VirtualTexturing;
 #endif
+*/
 
 
 namespace UnityEngine.Rendering.HighDefinition
 {
-    /// <summary>
-    /// High Definition Render Pipeline class.
-    /// </summary>
-    public partial class HDRenderPipeline : RenderPipeline
+    /*
+        High Definition Render Pipeline class.
+    */
+    public partial class HDRenderPipeline//HDRenderPipeline__RR
+        : RenderPipeline
     {
         #region Default Settings
         internal static HDRenderPipelineAsset defaultAsset
@@ -105,9 +108,12 @@ namespace UnityEngine.Rendering.HighDefinition
 
         readonly List<RenderPipelineMaterial> m_MaterialList = new List<RenderPipelineMaterial>();
 
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
         readonly VTBufferManager m_VtBufferManager;
 #endif
+*/
+
         readonly PostProcessSystem m_PostProcessSystem;
         readonly XRSystem m_XRSystem;
 
@@ -260,9 +266,12 @@ namespace UnityEngine.Rendering.HighDefinition
 
         // Debugging
         DebugDisplaySettings m_DebugDisplaySettings = new DebugDisplaySettings();
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
         Material m_VTDebugBlit;
 #endif
+*/
+
         /// <summary>
         /// Debug display settings.
         /// </summary>
@@ -389,6 +398,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 ColorUtils.s_LensAttenuation = 0.78f;
             }
 
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
             VirtualTexturingSettingsSRP settings = asset.virtualTexturingSettings;
 
@@ -406,6 +416,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             VirtualTexturing.Streaming.SetGPUCacheSettings(gpuCacheSettings);
 #endif
+*/
 
             // Initial state of the RTHandle system.
             // Tells the system that we will require MSAA or not so that we can avoid wasteful render texture allocation.
@@ -423,10 +434,12 @@ namespace UnityEngine.Rendering.HighDefinition
             // Scan material list and assign it
             m_MaterialList = HDUtils.GetRenderPipelineMaterialList();
 
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
             m_VtBufferManager = new VTBufferManager(asset);
             m_VTDebugBlit = CoreUtils.CreateEngineMaterial(defaultResources.shaders.debugViewVirtualTexturingBlit);
 #endif
+*/
 
             m_PostProcessSystem = new PostProcessSystem(asset, defaultResources);
             m_AmbientOcclusionSystem = new AmbientOcclusionSystem(asset, defaultResources);
@@ -526,7 +539,9 @@ namespace UnityEngine.Rendering.HighDefinition
 
             InitializeProbeVolumes();
             CustomPassUtils.Initialize();
-        }
+        }// 构造函数 完__
+
+
 
 #if UNITY_EDITOR
         void UpgradeResourcesInAssetIfNeeded(HDRenderPipelineAsset asset)
@@ -535,11 +550,14 @@ namespace UnityEngine.Rendering.HighDefinition
             if (asset.renderPipelineResources == null)
                 asset.renderPipelineResources
                     = UnityEditor.AssetDatabase.LoadAssetAtPath<RenderPipelineResources>(HDUtils.GetHDRenderPipelinePath() + "Runtime/RenderPipelineResources/HDRenderPipelineResources.asset");
-#if UNITY_EDITOR_LINUX // Temp hack to be able to make linux test run. To clarify
+
+//#if UNITY_EDITOR_LINUX // Temp hack to be able to make linux test run. To clarify
+            /*   tpr
             ResourceReloader.TryReloadAllNullIn(asset.renderPipelineResources, HDUtils.GetHDRenderPipelinePath());
-#else
+            */
+//#else
             ResourceReloader.ReloadAllNullIn(asset.renderPipelineResources, HDUtils.GetHDRenderPipelinePath());
-#endif
+//#endif
 
             bool requiresRayTracingResources = false;
             // Make sure to include ray-tracing resources if at least one of the defaultAsset or quality levels needs it
@@ -559,11 +577,13 @@ namespace UnityEngine.Rendering.HighDefinition
                 if (asset.renderPipelineRayTracingResources == null)
                     asset.renderPipelineRayTracingResources
                         = UnityEditor.AssetDatabase.LoadAssetAtPath<HDRenderPipelineRayTracingResources>(HDUtils.GetHDRenderPipelinePath() + "Runtime/RenderPipelineResources/HDRenderPipelineRayTracingResources.asset");
-#if UNITY_EDITOR_LINUX // Temp hack to be able to make linux test run. To clarify
+//#if UNITY_EDITOR_LINUX // Temp hack to be able to make linux test run. To clarify
+                /*   tpr
                 ResourceReloader.TryReloadAllNullIn(asset.renderPipelineRayTracingResources, HDUtils.GetHDRenderPipelinePath());
-#else
+                */
+//#else
                 ResourceReloader.ReloadAllNullIn(asset.renderPipelineRayTracingResources, HDUtils.GetHDRenderPipelinePath());
-#endif
+//#endif
             }
             else
             {
@@ -590,7 +610,9 @@ namespace UnityEngine.Rendering.HighDefinition
             // Upgrade the resources (re-import every references in RenderPipelineResources) if the resource version mismatches
             // It's done here because we know every HDRP assets have been imported before
             asset.renderPipelineResources?.UpgradeIfNeeded();
-        }
+        }//   函数完__
+
+
 
         void UpgradeResourcesIfNeeded()
         {
@@ -600,7 +622,9 @@ namespace UnityEngine.Rendering.HighDefinition
             // Check and fix both the default and current HDRP asset
             UpgradeResourcesInAssetIfNeeded(HDRenderPipeline.defaultAsset);
             UpgradeResourcesInAssetIfNeeded(HDRenderPipeline.currentAsset);
-        }
+        }//   函数完__
+
+
 
         void ValidateResources()
         {
@@ -624,7 +648,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     }
                 }
             }
-        }
+        }//   函数完__
 
 #endif
 
@@ -652,6 +676,7 @@ namespace UnityEngine.Rendering.HighDefinition
             GraphicsSettings.lightsUseColorTemperature = true;
             m_PreviousSRPBatcher = GraphicsSettings.useScriptableRenderPipelineBatching;
             GraphicsSettings.useScriptableRenderPipelineBatching = m_Asset.enableSRPBatcher;
+            
 #if  UNITY_2020_2_OR_NEWER
             m_PreviousDefaultRenderingLayerMask = GraphicsSettings.defaultRenderingLayerMask;
             GraphicsSettings.defaultRenderingLayerMask = ShaderVariablesGlobal.DefaultRenderingLayerMask;
@@ -700,7 +725,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 Debug.LogError("High Definition Render Pipeline doesn't support Gamma mode, change to Linear mode (HDRP isn't set up properly. Go to Windows > RenderPipeline > HDRP Wizard to fix your settings).");
             }
 #endif
-        }
+        }//   函数完__
+
+
 
         bool CheckAPIValidity()
         {
@@ -713,7 +740,9 @@ namespace UnityEngine.Rendering.HighDefinition
             }
 
             return true;
-        }
+        }//   函数完__
+
+
 
         // Note: If you add new platform in this function, think about adding support when building the player too in HDRPCustomBuildProcessor.cs
         bool IsSupportedPlatformAndDevice(out GraphicsDeviceType unsupportedGraphicDevice)
@@ -738,7 +767,9 @@ namespace UnityEngine.Rendering.HighDefinition
 #else
             return HDUtils.IsSupportedGraphicDevice(SystemInfo.graphicsDeviceType) && HDUtils.IsOperatingSystemSupported(SystemInfo.operatingSystem);
 #endif
-        }
+        }//   函数完__
+
+
 
         void UnsetRenderingFeatures()
         {
@@ -759,7 +790,8 @@ namespace UnityEngine.Rendering.HighDefinition
 #if UNITY_EDITOR
             UnityEditor.EditorSettings.enableCookiesInLightmapper = m_PreviousEnableCookiesInLightmapper;
 #endif
-        }
+        }//   函数完__
+
 
         void InitializeRenderGraph()
         {
@@ -793,7 +825,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 m_BlitTexArraySingleSlice = CoreUtils.CreateEngineMaterial(defaultResources.shaders.blitPS);
                 m_BlitTexArraySingleSlice.EnableKeyword("BLIT_SINGLE_SLICE");
             }
-        }
+        }//   函数完__
+
+
 
         void InitializeRenderStateBlocks()
         {
@@ -814,7 +848,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 blendState = new BlendState(true, false),
                 mask = RenderStateMask.Blend
             };
-        }
+        }//   函数完__
+
+
 
         /// <summary>
         /// Disposable pattern implementation.
@@ -860,10 +896,12 @@ namespace UnityEngine.Rendering.HighDefinition
             CoreUtils.Destroy(m_CameraMotionVectorsMaterial);
             CoreUtils.Destroy(m_DecalNormalBufferMaterial);
 
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
             m_VtBufferManager.Cleanup();
             CoreUtils.Destroy(m_VTDebugBlit);
 #endif
+*/
             CoreUtils.Destroy(m_DebugViewMaterialGBuffer);
             CoreUtils.Destroy(m_DebugViewMaterialGBufferShadowMask);
             CoreUtils.Destroy(m_DebugDisplayLatlong);
@@ -964,7 +1002,9 @@ namespace UnityEngine.Rendering.HighDefinition
             // we are detecting if we are in an OnValidate call and releasing the Singleton only if it is not the case.
             if (!m_Asset.isInOnValidateCall)
                 HDUtils.ReleaseComponentSingletons();
-        }
+        }//   函数完__
+
+
 
         void Resize(HDCamera hdCamera)
         {
@@ -985,7 +1025,9 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 LightLoopAllocResolutionDependentBuffers(hdCamera, m_MaxCameraWidth, m_MaxCameraHeight);
             }
-        }
+        }//   函数完__
+
+
 
         void UpdateGlobalConstantBuffers(HDCamera hdCamera, CommandBuffer cmd)
         {
@@ -995,7 +1037,9 @@ namespace UnityEngine.Rendering.HighDefinition
 
             // This one is not in a constant buffer because it's only used as a parameter for some shader's render states. It's not actually used inside shader code.
             cmd.SetGlobalInt(HDShaderIDs._ColorMaskTransparentVel, (int)ColorWriteMask.All);
-        }
+        }//   函数完__
+
+
 
         void UpdateShaderVariablesGlobalCB(HDCamera hdCamera, CommandBuffer cmd)
         {
@@ -1058,7 +1102,9 @@ namespace UnityEngine.Rendering.HighDefinition
             }
 
             ConstantBuffer.PushGlobal(cmd, m_ShaderVariablesGlobalCB, HDShaderIDs._ShaderVariablesGlobal);
-        }
+        }//   函数完__
+
+
 
         void UpdateShaderVariablesXRCB(HDCamera hdCamera, CommandBuffer cmd)
         {
@@ -1085,7 +1131,9 @@ namespace UnityEngine.Rendering.HighDefinition
             m_ShaderVariablesRayTracingCB._DirectionalShadowFallbackIntensity = rayTracingSettings.directionalShadowFallbackIntensity.value;
 
             ConstantBuffer.PushGlobal(cmd, m_ShaderVariablesRayTracingCB, HDShaderIDs._ShaderVariablesRaytracing);
-        }
+        }//   函数完__
+
+
 
         struct BuildCoarseStencilAndResolveParameters
         {
@@ -1095,6 +1143,8 @@ namespace UnityEngine.Rendering.HighDefinition
             public bool             resolveIsNecessary;
             public bool             resolveOnly;
         }
+
+
 
         BuildCoarseStencilAndResolveParameters PrepareBuildCoarseStencilParameters(HDCamera hdCamera, bool resolveOnly)
         {
@@ -1121,7 +1171,9 @@ namespace UnityEngine.Rendering.HighDefinition
             }
 
             return parameters;
-        }
+        }//   函数完__
+
+
 
         static void BuildCoarseStencilAndResolveIfNeeded(BuildCoarseStencilAndResolveParameters parameters, RTHandle depthStencilBuffer, RTHandle resolvedStencilBuffer, ComputeBuffer coarseStencilBuffer, CommandBuffer cmd)
         {
@@ -1143,7 +1195,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 int coarseStencilHeight = HDUtils.DivRoundUp(parameters.hdCamera.actualHeight, 8);
                 cmd.DispatchCompute(cs, parameters.resolveKernel, coarseStencilWidth, coarseStencilHeight, parameters.hdCamera.viewCount);
             }
-        }
+        }//   函数完__
+
+
 
         void ConfigureKeywords(bool enableBakeShadowMask, HDCamera hdCamera, CommandBuffer cmd)
         {
@@ -1177,7 +1231,9 @@ namespace UnityEngine.Rendering.HighDefinition
 
             // Raise or remove the depth msaa flag based on the frame setting
             CoreUtils.SetKeyword(cmd, "WRITE_MSAA_DEPTH", hdCamera.frameSettings.IsEnabled(FrameSettingsField.MSAA));
-        }
+        }//   函数完__
+
+
 
         struct RenderRequest
         {
@@ -1217,6 +1273,9 @@ namespace UnityEngine.Rendering.HighDefinition
             }
         }
 
+        // ================================================= Render() =======================================:
+        // Render__RR
+
 #if UNITY_2021_1_OR_NEWER
         protected override void Render(ScriptableRenderContext renderContext, Camera[] cameras)
         {
@@ -1225,27 +1284,26 @@ namespace UnityEngine.Rendering.HighDefinition
 
 #endif
 
-        /// <summary>
-        /// RenderPipeline Render implementation.
-        /// </summary>
-        /// <param name="renderContext">Current ScriptableRenderContext.</param>
-        /// <param name="cameras">List of cameras to render.</param>
-#if UNITY_2021_1_OR_NEWER
+//#if UNITY_2021_1_OR_NEWER
         protected override void Render(ScriptableRenderContext renderContext, List<Camera> cameras)
-#else
+//#else
+        /*      tpr
         protected override void Render(ScriptableRenderContext renderContext, Camera[] cameras)
-#endif
+        */
+//#endif
         {
 #if UNITY_EDITOR
             if (!m_ResourcesInitialized)
                 return;
 #endif
 
-#if UNITY_2021_1_OR_NEWER
+//#if UNITY_2021_1_OR_NEWER
             if (!m_ValidAPI || cameras.Count == 0)
-#else
+//#else
+            /*      tpr
             if (!m_ValidAPI || cameras.Length == 0)
-#endif
+            */
+//#endif
                 return;
 
             GetOrCreateDefaultVolume();
@@ -1253,11 +1311,14 @@ namespace UnityEngine.Rendering.HighDefinition
             // This function should be called once every render (once for all camera)
             LightLoopNewRender();
 
-#if UNITY_2021_1_OR_NEWER
+//#if UNITY_2021_1_OR_NEWER
+            // 触发并执行: 所有绑定到委托 "RenderPipelineManager.beginContextRendering 和 beginFrameRendering" 上的 callbacks;
             BeginContextRendering(renderContext, cameras);
-#else
+//#else
+            /*      tpr
             BeginFrameRendering(renderContext, cameras);
-#endif
+            */
+//#endif
 
             // Check if we can speed up FrameSettings process by skiping history
             // or go in detail if debug is activated. Done once for all renderer.
@@ -1283,7 +1344,8 @@ namespace UnityEngine.Rendering.HighDefinition
                 HDCamera.CleanUnused();
             }
 
-            // This syntax is awful and hostile to debugging, please don't use it...
+            // This syntax is awful and hostile to debugging, please don't use it... 
+            // 这种语法很糟糕并且不利于调试，请不要使用它...
             using (ListPool<RenderRequest>.Get(out List<RenderRequest> renderRequests))
             using (ListPool<int>.Get(out List<int> rootRenderRequestIndices))
             using (HashSetPool<int>.Get(out HashSet<int> skipClearCullingResults))
@@ -2004,12 +2066,18 @@ namespace UnityEngine.Rendering.HighDefinition
             m_RenderGraph.EndFrame();
             m_XRSystem.ReleaseFrame();
 
-#if UNITY_2021_1_OR_NEWER
+//#if UNITY_2021_1_OR_NEWER
             EndContextRendering(renderContext, cameras);
-#else
+//#else
+            /*      tpr
             EndFrameRendering(renderContext, cameras);
-#endif
-        }
+            */
+//#endif
+        }//    函数 Render() 完__
+
+
+
+
 
         void PropagateScreenSpaceShadowData()
         {
@@ -2021,12 +2089,11 @@ namespace UnityEngine.Rendering.HighDefinition
         }
 
         void ExecuteRenderRequest(
-            RenderRequest renderRequest,
-            ScriptableRenderContext renderContext,
-            CommandBuffer cmd,
-            AOVRequestData aovRequest
-        )
-        {
+                                RenderRequest renderRequest,
+                                ScriptableRenderContext renderContext,
+                                CommandBuffer cmd,
+                                AOVRequestData aovRequest
+        ){
             DynamicResolutionHandler.UpdateAndUseCamera(renderRequest.hdCamera.camera);
             InitializeGlobalResources(renderContext);
 
@@ -2050,10 +2117,11 @@ namespace UnityEngine.Rendering.HighDefinition
                 BuildRayTracingAccelerationStructure(hdCamera);
                 CullForRayTracing(cmd, hdCamera);
             }
-
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
             m_VtBufferManager.BeginRender(hdCamera);
 #endif
+*/
 
             using (ListPool<RTHandle>.Get(out var aovBuffers))
             using (ListPool<RTHandle>.Get(out var aovCustomPassBuffers))
@@ -2183,7 +2251,9 @@ namespace UnityEngine.Rendering.HighDefinition
             cmd.Clear();
 
             m_CurrentHDCamera = null;
-        }
+        }//   函数完__
+
+
 
         struct BlitFinalCameraTextureParameters
         {
@@ -2218,7 +2288,9 @@ namespace UnityEngine.Rendering.HighDefinition
             parameters.blitMaterial = HDUtils.GetBlitMaterial(TextureXR.useTexArray ? TextureDimension.Tex2DArray : TextureDimension.Tex2D, singleSlice: parameters.srcTexArraySlice >= 0);
 
             return parameters;
-        }
+        }//   函数完__
+
+
 
         static void BlitFinalCameraTexture(BlitFinalCameraTextureParameters parameters, MaterialPropertyBlock propertyBlock, RTHandle source, RenderTargetIdentifier destination, CommandBuffer cmd)
         {
@@ -2237,7 +2309,9 @@ namespace UnityEngine.Rendering.HighDefinition
             propertyBlock.SetFloat(HDShaderIDs._BlitMipLevel, 0);
             propertyBlock.SetInt(HDShaderIDs._BlitTexArraySlice, parameters.srcTexArraySlice);
             HDUtils.DrawFullScreen(cmd, parameters.viewport, parameters.blitMaterial, destination, propertyBlock, 0, parameters.dstTexArraySlice);
-        }
+        }//   函数完__
+
+
 
         void SetupCameraProperties(HDCamera hdCamera, ScriptableRenderContext renderContext, CommandBuffer cmd)
         {
@@ -2267,7 +2341,9 @@ namespace UnityEngine.Rendering.HighDefinition
 
             renderContext.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
-        }
+        }//   函数完__
+
+
 
         bool TryCalculateFrameParameters(
             Camera camera,
@@ -2275,8 +2351,7 @@ namespace UnityEngine.Rendering.HighDefinition
             out HDAdditionalCameraData additionalCameraData,
             out HDCamera hdCamera,
             out ScriptableCullingParameters cullingParams
-        )
-        {
+        ){
             // First, get aggregate of frame settings base on global settings, camera frame settings and debug settings
             // Note: the SceneView camera will never have additionalCameraData
             additionalCameraData = HDUtils.TryGetAdditionalCameraDataOrDefault(camera);
@@ -2397,7 +2472,9 @@ namespace UnityEngine.Rendering.HighDefinition
                 cullingParams.cullingOptions &= ~CullingOptions.ShadowCasters;
 
             return true;
-        }
+        }//   函数完__
+
+
 
         static void OverrideCullingForRayTracing(HDCamera hdCamera, Camera camera, ref ScriptableCullingParameters cullingParams)
         {
@@ -2447,24 +2524,24 @@ namespace UnityEngine.Rendering.HighDefinition
                 // Propagate the new planes
                 cullingParams.cameraProperties = cameraProperties;
             }
-        }
+        }//   函数完__
 
         static bool TryCull(
-            Camera camera,
-            HDCamera hdCamera,
-            ScriptableRenderContext renderContext,
-            SkyManager skyManager,
-            ScriptableCullingParameters cullingParams,
-            HDRenderPipelineAsset hdrp,
-            ref HDCullingResults cullingResults
-        )
-        {
+                        Camera camera,
+                        HDCamera hdCamera,
+                        ScriptableRenderContext renderContext,
+                        SkyManager skyManager,
+                        ScriptableCullingParameters cullingParams,
+                        HDRenderPipelineAsset hdrp,
+                        ref HDCullingResults cullingResults
+        ){
             if (camera.cameraType == CameraType.Reflection)
             {
 #if UNITY_2020_2_OR_NEWER
                 ScriptableRenderContext.EmitGeometryForCamera(camera);
 #endif
             }
+
 #if UNITY_EDITOR
             // emit scene view UI
             else if (camera.cameraType == CameraType.SceneView)
@@ -2479,13 +2556,15 @@ namespace UnityEngine.Rendering.HighDefinition
             var initialMaximumLODLevel = QualitySettings.maximumLODLevel;
             try
             {
-#if UNITY_2021_1_OR_NEWER
+//#if UNITY_2021_1_OR_NEWER
                 // Modifying the variables this way does not set the dirty flag, which avoids repainting all views
                 QualitySettings.SetLODSettings(hdCamera.frameSettings.GetResolvedLODBias(hdrp), hdCamera.frameSettings.GetResolvedMaximumLODLevel(hdrp), false);
-#else
+//#else
+                /*      tpr
                 QualitySettings.lodBias = hdCamera.frameSettings.GetResolvedLODBias(hdrp);
                 QualitySettings.maximumLODLevel = hdCamera.frameSettings.GetResolvedMaximumLODLevel(hdrp);
-#endif
+                */
+//#endif
 
                 // This needs to be called before culling, otherwise in the case where users generate intermediate renderers, it can provoke crashes.
                 BeginCameraRendering(renderContext, camera);
@@ -2549,26 +2628,28 @@ namespace UnityEngine.Rendering.HighDefinition
             }
             finally
             {
-#if UNITY_2021_1_OR_NEWER
+//#if UNITY_2021_1_OR_NEWER
                 QualitySettings.SetLODSettings(initialLODBias, initialMaximumLODLevel, false);
-#else
+//#else
+                /*      tpr
                 QualitySettings.lodBias = initialLODBias;
                 QualitySettings.maximumLODLevel = initialMaximumLODLevel;
-#endif
+                */
+//#endif
             }
-        }
+        }//   函数完__
+
 
         static RendererListDesc CreateOpaqueRendererListDesc(
-            CullingResults cull,
-            Camera camera,
-            ShaderTagId passName,
-            PerObjectData rendererConfiguration = 0,
-            RenderQueueRange? renderQueueRange = null,
-            RenderStateBlock? stateBlock = null,
-            Material overrideMaterial = null,
-            bool excludeObjectMotionVectors = false
-        )
-        {
+                                            CullingResults cull,
+                                            Camera camera,
+                                            ShaderTagId passName,
+                                            PerObjectData rendererConfiguration = 0,
+                                            RenderQueueRange? renderQueueRange = null,
+                                            RenderStateBlock? stateBlock = null,
+                                            Material overrideMaterial = null,
+                                            bool excludeObjectMotionVectors = false
+        ){
             var result = new RendererListDesc(passName, cull, camera)
             {
                 rendererConfiguration = rendererConfiguration,
@@ -2582,16 +2663,15 @@ namespace UnityEngine.Rendering.HighDefinition
         }
 
         static RendererListDesc CreateOpaqueRendererListDesc(
-            CullingResults cull,
-            Camera camera,
-            ShaderTagId[] passNames,
-            PerObjectData rendererConfiguration = 0,
-            RenderQueueRange? renderQueueRange = null,
-            RenderStateBlock? stateBlock = null,
-            Material overrideMaterial = null,
-            bool excludeObjectMotionVectors = false
-        )
-        {
+                                                CullingResults cull,
+                                                Camera camera,
+                                                ShaderTagId[] passNames,
+                                                PerObjectData rendererConfiguration = 0,
+                                                RenderQueueRange? renderQueueRange = null,
+                                                RenderStateBlock? stateBlock = null,
+                                                Material overrideMaterial = null,
+                                                bool excludeObjectMotionVectors = false
+        ){
             var result = new RendererListDesc(passNames, cull, camera)
             {
                 rendererConfiguration = rendererConfiguration,
@@ -2605,16 +2685,15 @@ namespace UnityEngine.Rendering.HighDefinition
         }
 
         static RendererListDesc CreateTransparentRendererListDesc(
-            CullingResults cull,
-            Camera camera,
-            ShaderTagId passName,
-            PerObjectData rendererConfiguration = 0,
-            RenderQueueRange? renderQueueRange = null,
-            RenderStateBlock? stateBlock = null,
-            Material overrideMaterial = null,
-            bool excludeObjectMotionVectors = false
-        )
-        {
+                                                CullingResults cull,
+                                                Camera camera,
+                                                ShaderTagId passName,
+                                                PerObjectData rendererConfiguration = 0,
+                                                RenderQueueRange? renderQueueRange = null,
+                                                RenderStateBlock? stateBlock = null,
+                                                Material overrideMaterial = null,
+                                                bool excludeObjectMotionVectors = false
+        ){
             var result = new RendererListDesc(passName, cull, camera)
             {
                 rendererConfiguration = rendererConfiguration,
@@ -2625,19 +2704,18 @@ namespace UnityEngine.Rendering.HighDefinition
                 excludeObjectMotionVectors = excludeObjectMotionVectors
             };
             return result;
-        }
+        }//   函数完__
 
         static RendererListDesc CreateTransparentRendererListDesc(
-            CullingResults cull,
-            Camera camera,
-            ShaderTagId[] passNames,
-            PerObjectData rendererConfiguration = 0,
-            RenderQueueRange? renderQueueRange = null,
-            RenderStateBlock? stateBlock = null,
-            Material overrideMaterial = null,
-            bool excludeObjectMotionVectors = false
-        )
-        {
+                                                CullingResults cull,
+                                                Camera camera,
+                                                ShaderTagId[] passNames,
+                                                PerObjectData rendererConfiguration = 0,
+                                                RenderQueueRange? renderQueueRange = null,
+                                                RenderStateBlock? stateBlock = null,
+                                                Material overrideMaterial = null,
+                                                bool excludeObjectMotionVectors = false
+        ){
             var result = new RendererListDesc(passNames, cull, camera)
             {
                 rendererConfiguration = rendererConfiguration,
@@ -2790,19 +2868,21 @@ namespace UnityEngine.Rendering.HighDefinition
             }
 
             return result;
-        }
+        }//   函数完__
 
-        static void RenderDepthPrepass(ScriptableRenderContext     renderContext,
-            CommandBuffer               cmd,
-            FrameSettings               frameSettings,
-            RenderTargetIdentifier[]    deferredMrt,
-            RenderTargetIdentifier[]    forwardMrt,
-            RTHandle                    depthBuffer,
-            in RendererList             depthDeferredRendererListDesc,
-            in RendererList             depthForwardRendererListDesc,
-            bool                        hasDepthDeferredPass
-        )
-        {
+
+
+        static void RenderDepthPrepass(
+                                ScriptableRenderContext     renderContext,
+                                CommandBuffer               cmd,
+                                FrameSettings               frameSettings,
+                                RenderTargetIdentifier[]    deferredMrt,
+                                RenderTargetIdentifier[]    forwardMrt,
+                                RTHandle                    depthBuffer,
+                                in RendererList             depthDeferredRendererListDesc,
+                                in RendererList             depthForwardRendererListDesc,
+                                bool                        hasDepthDeferredPass
+        ){
             if (hasDepthDeferredPass)
             {
                 if (deferredMrt == null)
@@ -2845,14 +2925,15 @@ namespace UnityEngine.Rendering.HighDefinition
             }
 
             return parameters;
-        }
+        }//   函数完__
 
-        static void DecalNormalPatch(DBufferNormalPatchParameters    parameters,
-            RTHandle[]                      dBuffer,
-            RTHandle                        depthStencilBuffer,
-            RTHandle                        normalBuffer,
-            CommandBuffer                   cmd)
-        {
+        static void DecalNormalPatch(
+                                DBufferNormalPatchParameters    parameters,
+                                RTHandle[]                      dBuffer,
+                                RTHandle                        depthStencilBuffer,
+                                RTHandle                        normalBuffer,
+                                CommandBuffer                   cmd
+        ){
             using (new ProfilingScope(cmd, ProfilingSampler.Get(HDProfileId.DBufferNormal)))
             {
                 parameters.decalNormalBufferMaterial.SetInt(HDShaderIDs._DecalNormalBufferStencilReadMask, parameters.stencilMask);
@@ -2865,7 +2946,8 @@ namespace UnityEngine.Rendering.HighDefinition
                 cmd.DrawProcedural(Matrix4x4.identity, parameters.decalNormalBufferMaterial, 0, MeshTopology.Triangles, 3, 1);
                 cmd.ClearRandomWriteTargets();
             }
-        }
+        }//   函数完__
+
 
         RendererListDesc PrepareMeshDecalsRendererList(CullingResults cullingResults, HDCamera hdCamera, bool use4RTs)
         {
@@ -2890,7 +2972,8 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 cb._EnableDecals = 0;
             }
-        }
+        }//   函数完__
+
 
         static RenderTargetIdentifier[] m_Dbuffer3RtIds = new RenderTargetIdentifier[3];
 
@@ -2908,16 +2991,17 @@ namespace UnityEngine.Rendering.HighDefinition
             return parameters;
         }
 
-        static void RenderDBuffer(in RenderDBufferParameters  parameters,
-            RenderTargetIdentifier[]    mrt,
-            RTHandle[]                  rtHandles,
-            RTHandle                    depthStencilBuffer,
-            RTHandle                    depthTexture,
-            RendererList                meshDecalsRendererList,
-            RTHandle                    decalPrepassBuffer,
-            ScriptableRenderContext     renderContext,
-            CommandBuffer               cmd)
-        {
+        static void RenderDBuffer(
+                            in RenderDBufferParameters  parameters,
+                            RenderTargetIdentifier[]    mrt,
+                            RTHandle[]                  rtHandles,
+                            RTHandle                    depthStencilBuffer,
+                            RTHandle                    depthTexture,
+                            RendererList                meshDecalsRendererList,
+                            RTHandle                    decalPrepassBuffer,
+                            ScriptableRenderContext     renderContext,
+                            CommandBuffer               cmd
+        ){
             // for alpha compositing, color is cleared to 0, alpha to 1
             // https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch23.html
 
@@ -2957,7 +3041,9 @@ namespace UnityEngine.Rendering.HighDefinition
             DecalSystem.instance.RenderIntoDBuffer(cmd);
 
             cmd.ClearRandomWriteTargets();
-        }
+        }//   函数完__
+
+
 
         RendererListDesc PrepareForwardEmissiveRendererList(CullingResults cullResults, HDCamera hdCamera)
         {
@@ -2984,7 +3070,8 @@ namespace UnityEngine.Rendering.HighDefinition
                 var rendererListTransparent = RendererList.Create(CreateTransparentRendererListDesc(cull, hdCamera.camera, m_AllTransparentPassNames));
                 DrawTransparentRendererList(renderContext, cmd, hdCamera.frameSettings, rendererListTransparent);
             }
-        }
+        }//   函数完__
+
 
         struct TransparencyOverdrawParameters
         {
@@ -3025,17 +3112,20 @@ namespace UnityEngine.Rendering.HighDefinition
             parameters.frameSettings = hdCamera.frameSettings;
 
             return parameters;
-        }
+        }//   函数完__
 
-        static void RenderTransparencyOverdraw(TransparencyOverdrawParameters  parameters,
-            RTHandle                        colorBuffer,
-            RTHandle                        depthBuffer,
-            in RendererList                 transparencyRL,
-            in RendererList                 transparencyAfterPostRL,
-            in RendererList                 transparencyLowResRL,
-            ScriptableRenderContext         renderContext,
-            CommandBuffer                   cmd)
-        {
+
+
+        static void RenderTransparencyOverdraw(
+                                    TransparencyOverdrawParameters  parameters,
+                                    RTHandle                        colorBuffer,
+                                    RTHandle                        depthBuffer,
+                                    in RendererList                 transparencyRL,
+                                    in RendererList                 transparencyAfterPostRL,
+                                    in RendererList                 transparencyLowResRL,
+                                    ScriptableRenderContext         renderContext,
+                                    CommandBuffer                   cmd
+        ){
             CoreUtils.SetRenderTarget(cmd, colorBuffer, depthBuffer, clearFlag: ClearFlag.Color, clearColor: Color.black);
 
             // High res transparent objects, drawing in m_DebugFullScreenTempBuffer
@@ -3051,7 +3141,8 @@ namespace UnityEngine.Rendering.HighDefinition
             DrawTransparentRendererList(renderContext, cmd, parameters.frameSettings, transparencyLowResRL);
 
             // weighted sum of m_DebugFullScreenTempBuffer and m_DebugTranparencyLowRes done in DebugFullScreen.shader
-        }
+        }//   函数完__
+
 
         struct FullScreenDebugParameters
         {
@@ -3069,14 +3160,15 @@ namespace UnityEngine.Rendering.HighDefinition
             return parameters;
         }
 
-        static void RenderFullScreenDebug(FullScreenDebugParameters   parameters,
-            RTHandle                    colorBuffer,
-            RTHandle                    depthBuffer,
-            ComputeBuffer               debugBuffer,
-            in RendererList             rendererList,
-            ScriptableRenderContext     renderContext,
-            CommandBuffer               cmd)
-        {
+        static void RenderFullScreenDebug(
+                                FullScreenDebugParameters   parameters,
+                                RTHandle                    colorBuffer,
+                                RTHandle                    depthBuffer,
+                                ComputeBuffer               debugBuffer,
+                                in RendererList             rendererList,
+                                ScriptableRenderContext     renderContext,
+                                CommandBuffer               cmd
+        ){
             using (new ProfilingScope(cmd, ProfilingSampler.Get(HDProfileId.RenderFullScreenDebug)))
             {
                 CoreUtils.SetRenderTarget(cmd, colorBuffer, depthBuffer);
@@ -3086,7 +3178,8 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 cmd.ClearRandomWriteTargets();
             }
-        }
+        }//   函数完__
+
 
         void UpdateSkyEnvironment(HDCamera hdCamera, ScriptableRenderContext renderContext, CommandBuffer cmd)
         {
@@ -3160,7 +3253,8 @@ namespace UnityEngine.Rendering.HighDefinition
 
             var passNames = m_Asset.currentPlatformRenderPipelineSettings.supportTransparentBackface ? m_AllTransparentPassNames : m_TransparentNoBackfaceNames;
             return CreateTransparentRendererListDesc(cullResults, hdCamera.camera, passNames, m_CurrentRendererConfigurationBakedLighting, transparentRange);
-        }
+        }//   函数完__
+
 
         static void RenderForwardRendererList(FrameSettings               frameSettings,
             RendererList                rendererList,
@@ -3184,7 +3278,8 @@ namespace UnityEngine.Rendering.HighDefinition
                 DrawOpaqueRendererList(renderContext, cmd, frameSettings, rendererList);
             else
                 DrawTransparentRendererList(renderContext, cmd, frameSettings, rendererList);
-        }
+        }//   函数完__
+
 
         struct RenderSSRParameters
         {
@@ -3245,26 +3340,28 @@ namespace UnityEngine.Rendering.HighDefinition
             parameters.offsetBufferData = depthPyramid.GetOffsetBufferData(m_DepthPyramidMipLevelOffsetsBuffer);
 
             return parameters;
-        }
+        }//   函数完__
 
-        static void RenderSSR(in RenderSSRParameters  parameters,
-            HDCamera                hdCamera,
-            BlueNoise               blueNoise,
-            RTHandle                depthTexture,
-            RTHandle                depthPyramid,
-            RTHandle                normalBuffer,
-            RTHandle                motionVectorsBuffer,
-            RTHandle                SsrHitPointTexture,
-            RTHandle                stencilBuffer,
-            RTHandle                clearCoatMask,
-            RTHandle                previousColorPyramid,
-            RTHandle                ssrAccum,
-            RTHandle                ssrLightingTexture,
-            RTHandle                ssrAccumPrev,
-            ComputeBuffer           coarseStencilBuffer,
-            CommandBuffer           cmd,
-            ScriptableRenderContext renderContext)
-        {
+
+        static void RenderSSR(
+                            in RenderSSRParameters  parameters,
+                            HDCamera                hdCamera,
+                            BlueNoise               blueNoise,
+                            RTHandle                depthTexture,
+                            RTHandle                depthPyramid,
+                            RTHandle                normalBuffer,
+                            RTHandle                motionVectorsBuffer,
+                            RTHandle                SsrHitPointTexture,
+                            RTHandle                stencilBuffer,
+                            RTHandle                clearCoatMask,
+                            RTHandle                previousColorPyramid,
+                            RTHandle                ssrAccum,
+                            RTHandle                ssrLightingTexture,
+                            RTHandle                ssrAccumPrev,
+                            ComputeBuffer           coarseStencilBuffer,
+                            CommandBuffer           cmd,
+                            ScriptableRenderContext renderContext
+        ){
             var cs = parameters.ssrCS;
 
             ScreenSpaceReflection ssrSettings = hdCamera.volumeStack.GetComponent<ScreenSpaceReflection>();
@@ -3363,7 +3460,9 @@ namespace UnityEngine.Rendering.HighDefinition
                     cmd.DispatchCompute(cs, parameters.accumulateKernel, HDUtils.DivRoundUp(parameters.width, 8), HDUtils.DivRoundUp(parameters.height, 8), parameters.viewCount);
                 }
             }
-        }
+        }//   函数完__
+
+
 
         unsafe void ApplyDebugDisplaySettings(HDCamera hdCamera, CommandBuffer cmd, bool aovOutput)
         {
@@ -3455,7 +3554,9 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 cmd.SetGlobalTexture(HDShaderIDs._DebugFont, defaultResources.textures.debugFontTex);
             }
-        }
+        }//   函数完__
+
+
 
         static bool NeedColorPickerDebug(DebugDisplaySettings debugSettings)
         {
@@ -3543,16 +3644,19 @@ namespace UnityEngine.Rendering.HighDefinition
             parameters.debugOverlay = m_DebugOverlay;
 
             return parameters;
-        }
+        }//   函数完__
 
-        static void ResolveFullScreenDebug(in DebugParameters      parameters,
-            MaterialPropertyBlock   mpb,
-            RTHandle                inputFullScreenDebug,
-            RTHandle                inputDepthPyramid,
-            RTHandle                output,
-            ComputeBuffer           fullscreenBuffer,
-            CommandBuffer           cmd)
-        {
+
+
+        static void ResolveFullScreenDebug(
+                                        in DebugParameters      parameters,
+                                        MaterialPropertyBlock   mpb,
+                                        RTHandle                inputFullScreenDebug,
+                                        RTHandle                inputDepthPyramid,
+                                        RTHandle                output,
+                                        ComputeBuffer           fullscreenBuffer,
+                                        CommandBuffer           cmd
+        ){
             mpb.SetTexture(HDShaderIDs._DebugFullScreenTexture, inputFullScreenDebug);
             mpb.SetTexture(HDShaderIDs._CameraDepthTexture, inputDepthPyramid);
             mpb.SetFloat(HDShaderIDs._FullScreenDebugMode, (float)parameters.debugDisplaySettings.data.fullScreenDebugMode);
@@ -3574,13 +3678,16 @@ namespace UnityEngine.Rendering.HighDefinition
 
             if (fullscreenBuffer != null)
                 cmd.ClearRandomWriteTargets();
-        }
+        }//   函数完__
 
-        static void ResolveColorPickerDebug(in DebugParameters  parameters,
-            RTHandle            debugColorPickerBuffer,
-            RTHandle            output,
-            CommandBuffer       cmd)
-        {
+
+
+        static void ResolveColorPickerDebug(
+                                    in DebugParameters  parameters,
+                                    RTHandle            debugColorPickerBuffer,
+                                    RTHandle            output,
+                                    CommandBuffer       cmd
+        ){
             ColorPickerDebugSettings colorPickerDebugSettings = parameters.debugDisplaySettings.data.colorPickerDebugSettings;
             FalseColorDebugSettings falseColorDebugSettings = parameters.debugDisplaySettings.data.falseColorDebugSettings;
             var falseColorThresholds = new Vector4(falseColorDebugSettings.colorThreshold0, falseColorDebugSettings.colorThreshold1, falseColorDebugSettings.colorThreshold2, falseColorDebugSettings.colorThreshold3);
@@ -3601,22 +3708,24 @@ namespace UnityEngine.Rendering.HighDefinition
             parameters.colorPickerMaterial.SetFloat(HDShaderIDs._ApplyLinearToSRGB, parameters.debugDisplaySettings.IsDebugMaterialDisplayEnabled() ? 1.0f : 0.0f);
 
             HDUtils.DrawFullScreen(cmd, parameters.colorPickerMaterial, output);
-        }
+        }//   函数完__
 
-        static void RenderExposureDebug(in DebugParameters parameters,
-            RTHandle inputColorBuffer,
-            RTHandle postprocessedColorBuffer,
-            RTHandle currentExposure,
-            RTHandle prevExposure,
-            RTHandle debugExposureData,
-            RTHandle output,
-            HableCurve hableCurve,
-            int lutSize,
-            Vector4 proceduralParams1,
-            Vector4 proceduralParams2,
-            ComputeBuffer histogramBuffer,
-            CommandBuffer cmd)
-        {
+
+        static void RenderExposureDebug(
+                                    in DebugParameters parameters,
+                                    RTHandle inputColorBuffer,
+                                    RTHandle postprocessedColorBuffer,
+                                    RTHandle currentExposure,
+                                    RTHandle prevExposure,
+                                    RTHandle debugExposureData,
+                                    RTHandle output,
+                                    HableCurve hableCurve,
+                                    int lutSize,
+                                    Vector4 proceduralParams1,
+                                    Vector4 proceduralParams2,
+                                    ComputeBuffer histogramBuffer,
+                                    CommandBuffer cmd
+        ){
             // Grab exposure parameters
             var exposureSettings = parameters.hdCamera.volumeStack.GetComponent<Exposure>();
 
@@ -3697,7 +3806,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
 
             HDUtils.DrawFullScreen(cmd, parameters.debugExposureMaterial, output, null, passIndex);
-        }
+        }//   函数完__
 
         static void RenderSkyReflectionOverlay(in DebugParameters debugParameters, CommandBuffer cmd, MaterialPropertyBlock mpb)
         {
@@ -3710,7 +3819,7 @@ namespace UnityEngine.Rendering.HighDefinition
             mpb.SetFloat(HDShaderIDs._SliceIndex, lightingDebug.cubeArraySliceIndex);
             cmd.DrawProcedural(Matrix4x4.identity, debugParameters.debugLatlongMaterial, 0, MeshTopology.Triangles, 3, 1, mpb);
             debugParameters.debugOverlay.Next();
-        }
+        }//   函数完__
 
         struct PostProcessParameters
         {
@@ -3743,7 +3852,7 @@ namespace UnityEngine.Rendering.HighDefinition
             result.transparentAfterPPDesc = CreateTransparentRendererListDesc(cullResults, hdCamera.camera, HDShaderPassNames.s_ForwardOnlyName, renderQueueRange: HDRenderQueue.k_RenderQueue_AfterPostProcessTransparent);
 
             return result;
-        }
+        }//   函数完__
 
         static void UpdateOffscreenRenderingConstants(ref ShaderVariablesGlobal cb, bool enabled, uint factor)
         {
@@ -3776,7 +3885,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 UpdateOffscreenRenderingConstants(ref parameters.globalCB, false, 1);
                 ConstantBuffer.PushGlobal(cmd, parameters.globalCB, HDShaderIDs._ShaderVariablesGlobal);
             }
-        }
+        }//   函数完__
 
         struct SendGeometryGraphcisBuffersParameters
         {
@@ -3822,7 +3931,7 @@ namespace UnityEngine.Rendering.HighDefinition
             }
 
             return parameters;
-        }
+        }//   函数完__
 
         static void SendGeometryGraphicsBuffers(in SendGeometryGraphcisBuffersParameters parameters,
             RTHandle mainNormalBuffer,
@@ -3889,7 +3998,7 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 VFXManager.SetCameraBuffer(hdCamera.camera, VFXCameraBufferTypes.Normal, normalBuffer, 0, 0, hdCamera.actualWidth, hdCamera.actualHeight);
             }
-        }
+        }//   函数完__
 
         static void SendColorGraphicsBuffer(CommandBuffer cmd, HDCamera hdCamera)
         {

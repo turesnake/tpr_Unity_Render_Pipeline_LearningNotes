@@ -205,9 +205,11 @@ namespace UnityEditor.Rendering.HighDefinition
                 overridedDefaultValue: clearGBufferEnablable && defaultFrameSettings.IsEnabled(FrameSettingsField.ClearGBuffers));
 
             area.AmmendInfo(FrameSettingsField.RayTracing, overrideable: () => hdrpSettings.supportRayTracing);
+/*     tpr
 #if !ENABLE_VIRTUALTEXTURES
             area.AmmendInfo(FrameSettingsField.VirtualTexturing, overrideable: () => false);
 #endif
+*/
             area.AmmendInfo(FrameSettingsField.MotionVectors, overrideable: () => hdrpSettings.supportMotionVectors);
             area.AmmendInfo(FrameSettingsField.ObjectMotionVectors, overrideable: () => hdrpSettings.supportMotionVectors);
             area.AmmendInfo(FrameSettingsField.TransparentsWriteMotionVector, overrideable: () => hdrpSettings.supportMotionVectors);

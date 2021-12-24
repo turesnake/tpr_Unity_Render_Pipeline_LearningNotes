@@ -128,6 +128,9 @@ namespace UnityEngine.Rendering.HighDefinition
         }
     }
 
+
+
+
     /// <summary>
     /// Additional component that holds HDRP specific parameters for Cameras.
     /// </summary>
@@ -135,11 +138,12 @@ namespace UnityEngine.Rendering.HighDefinition
     [AddComponentMenu("")] // Hide in menu
     [DisallowMultipleComponent, ExecuteAlways]
     [RequireComponent(typeof(Camera))]
-    public partial class HDAdditionalCameraData : MonoBehaviour, IFrameSettingsHistoryContainer
+    public partial class HDAdditionalCameraData //HDAdditionalCameraData__RR
+        : MonoBehaviour, IFrameSettingsHistoryContainer
     {
-        /// <summary>
-        /// How the camera should handle vertically flipping the frame at the end of rendering.
-        /// </summary>
+
+        // How the camera should handle vertically flipping the frame at the end of rendering.
+        // enum: Automatic, ForceFlipY;
         public enum FlipYMode
         {
             /// <summary>Handle flip automatically.</summary>
@@ -148,9 +152,8 @@ namespace UnityEngine.Rendering.HighDefinition
             ForceFlipY
         }
 
-        /// <summary>
-        /// Type of buffers that can be accessed for this camera.
-        /// </summary>
+
+        // Type of buffers that can be accessed for this camera.
         [Flags]
         public enum BufferAccessType
         {

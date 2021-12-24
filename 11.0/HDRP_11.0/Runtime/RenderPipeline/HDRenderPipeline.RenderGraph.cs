@@ -49,11 +49,13 @@ namespace UnityEngine.Rendering.HighDefinition
             m_NonMSAAColorBuffer = CreateColorBuffer(m_RenderGraph, hdCamera, false);
             TextureHandle currentColorPyramid = m_RenderGraph.ImportTexture(hdCamera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.ColorBufferMipChain));
             TextureHandle rayCountTexture = RayCountManager.CreateRayCountTexture(m_RenderGraph);
+/*    tpr
 #if ENABLE_VIRTUALTEXTURES
             TextureHandle vtFeedbackBuffer = VTBufferManager.CreateVTFeedbackBuffer(m_RenderGraph, msaa);
 #else
+*/
             TextureHandle vtFeedbackBuffer = TextureHandle.nullHandle;
-#endif
+//#endif
 
             LightingBuffers lightingBuffers = new LightingBuffers();
             lightingBuffers.diffuseLightingBuffer = CreateDiffuseLightingBuffer(m_RenderGraph, msaa);
@@ -259,13 +261,14 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 // Render gizmos that should be affected by post processes
                 RenderGizmos(m_RenderGraph, hdCamera, colorBuffer, GizmoSubset.PreImageEffects);
-
+/*    tpr
 #if ENABLE_VIRTUALTEXTURES
                 // Note: This pass rely on availability of vtFeedbackBuffer buffer (i.e it need to be write before we read it here)
                 // We don't write it when doing debug mode, FullScreenDebug mode or path tracer. Thus why this pass is call here.
                 m_VtBufferManager.Resolve(m_RenderGraph, hdCamera, vtFeedbackBuffer);
                 PushFullScreenVTFeedbackDebugTexture(m_RenderGraph, vtFeedbackBuffer, msaa);
 #endif
+*/
             }
 
             // At this point, the color buffer has been filled by either debug views are regular rendering so we can push it here.
@@ -575,9 +578,11 @@ namespace UnityEngine.Rendering.HighDefinition
                 {
                     int index = 0;
                     passData.renderTarget[index++] = builder.WriteTexture(colorBuffer); // Store the specular color
+/*    tpr
 #if ENABLE_VIRTUALTEXTURES
                     passData.renderTarget[index++] = builder.WriteTexture(vtFeedbackBuffer);
 #endif
+*/
                     passData.renderTarget[index++] = builder.WriteTexture(lightingBuffers.diffuseLightingBuffer);
                     passData.renderTarget[index++] = builder.WriteTexture(lightingBuffers.sssBuffer);
                     passData.renderTargetCount = index;
@@ -586,9 +591,11 @@ namespace UnityEngine.Rendering.HighDefinition
                 {
                     int index = 0;
                     passData.renderTarget[index++] = builder.WriteTexture(colorBuffer);
+/*    tpr
 #if ENABLE_VIRTUALTEXTURES
                     passData.renderTarget[index++] = builder.WriteTexture(vtFeedbackBuffer);
 #endif
+*/
                     passData.renderTargetCount = index;
                 }
 
@@ -661,9 +668,11 @@ namespace UnityEngine.Rendering.HighDefinition
 
                 int index = 0;
                 passData.renderTarget[index++] = builder.WriteTexture(colorBuffer);
+/*    tpr
 #if ENABLE_VIRTUALTEXTURES
                 passData.renderTarget[index++] = builder.WriteTexture(vtFeedbackBuffer);
 #endif
+*/
 
                 if (passData.renderMotionVecForTransparent)
                 {

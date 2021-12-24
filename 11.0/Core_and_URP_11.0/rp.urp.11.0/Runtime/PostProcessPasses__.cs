@@ -22,7 +22,6 @@ namespace UnityEngine.Rendering.Universal
         PostProcessPass m_PostProcessPass;
         PostProcessPass m_FinalPostProcessPass;
 
-
         // -----------------------------------------:
         RenderTargetHandle m_AfterPostProcessColor;//"_AfterPostProcessTexture"
         RenderTargetHandle m_ColorGradingLut;//"_InternalGradingLut"
@@ -36,7 +35,6 @@ namespace UnityEngine.Rendering.Universal
         public PostProcessPass postProcessPass { get => m_PostProcessPass; }
         public PostProcessPass finalPostProcessPass { get => m_FinalPostProcessPass; }
 
-
         public RenderTargetHandle afterPostProcessColor { get => m_AfterPostProcessColor; }//"_AfterPostProcessTexture"
         public RenderTargetHandle colorGradingLut { get => m_ColorGradingLut; }//"_InternalGradingLut"
 
@@ -46,7 +44,7 @@ namespace UnityEngine.Rendering.Universal
         // 构造函数
         public PostProcessPasses(//   读完__
                             PostProcessData rendererPostProcessData, //PostProcess 要使用到的 资源对象: shaders, textures
-                            Material blitMaterial                   //"Shaders/Utils/Blit.shader"
+                            Material blitMaterial                    //"Shaders/Utils/Blit.shader"
         ){
             m_ColorGradingLutPass = null;
             m_PostProcessPass = null;

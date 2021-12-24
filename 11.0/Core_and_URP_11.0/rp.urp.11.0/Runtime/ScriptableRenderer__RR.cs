@@ -723,6 +723,7 @@ namespace UnityEngine.Rendering.Universal
 
 
         /*
+            ------------------------------------------------------------------------------------------:
             Execute the enqueued render passes. This automatically handles editor and stereo rendering.
             本函数只处理一个 camera
 
@@ -904,7 +905,7 @@ namespace UnityEngine.Rendering.Universal
 
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
-        }//  函数完__
+        }//  函数 Execute 完__
 
         
         /*
@@ -1561,6 +1562,7 @@ namespace UnityEngine.Rendering.Universal
             context.ExecuteCommandBuffer(cmd);
             CommandBufferPool.Release(cmd);
         }//   函数完__
+
 
 
         // 执行清理工作;

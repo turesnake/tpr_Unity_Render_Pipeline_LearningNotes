@@ -20,11 +20,13 @@ namespace UnityEngine.Rendering.HighDefinition
         PerfectLens
     }
 
-    /// <summary>
-    /// High Definition Render Pipeline asset.
-    /// </summary>
+
+    /*
+        High Definition Render Pipeline asset.
+    */
     [HelpURL(Documentation.baseURL + Documentation.version + Documentation.subURL + "HDRP-Asset" + Documentation.endURL)]
-    public partial class HDRenderPipelineAsset : RenderPipelineAsset, IVirtualTexturingEnabledRenderPipeline
+    public partial class HDRenderPipelineAsset//HDRenderPipelineAsset__RR
+        : RenderPipelineAsset, IVirtualTexturingEnabledRenderPipeline
     {
         [System.NonSerialized]
         internal bool isInOnValidateCall = false;
@@ -35,12 +37,16 @@ namespace UnityEngine.Rendering.HighDefinition
 
         void Reset() => OnValidate();
 
-        /// <summary>
-        /// CreatePipeline implementation.
-        /// </summary>
-        /// <returns>A new HDRenderPipeline instance.</returns>
+        /*
+            由我们来实现此 abstract 函数
+            在程序渲染第一帧之前,unity 会主动调用此函数
+            如果运行中途, RenderPipelineAsset 的一个设置发生了改变, unity 会销毁当前的 Render Pipe Instance
+            然后在下一帧之前,重新调用本函数
+        */
         protected override RenderPipeline CreatePipeline()
             => new HDRenderPipeline(this, HDRenderPipeline.defaultAsset);
+
+
 
         /// <summary>
         /// OnValidate implementation.
@@ -58,6 +64,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             isInOnValidateCall = false;
         }
+        
 
         [SerializeField]
         RenderPipelineResources m_RenderPipelineResources;

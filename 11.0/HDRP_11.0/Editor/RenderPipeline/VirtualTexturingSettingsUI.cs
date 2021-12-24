@@ -6,9 +6,11 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering.HighDefinition;
 
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
-using UnityEngine.Rendering.VirtualTexturing;
+    using UnityEngine.Rendering.VirtualTexturing;
 #endif
+*/
 
 namespace UnityEditor.Rendering.HighDefinition
 {
@@ -31,10 +33,11 @@ namespace UnityEditor.Rendering.HighDefinition
             serializedRPAsset = serialized;
 
             EditorGUILayout.Space();
-
+/*     tpr
 #if !ENABLE_VIRTUALTEXTURES
             EditorGUI.BeginDisabledGroup(true);
 #endif
+*/
 
             using (var scope = new EditorGUI.ChangeCheckScope())
             {
@@ -50,10 +53,11 @@ namespace UnityEditor.Rendering.HighDefinition
 
                 m_GPUCacheSizeOverrideListStreaming.DoLayoutList();
             }
-
+/*     tpr
 #if !ENABLE_VIRTUALTEXTURES
             EditorGUI.EndDisabledGroup();
 #endif
+*/
 
             serialized.serializedObject.ApplyModifiedProperties();
         }
@@ -83,6 +87,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
             list.drawElementCallback = drawCallback;
 
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
             list.onAddCallback = (l) =>
             {
@@ -99,6 +104,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 newItemProperty.FindPropertyRelative("sizeInMegaBytes").intValue = 64;
             };
 #endif
+*/
 
             return list;
         }
@@ -137,6 +143,7 @@ namespace UnityEditor.Rendering.HighDefinition
             var cacheSizeOverrideProperty = settingListProperty.GetArrayElementAtIndex(settingIdx);
             var cacheSizeOverride = settingList[settingIdx];
 
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
             List<GraphicsFormat> availableFormats = new List<GraphicsFormat>(EditorHelpers.QuerySupportedFormats());
             // None is used for a default cache size.
@@ -156,6 +163,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 formatGroups[format].Add(channelTransform);
             }
 #endif
+*/
 
             GraphicsFormat serializedFormat = (GraphicsFormat)cacheSizeOverrideProperty.FindPropertyRelative("format").intValue;
             GraphicsFormatToFormatAndChannelTransformString(serializedFormat, out string formatString, out string channelTransformString);
@@ -183,6 +191,7 @@ namespace UnityEditor.Rendering.HighDefinition
             rect.width = formatWidth;
             if (EditorGUI.DropdownButton(rect, new GUIContent(formatString), FocusType.Keyboard))
             {
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
                 GenericMenu menu = new GenericMenu();
                 foreach (string possibleFormat in formatGroups.Keys)
@@ -205,6 +214,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
                 menu.ShowAsContext();
 #endif
+*/
             }
 
             // Channel transform
@@ -213,17 +223,20 @@ namespace UnityEditor.Rendering.HighDefinition
 
             List<string> possibleChannelTransforms = new List<string>();
 
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
             if (formatGroups.ContainsKey(formatString))
             {
                 possibleChannelTransforms = formatGroups[formatString];
             }
 #endif
+*/
 
             EditorGUI.BeginDisabledGroup(possibleChannelTransforms.Count == 0);
             {
                 if (serializedFormat != GraphicsFormat.None && EditorGUI.DropdownButton(rect, new GUIContent(channelTransformString), FocusType.Keyboard))
                 {
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
                     GenericMenu menu = new GenericMenu();
                     possibleChannelTransforms.Add(channelTransformString);
@@ -242,6 +255,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
                     menu.ShowAsContext();
 #endif
+*/
                 }
             }
             EditorGUI.EndDisabledGroup();

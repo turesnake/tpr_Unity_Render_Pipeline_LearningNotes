@@ -67,6 +67,7 @@ Shader "Hidden/Universal Render Pipeline/FinalPost"
 
             half3 color = Load(positionSS, 0, 0).xyz;
 
+            // ------------------------------------------------------:
             #if _FXAA
             {
                 // Edge detection
@@ -120,18 +121,21 @@ Shader "Hidden/Universal Render Pipeline/FinalPost"
             }
             #endif
 
+            // ------------------------------------------------------:
             #if _FILM_GRAIN
             {
                 color = ApplyGrain(color, positionNDC, TEXTURE2D_ARGS(_Grain_Texture, sampler_LinearRepeat), GrainIntensity, GrainResponse, GrainScale, GrainOffset);
             }
             #endif
 
+            // ------------------------------------------------------:
             #if _LINEAR_TO_SRGB_CONVERSION
             {
                 color = LinearToSRGB(color);
             }
             #endif
 
+            // ------------------------------------------------------:
             #if _DITHERING
             {
                 color = ApplyDithering(color, positionNDC, TEXTURE2D_ARGS(_BlueNoise_Texture, sampler_PointRepeat), DitheringScale, DitheringOffset);

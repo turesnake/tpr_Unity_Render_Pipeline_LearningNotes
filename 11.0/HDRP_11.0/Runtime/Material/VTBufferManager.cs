@@ -1,3 +1,4 @@
+/*     tpr
 #if ENABLE_VIRTUALTEXTURES
 using VirtualTexturing = UnityEngine.Rendering.VirtualTexturing;
 using UnityEngine.Experimental.Rendering;
@@ -144,7 +145,16 @@ namespace  UnityEngine.Rendering.HighDefinition
             var resolveCounter = 0;
             var startOffsetX = (resolveCounter % kResolveScaleFactor);
             var startOffsetY = (resolveCounter / kResolveScaleFactor) % kResolveScaleFactor;
-            cmd.SetComputeVectorParam(parameters.downsampleCS, HDShaderIDs._Params, new Vector4(kResolveScaleFactor, startOffsetX, startOffsetY, /*unused*/ -1));
+            cmd.SetComputeVectorParam(
+                parameters.downsampleCS, 
+                HDShaderIDs._Params, 
+                new Vector4(
+                    kResolveScaleFactor, 
+                    startOffsetX, 
+                    startOffsetY, 
+                    -1 // unused
+                )
+            );
             cmd.SetComputeVectorParam(parameters.downsampleCS, HDShaderIDs._Params1, new Vector4(parameters.width, parameters.height, parameters.lowresWidth, parameters.lowresHeight));
             var TGSize = 8; //Match shader
             cmd.DispatchCompute(parameters.downsampleCS, parameters.downsampleKernel, ((int)parameters.lowresWidth + (TGSize - 1)) / TGSize, ((int)parameters.lowresHeight + (TGSize - 1)) / TGSize, 1);
@@ -160,3 +170,4 @@ namespace  UnityEngine.Rendering.HighDefinition
     }
 }
 #endif
+*/

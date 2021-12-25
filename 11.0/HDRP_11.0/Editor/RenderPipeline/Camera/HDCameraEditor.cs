@@ -28,6 +28,7 @@ namespace UnityEditor.Rendering.HighDefinition
             {
                 m_PreviewCameras[i] = EditorUtility.CreateGameObjectWithHideFlags("Preview " + serializedObject.targetObject.name, HideFlags.HideAndDontSave, typeof(Camera)).GetComponent<Camera>();
                 m_PreviewCameras[i].enabled = false;
+                // enum: Game, SceneView, Preview, VR, Reflection
                 m_PreviewCameras[i].cameraType = CameraType.Preview; // Must be init before adding HDAdditionalCameraData
                 m_PreviewAdditionalCameraDatas[i] = m_PreviewCameras[i].gameObject.AddComponent<HDAdditionalCameraData>();
                 // Say that we are a camera editor preview and not just a regular preview

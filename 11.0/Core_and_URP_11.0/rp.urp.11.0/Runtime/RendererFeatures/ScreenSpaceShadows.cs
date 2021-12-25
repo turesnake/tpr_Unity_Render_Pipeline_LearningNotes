@@ -3,6 +3,8 @@ using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.Rendering.Universal
 {
+    /*
+    */
     [Serializable]
     internal class ScreenSpaceShadowsSettings//ScreenSpaceShadowsSettings__RR
     {

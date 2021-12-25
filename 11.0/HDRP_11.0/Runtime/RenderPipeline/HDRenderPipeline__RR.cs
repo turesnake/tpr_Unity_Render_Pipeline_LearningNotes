@@ -1361,7 +1361,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 bool hasGameViewCamera = false;
                 foreach (var c in cameras)
                 {
-                    if (c.cameraType == CameraType.Game)
+                    if (c.cameraType == CameraType.Game)// enum: Game, SceneView, Preview, VR, Reflection
                     {
                         hasGameViewCamera = true;
                         break;
@@ -1455,7 +1455,9 @@ namespace UnityEngine.Rendering.HighDefinition
                         }
 
                         if (needCulling)
-                            skipRequest = !TryCull(camera, hdCamera, renderContext, m_SkyManager, cullingParameters, m_Asset, ref cullingResults);
+                            skipRequest = !TryCull(
+                                camera, hdCamera, renderContext, m_SkyManager, cullingParameters, m_Asset, ref cullingResults
+                            );
                     }
 
                     if (additionalCameraData != null && additionalCameraData.hasCustomRender)
@@ -2525,6 +2527,7 @@ namespace UnityEngine.Rendering.HighDefinition
                 cullingParams.cameraProperties = cameraProperties;
             }
         }//   函数完__
+
 
         static bool TryCull(
                         Camera camera,

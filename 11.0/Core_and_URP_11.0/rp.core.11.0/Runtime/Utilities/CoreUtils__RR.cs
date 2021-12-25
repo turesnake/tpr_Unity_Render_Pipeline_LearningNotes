@@ -904,7 +904,7 @@ namespace UnityEngine.Rendering
         */
         /// <param name="shaderPath">Path of the shader used for the material.</param>
         /// <returns>A new Material instance using "the shader found at the provided path."</returns>
-        public static Material CreateEngineMaterial(string shaderPath)// 读完__
+        public static Material CreateEngineMaterial(string shaderPath)//  读完__
         {
             Shader shader = Shader.Find(shaderPath);
             if (shader == null)

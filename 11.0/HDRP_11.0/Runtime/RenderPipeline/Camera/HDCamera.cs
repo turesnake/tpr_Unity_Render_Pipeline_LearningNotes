@@ -15,74 +15,80 @@ namespace UnityEngine.Rendering.HighDefinition
     // HDCameras are automatically created & updated from a source camera and will be destroyed if
     // not used during a frame.
 
-    /// <summary>
-    /// HDCamera class.
-    /// This class holds all information for a given camera. Constants used for shading as well as buffers persistent from one frame to another etc.
-    /// </summary>
+    /*
+        HDCamera class.
+        This class holds all information for a given camera. 
+        Constants used for shading as well as buffers persistent from one frame to another etc.
+
+    */
     [DebuggerDisplay("({camera.name})")]
     public class HDCamera//HDCamera__RR
     {
-        #region Public API
-        /// <summary>
-        /// Structure containing all shader view related constants for this camera.
-        /// </summary>
-        public struct ViewConstants
-        {
-            /// <summary>View matrix.</summary>
-            public Matrix4x4 viewMatrix;
-            /// <summary>Inverse View matrix.</summary>
-            public Matrix4x4 invViewMatrix;
-            /// <summary>Projection matrix.</summary>
-            public Matrix4x4 projMatrix;
-            /// <summary>Inverse Projection matrix.</summary>
-            public Matrix4x4 invProjMatrix;
-            /// <summary>View Projection matrix.</summary>
-            public Matrix4x4 viewProjMatrix;
-            /// <summary>Inverse View Projection matrix.</summary>
-            public Matrix4x4 invViewProjMatrix;
-            /// <summary>Non-jittered View Projection matrix.</summary>
-            public Matrix4x4 nonJitteredViewProjMatrix;
-            /// <summary>Non-jittered View Projection matrix from previous frame.</summary>
-            public Matrix4x4 prevViewProjMatrix;
-            /// <summary>Non-jittered Inverse View Projection matrix from previous frame.</summary>
-            public Matrix4x4 prevInvViewProjMatrix;
-            /// <summary>Non-jittered View Projection matrix from previous frame without translation.</summary>
-            public Matrix4x4 prevViewProjMatrixNoCameraTrans;
 
-            /// <summary>Utility matrix (used by sky) to map screen position to WS view direction.</summary>
+#region Public API
+
+      
+        // Structure containing all shader view related constants for this camera.
+        public struct ViewConstants//ViewConstants__
+        {
+            public Matrix4x4 viewMatrix;
+         
+            public Matrix4x4 invViewMatrix;//Inverse View matrix
+       
+            public Matrix4x4 projMatrix;//Projection matrix
+       
+            public Matrix4x4 invProjMatrix;// Inverse Projection matrix
+         
+            public Matrix4x4 viewProjMatrix;
+       
+            public Matrix4x4 invViewProjMatrix;//Inverse View Projection matrix
+       
+            public Matrix4x4 nonJitteredViewProjMatrix;//Non-jittered View Projection matrix
+          
+            public Matrix4x4 prevViewProjMatrix;// Non-jittered View Projection matrix from previous frame
+       
+            public Matrix4x4 prevInvViewProjMatrix;// Non-jittered Inverse View Projection matrix from previous frame
+           
+            public Matrix4x4 prevViewProjMatrixNoCameraTrans;// Non-jittered View Projection matrix from previous frame without translation
+
+         
+            // Utility matrix (used by sky) to map screen position to WS view direction
             public Matrix4x4 pixelCoordToViewDirWS;
 
-            // We need this to track the previous VP matrix with camera translation excluded. Internal since it is used only in its "previous" form
+            // We need this to track the previous VP matrix with camera translation excluded. 
+            // Internal since it is used only in its "previous" form
             internal Matrix4x4 viewProjectionNoCameraTrans;
 
-            /// <summary>World Space camera position.</summary>
+            
             public Vector3 worldSpaceCameraPos;
             internal float pad0;
-            /// <summary>Offset from the main view position for stereo view constants.</summary>
-            public Vector3 worldSpaceCameraPosViewOffset;
+           
+            public Vector3 worldSpaceCameraPosViewOffset;// Offset from the main view position for stereo view constants
             internal float pad1;
-            /// <summary>World Space camera position from previous frame.</summary>
-            public Vector3 prevWorldSpaceCameraPos;
+      
+            public Vector3 prevWorldSpaceCameraPos;// World Space camera position from previous frame
             internal float pad2;
-        };
+        };//   ViewConstants  完__
 
-        /// <summary>
-        /// Screen resolution information.
-        /// Width, height, inverse width, inverse height.
-        /// </summary>
+
+
+
+        // Screen resolution information.
+        // Width, height, inverse width, inverse height.
+      
         public Vector4              screenSize;
-        /// <summary>Camera frustum.</summary>
-        public Frustum              frustum;
-        /// <summary>Camera component.</summary>
-        public Camera               camera;
-        /// <summary>TAA jitter information.</summary>
-        public Vector4              taaJitter;
-        /// <summary>View constants.</summary>
-        public ViewConstants        mainViewConstants;
-        /// <summary>Color pyramid history buffer state.</summary>
-        public bool                 colorPyramidHistoryIsValid = false;
-        /// <summary>Volumetric history buffer state.</summary>
-        public bool                 volumetricHistoryIsValid = false;
+      
+        public Frustum              frustum;//Camera frustum
+      
+        public Camera               camera;//相机本机
+      
+        public Vector4              taaJitter;// TAA jitter information
+        
+        public ViewConstants        mainViewConstants;//View constants
+       
+        public bool                 colorPyramidHistoryIsValid = false;//Color pyramid history buffer state
+      
+        public bool                 volumetricHistoryIsValid = false;//Volumetric history buffer state
 
         internal int                volumetricValidFrames = 0;
 
@@ -102,6 +108,8 @@ namespace UnityEngine.Rendering.HighDefinition
         public float                time; // Take the 'animateMaterials' setting into account.
 
         internal bool               dofHistoryIsValid = false;  // used to invalidate DoF accumulation history when switching DoF modes
+
+
 
         // Pass all the systems that may want to initialize per-camera data here.
         // That way you will never create an HDCamera and forget to initialize the data.
@@ -171,9 +179,9 @@ namespace UnityEngine.Rendering.HighDefinition
             return m_HistoryRTSystem.GetFrameRT(id, 0);
         }
 
-        #endregion
+    #endregion
 
-        #region Internal API
+    #region Internal API
         internal struct ShadowHistoryUsage
         {
             public int lightInstanceID;

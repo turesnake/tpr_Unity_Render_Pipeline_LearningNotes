@@ -103,6 +103,10 @@ namespace UnityEngine.Rendering.Universal
 
 
         // 设置 gloabl shader 变量: "_SourceSize";
+        //  x: rt.width,
+        //  y: rt.height, 
+        //  z: 1.0f / rt.width,
+        //  w: 1.0f / rt.height
         internal static void SetSourceSize(CommandBuffer cmd, RenderTextureDescriptor desc)
         {
             float width = desc.width;

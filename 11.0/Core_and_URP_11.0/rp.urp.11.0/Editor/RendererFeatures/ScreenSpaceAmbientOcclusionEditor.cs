@@ -3,6 +3,9 @@ using UnityEngine.Rendering.Universal;
 
 namespace UnityEditor.Rendering.Universal
 {
+    /*
+        SSAO inspector;
+    */
     [CustomEditor(typeof(ScreenSpaceAmbientOcclusion))]
     internal class ScreenSpaceAmbientOcclusionEditor //ScreenSpaceAmbientOcclusionEditor__RR
         : Editor
@@ -32,9 +35,10 @@ namespace UnityEditor.Rendering.Universal
             public static GUIContent SampleCount = EditorGUIUtility.TrTextContent("Sample Count", "The number of samples that Unity takes when calculating the obscurance value. Higher values have high performance impact.");
         }
 
-        private void Init()
+        private void Init()//   读完__
         {
             SerializedProperty settings = serializedObject.FindProperty("m_Settings");
+
             m_Source = settings.FindPropertyRelative("Source");
             m_Downsample = settings.FindPropertyRelative("Downsample");
             m_NormalQuality = settings.FindPropertyRelative("NormalSamples");

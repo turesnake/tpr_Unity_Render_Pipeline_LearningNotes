@@ -54,20 +54,26 @@ static const float kGeometryCoeff = 0.8;
 static const float kBeta = 0.002;
 #define EPSILON         1.0e-4
 
+
 float4 PackAONormal(float ao, float3 n)
 {
     return float4(ao, n * 0.5 + 0.5);
 }
+
 
 float3 GetPackedNormal(float4 p)
 {
     return p.gba * 2.0 - 1.0;
 }
 
+
+
 float GetPackedAO(float4 p)
 {
     return p.r;
 }
+
+
 
 float EncodeAO(float x)
 {
@@ -78,15 +84,21 @@ float EncodeAO(float x)
     #endif
 }
 
+
+
 float CompareNormal(float3 d1, float3 d2)
 {
     return smoothstep(kGeometryCoeff, 1.0, dot(d1, d2));
 }
 
+
+
 float2 GetScreenSpacePosition(float2 uv)
 {
     return uv * SCREEN_PARAMS.xy * DOWNSAMPLE;
 }
+
+
 
 // Trigonometric function utility
 float2 CosSin(float theta)
@@ -96,12 +108,16 @@ float2 CosSin(float theta)
     return float2(cs, sn);
 }
 
+
+
 // Pseudo random number generator with 2D coordinates
 float UVRandom(float u, float v)
 {
     float f = dot(float2(12.9898, 78.233), float2(u, v));
     return frac(43758.5453 * sin(f));
 }
+
+
 
 // Sample point picker
 float3 PickSamplePoint(float2 uv, float randAddon, int index)
@@ -112,6 +128,8 @@ float3 PickSamplePoint(float2 uv, float randAddon, int index)
     float theta = (UVRandom(1.0, index + randAddon) + gn) * TWO_PI;
     return float3(CosSin(theta) * sqrt(1.0 - u * u), u);
 }
+
+
 
 float RawToLinearDepth(float rawDepth)
 {
@@ -126,11 +144,15 @@ float RawToLinearDepth(float rawDepth)
     #endif
 }
 
+
+
 float SampleAndGetLinearDepth(float2 uv)
 {
     float rawDepth = SampleSceneDepth(uv.xy).r;
     return RawToLinearDepth(rawDepth);
 }
+
+
 
 float3 ReconstructViewPos(float2 uv, float depth, float2 p11_22, float2 p13_31)
 {
@@ -141,6 +163,8 @@ float3 ReconstructViewPos(float2 uv, float depth, float2 p11_22, float2 p13_31)
     #endif
     return viewPos;
 }
+
+
 
 // Try reconstructing normal accurately from depth buffer.
 // Low:    DDX/DDY on the current pixel
@@ -211,6 +235,8 @@ float3 ReconstructNormal(float2 uv, float depth, float3 vpos, float2 p11_22, flo
     #endif
 }
 
+
+
 void SampleDepthNormalView(float2 uv, float2 p11_22, float2 p13_31, out float depth, out float3 normal, out float3 vpos)
 {
     depth  = SampleAndGetLinearDepth(uv);
@@ -223,6 +249,8 @@ void SampleDepthNormalView(float2 uv, float2 p11_22, float2 p13_31, out float de
     #endif
 }
 
+
+
 float3x3 GetCoordinateConversionParameters(out float2 p11_22, out float2 p13_31)
 {
     float3x3 camProj = (float3x3)unity_CameraProjection;
@@ -232,6 +260,8 @@ float3x3 GetCoordinateConversionParameters(out float2 p11_22, out float2 p13_31)
 
     return camProj;
 }
+
+// =========================================< pass 0: SSAO_Occlusion >==============================================:
 
 // Distance-based AO estimator based on Morgan 2011
 // "Alchemy screen-space ambient obscurance algorithm"
@@ -300,7 +330,10 @@ float4 SSAO(Varyings input) : SV_Target
     ao = PositivePow(ao * INTENSITY * rcpSampleCount, kContrast);
 
     return PackAONormal(ao, norm_o);
-}
+}//   pass 0: SSAO_Occlusion  完__
+
+
+
 
 // Geometry-aware separable bilateral filter
 half4 Blur(float2 uv, float2 delta) : SV_Target
@@ -346,6 +379,8 @@ half4 Blur(float2 uv, float2 delta) : SV_Target
     return PackAONormal(s, n0);
 }
 
+
+
 // Geometry-aware bilateral filter (single pass/small kernel)
 float BlurSmall(float2 uv, float2 delta)
 {
@@ -373,6 +408,9 @@ float BlurSmall(float2 uv, float2 delta)
     return s *= rcp(w0 + w1 + w2 + w3 + w4);
 }
 
+
+// =========================================< pass 1: Horizontal Blur >==============================================:
+
 half4 HorizontalBlur(Varyings input) : SV_Target
 {
     /*UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);    tpr */
@@ -382,6 +420,9 @@ half4 HorizontalBlur(Varyings input) : SV_Target
     return Blur(uv, delta);
 }
 
+
+// =========================================< pass 2: Vertical Blur >==============================================:
+
 half4 VerticalBlur(Varyings input) : SV_Target
 {
     /*UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);    tpr */
@@ -390,6 +431,9 @@ half4 VerticalBlur(Varyings input) : SV_Target
     float2 delta = float2(0.0, _SourceSize.w * rcp(DOWNSAMPLE) * 2.0);
     return Blur(uv, delta);
 }
+
+
+// =========================================< pass 3: Final Blur >==============================================:
 
 half4 FinalBlur(Varyings input) : SV_Target
 {

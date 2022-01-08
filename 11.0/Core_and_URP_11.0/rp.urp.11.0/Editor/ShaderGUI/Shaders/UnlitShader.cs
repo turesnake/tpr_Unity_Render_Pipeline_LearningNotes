@@ -3,7 +3,9 @@ using UnityEngine;
 
 namespace UnityEditor.Rendering.Universal.ShaderGUI
 {
-    internal class UnlitShader : BaseShaderGUI
+
+    internal class UnlitShader 
+        : BaseShaderGUI
     {
         // material changed check
         public override void MaterialChanged(Material material)
@@ -66,14 +68,14 @@ namespace UnityEditor.Rendering.Universal.ShaderGUI
             BlendMode blendMode = BlendMode.Alpha;
             if (oldShader.name.Contains("/Transparent/Cutout/"))
             {
-                surfaceType = SurfaceType.Opaque;
+                surfaceType = SurfaceType.Opaque;// 0
                 material.SetFloat("_AlphaClip", 1);
             }
             else if (oldShader.name.Contains("/Transparent/"))
             {
                 // NOTE: legacy shaders did not provide physically based transparency
                 // therefore Fade mode
-                surfaceType = SurfaceType.Transparent;
+                surfaceType = SurfaceType.Transparent;// 1
                 blendMode = BlendMode.Alpha;
             }
             material.SetFloat("_Surface", (float)surfaceType);

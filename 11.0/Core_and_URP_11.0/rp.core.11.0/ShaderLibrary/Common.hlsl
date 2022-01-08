@@ -1324,6 +1324,8 @@ real3 SafeNormalize(float3 inVec)
     return inVec * rsqrt(dp3);
 }
 
+
+
 // Checks if a vector is normalized
 bool IsNormalized(float3 inVec)
 {

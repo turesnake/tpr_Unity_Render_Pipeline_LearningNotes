@@ -16,10 +16,11 @@ namespace UnityEditor
             Transparent
         }
 
+        // enum: Alpha, Premultiply, Additive, Multiply;
         public enum BlendMode
         {
-            Alpha,   // Old school alpha-blending mode, fresnel does not affect amount of transparency
-            Premultiply, // Physically plausible transparency mode, implemented as alpha pre-multiply
+            Alpha,      // Old school alpha-blending mode, fresnel does not affect amount of transparency
+            Premultiply, // Physically plausible transparency mode (物理上合理的透明模式), implemented as alpha pre-multiply
             Additive,
             Multiply
         }

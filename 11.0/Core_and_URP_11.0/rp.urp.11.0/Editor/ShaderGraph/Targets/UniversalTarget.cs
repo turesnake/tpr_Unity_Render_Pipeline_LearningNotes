@@ -29,8 +29,8 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
 
     enum SurfaceType
     {
-        Opaque,
-        Transparent,
+        Opaque,// 0
+        Transparent,// 1
     }
 
     enum AlphaMode

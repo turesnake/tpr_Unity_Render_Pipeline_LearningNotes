@@ -188,6 +188,7 @@ real Luminance(real3 linearRgb)
     return dot(linearRgb, real3(0.2126729, 0.7151522, 0.0721750));
 }
 
+
 real Luminance(real4 linearRgba)
 {
     return Luminance(linearRgba.rgb);

@@ -203,9 +203,7 @@ CBUFFER_START(UnityPerDraw)
         y: 光源数量 (?)
     */
     real4 unity_LightData;
-
     real4 unity_LightIndices[2];
-
     float4 unity_ProbesOcclusion;
 
     // ----- Reflection Probe 0 block feature -----
@@ -229,6 +227,8 @@ CBUFFER_START(UnityPerDraw)
     real4 unity_SHBb;
     real4 unity_SHC;
 CBUFFER_END
+
+
 
 
 /* tpr

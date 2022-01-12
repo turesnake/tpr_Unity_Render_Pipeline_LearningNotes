@@ -69,7 +69,7 @@ namespace UnityEditor
                 "When enabled, other GameObjects can cast shadows onto this GameObject.");
 
             public static readonly GUIContent baseMap = new GUIContent("Base Map",
-                "Specifies the base Material and/or Color of the surface. If you’ve selected Transparent or Alpha Clipping under Surface Options, your Material uses the Texture’s alpha channel or color.");
+                "Specifies the base Material and/or Color of the surface. If you've selected Transparent or Alpha Clipping under Surface Options, your Material uses the Texture's alpha channel or color.");
 
             public static readonly GUIContent emissionMap = new GUIContent("Emission Map",
                 "Sets a Texture map to use for emission. You can also select a color with the color picker. Colors are multiplied over the Texture.");
@@ -158,6 +158,9 @@ namespace UnityEditor
             queueOffsetProp = FindProperty("_QueueOffset", properties, false);
         }
 
+
+
+
         public override void OnGUI(MaterialEditor materialEditorIn, MaterialProperty[] properties)
         {
             if (materialEditorIn == null)
@@ -177,6 +180,9 @@ namespace UnityEditor
 
             ShaderPropertiesGUI(material);
         }
+
+
+        
 
         public virtual void OnOpenGUI(Material material, MaterialEditor materialEditor)
         {

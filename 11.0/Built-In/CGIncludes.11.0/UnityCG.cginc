@@ -66,13 +66,16 @@ struct appdata_base {
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
+
 struct appdata_tan {
-    float4 vertex : POSITION;
-    float4 tangent : TANGENT;
-    float3 normal : NORMAL;
+    float4 vertex   : POSITION;
+    float4 tangent  : TANGENT;
+    float3 normal   : NORMAL;
     float4 texcoord : TEXCOORD0;
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
+
+
 
 struct appdata_full {
     float4 vertex : POSITION;
@@ -241,15 +244,20 @@ inline float3 WorldSpaceViewDir( in float4 localPos )
 }
 
 // Computes object space view direction
+// 参数 v: 顶点 posOS
+// 得到方向向量: 顶点->camera (OS) 无归一化
 inline float3 ObjSpaceViewDir( in float4 v )
 {
     float3 objSpaceCameraPos = mul(unity_WorldToObject, float4(_WorldSpaceCameraPos.xyz, 1)).xyz;
     return objSpaceCameraPos - v.xyz;
 }
 
+
 // Declares 3x3 matrix 'rotation', filled with tangent space basis
 #define TANGENT_SPACE_ROTATION \
     float3 binormal = cross( normalize(v.normal), normalize(v.tangent.xyz) ) * v.tangent.w; \
+    // rotation 中填充的三个向量,是 os空间中定义的;
+    // 使用此矩阵, 可执行转换: ts->os
     float3x3 rotation = float3x3( v.tangent.xyz, binormal, v.normal )
 
 
@@ -708,6 +716,8 @@ fixed3 UnpackNormalmapRGorAG(fixed4 packednormal)
     normal.z = sqrt(1 - saturate(dot(normal.xy, normal.xy)));
     return normal;
 }
+
+
 inline fixed3 UnpackNormal(fixed4 packednormal)
 {
 #if defined(UNITY_NO_DXT5nm)
@@ -718,6 +728,8 @@ inline fixed3 UnpackNormal(fixed4 packednormal)
     return UnpackNormalmapRGorAG(packednormal);
 #endif
 }
+
+
 
 fixed3 UnpackNormalWithScale(fixed4 packednormal, float scale)
 {

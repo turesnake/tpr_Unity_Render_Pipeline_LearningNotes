@@ -15,7 +15,7 @@ float3 SampleSceneNormals(float2 uv)
             UnityStereoTransformScreenSpaceTex(uv) // 等于 uv, 对于 "非xr程序", 此宏啥也不做;
         ).xy
     ) 
-    * float3(1.0, 1.0, -1.0);
+    * float3(1.0, 1.0, -1.0); // 仅仅是反转 z轴方向, 
 }
 
 

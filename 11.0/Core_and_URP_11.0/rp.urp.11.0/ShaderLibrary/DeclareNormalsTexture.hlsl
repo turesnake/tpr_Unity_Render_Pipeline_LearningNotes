@@ -6,6 +6,12 @@ TEXTURE2D_X_FLOAT(_CameraNormalsTexture);
 SAMPLER(sampler_CameraNormalsTexture);
 
 
+
+/*
+    目前版本, 本函数在 mac(Metal) 下存在 bug: 
+        此时, 本函数得到的值 不是 view-space 下的法线, 而是 world-space 下的法线;
+        这个问题 应该是在更早之前, 向 _CameraNormalsTexture 写入数据时 留下的;
+*/
 float3 SampleSceneNormals(float2 uv)
 {
     return UnpackNormalOctRectEncode(

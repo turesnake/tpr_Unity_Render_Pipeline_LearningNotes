@@ -14,9 +14,11 @@ namespace UnityEngine.Rendering.Universal
         Deferred
     };
 
-    /// <summary>
-    /// When the Universal Renderer should use Depth Priming in Forward mode.
-    /// </summary>
+
+
+    /*
+        When the Universal Renderer should use Depth Priming(启动) in Forward mode.
+    */
     public enum DepthPrimingMode
     {
         /// <summary>Depth Priming will never be used.</summary>
@@ -27,11 +29,17 @@ namespace UnityEngine.Rendering.Universal
         Forced,
     }
 
-    /// <summary>
-    /// Default renderer for Universal RP.
-    /// This renderer is supported on all Universal RP supported platforms.
-    /// It uses a classic forward rendering strategy with per-object light culling.
-    /// </summary>
+
+
+    /*
+        Default renderer for Universal RP.
+        This renderer is supported on all Universal RP supported platforms.
+        It uses a classic forward rendering strategy with per-object light culling.
+        ---
+
+        代替之前的 ForwardRenderer 
+    
+    */
     public sealed class UniversalRenderer : ScriptableRenderer
     {
         const int k_DepthStencilBufferBits = 32;
@@ -53,9 +61,13 @@ namespace UnityEngine.Rendering.Universal
 
         internal bool accurateGbufferNormals => m_DeferredLights != null ? m_DeferredLights.AccurateGbufferNormals : false;
 
+/*
+// 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
         internal bool needTransparencyPass { get { return !UniversalRenderPipeline.asset.useAdaptivePerformance || !AdaptivePerformance.AdaptivePerformanceRenderSettings.SkipTransparentObjects;; } }
 #endif
+*/
+
         /// <summary>Property to control the depth priming behavior of the forward rendering path.</summary>
         public DepthPrimingMode depthPrimingMode { get { return m_DepthPrimingMode; } set { m_DepthPrimingMode = value; } }
         DepthOnlyPass m_DepthPrepass;
@@ -79,10 +91,13 @@ namespace UnityEngine.Rendering.Universal
         InvokeOnRenderObjectCallbackPass m_OnRenderObjectCallbackPass;
         FinalBlitPass m_FinalBlitPass;
         CapturePass m_CapturePass;
+/*
 #if ENABLE_VR && ENABLE_XR_MODULE
         XROcclusionMeshPass m_XROcclusionMeshPass;
         CopyDepthPass m_XRCopyDepthPass;
 #endif
+*/
+
 #if UNITY_EDITOR
         CopyDepthPass m_FinalDepthCopyPass;
 #endif
@@ -104,7 +119,7 @@ namespace UnityEngine.Rendering.Universal
         DeferredLights m_DeferredLights;
         RenderingMode m_RenderingMode;
         DepthPrimingMode m_DepthPrimingMode;
-        bool m_DepthPrimingRecommended;
+        bool m_DepthPrimingRecommended; // 移动端关闭, 桌面端开启
         StencilState m_DefaultStencilState;
         LightCookieManager m_LightCookieManager;
         IntermediateTextureMode m_IntermediateTextureMode;
@@ -128,9 +143,11 @@ namespace UnityEngine.Rendering.Universal
 
         public UniversalRenderer(UniversalRendererData data) : base(data)
         {
+/*
 #if ENABLE_VR && ENABLE_XR_MODULE
             UniversalRenderPipeline.m_XRSystem.InitializeXRSystemData(data.xrSystemData);
 #endif
+*/
             // TODO: should merge shaders with HDRP into core, XR dependency for now.
             // TODO: replace/merge URP blit into core blitter.
             Blitter.Initialize(data.shaders.coreBlitPS, data.shaders.coreBlitColorAndDepthPS);
@@ -179,22 +196,28 @@ namespace UnityEngine.Rendering.Universal
             this.m_DepthPrimingMode = data.depthPrimingMode;
             useRenderPassEnabled = data.useNativeRenderPass && SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2;
 
+
 #if UNITY_ANDROID || UNITY_IOS || UNITY_TVOS
+            // 移动端 关闭
             this.m_DepthPrimingRecommended = false;
 #else
             this.m_DepthPrimingRecommended = true;
 #endif
+
 
             // Note: Since all custom render passes inject first and we have stable sort,
             // we inject the builtin passes in the before events.
             m_MainLightShadowCasterPass = new MainLightShadowCasterPass(RenderPassEvent.BeforeRenderingShadows);
             m_AdditionalLightsShadowCasterPass = new AdditionalLightsShadowCasterPass(RenderPassEvent.BeforeRenderingShadows);
 
+/*
 #if ENABLE_VR && ENABLE_XR_MODULE
             m_XROcclusionMeshPass = new XROcclusionMeshPass(RenderPassEvent.BeforeRenderingOpaques);
             // Schedule XR copydepth right after m_FinalBlitPass(AfterRendering + 1)
             m_XRCopyDepthPass = new CopyDepthPass(RenderPassEvent.AfterRendering + 2, m_CopyDepthMaterial);
 #endif
+*/
+
             m_DepthPrepass = new DepthOnlyPass(RenderPassEvent.BeforeRenderingPrePasses, RenderQueueRange.opaque, data.opaqueLayerMask);
             m_DepthNormalPrepass = new DepthNormalOnlyPass(RenderPassEvent.BeforeRenderingPrePasses, RenderQueueRange.opaque, data.opaqueLayerMask);
             m_MotionVectorPass = new MotionVectorRenderPass(m_CameraMotionVecMaterial, m_ObjectMotionVecMaterial);
@@ -246,9 +269,14 @@ namespace UnityEngine.Rendering.Universal
             m_CopyDepthPass = new CopyDepthPass(RenderPassEvent.AfterRenderingSkybox, m_CopyDepthMaterial);
             m_DrawSkyboxPass = new DrawSkyboxPass(RenderPassEvent.BeforeRenderingSkybox);
             m_CopyColorPass = new CopyColorPass(RenderPassEvent.AfterRenderingSkybox, m_SamplingMaterial, m_BlitMaterial);
+
+/*
+// 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
             if (needTransparencyPass)
 #endif
+*/
+
             {
                 m_TransparentSettingsPass = new TransparentSettingsPass(RenderPassEvent.BeforeRenderingTransparents, data.shadowTransparentReceive);
                 m_RenderTransparentForwardPass = new DrawObjectsPass(URPProfileId.DrawTransparentObjects, false, RenderPassEvent.BeforeRenderingTransparents, RenderQueueRange.transparent, data.transparentLayerMask, m_DefaultStencilState, stencilData.stencilReference);
@@ -387,10 +415,14 @@ namespace UnityEngine.Rendering.Universal
 
                 // TODO: Do we need to inject transparents and skybox when rendering depth only camera? They don't write to depth.
                 EnqueuePass(m_DrawSkyboxPass);
+/*
+// 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
                 if (!needTransparencyPass)
                     return;
 #endif
+*/
+
                 EnqueuePass(m_RenderTransparentForwardPass);
                 return;
             }
@@ -408,9 +440,12 @@ namespace UnityEngine.Rendering.Universal
             {
                 m_ActiveCameraColorAttachment = m_ColorBufferSystem.GetBackBuffer();
                 var activeColorRenderTargetId = m_ActiveCameraColorAttachment.Identifier();
+/*
 #if ENABLE_VR && ENABLE_XR_MODULE
                 if (cameraData.xr.enabled) activeColorRenderTargetId = new RenderTargetIdentifier(activeColorRenderTargetId, 0, CubemapFace.Unknown, -1);
 #endif
+*/
+
                 ConfigureCameraColorTarget(activeColorRenderTargetId);
             }
 
@@ -445,23 +480,52 @@ namespace UnityEngine.Rendering.Universal
             bool additionalLightShadows = m_AdditionalLightsShadowCasterPass.Setup(ref renderingData);
             bool transparentsNeedSettingsPass = m_TransparentSettingsPass.Setup(ref renderingData);
 
-            // Depth prepass is generated in the following cases:
-            // - If game or offscreen camera requires it we check if we can copy the depth from the rendering opaques pass and use that instead.
-            // - Scene or preview cameras always require a depth texture. We do a depth pre-pass to simplify it and it shouldn't matter much for editor.
-            // - Render passes require it
-            bool requiresDepthPrepass = (requiresDepthTexture || cameraHasPostProcessingWithDepth) && !CanCopyDepth(ref renderingData.cameraData);
+
+            /*
+                "Depth prepass" is generated in the following cases:
+                        - If game or offscreen camera(离屏:渲染到一个 rt 上去) requires it 
+                            we check if we can copy the depth from the "rendering opaques pass" and use that instead.
+                        - Scene or preview cameras always require a depth texture. 
+                            We do a depth pre-pass to simplify it and it shouldn't matter much for editor.
+                        - Render passes require it
+                 --------
+                以下情况时, 需要运行一个 Depth prepass:
+                        -- 如果 game camera 或 离屏camera 需要 depth 数据, 
+                            我们会尝试从 "rendering opaques pass" 中复制出 depth 数据, 并直接使用这个数据
+                            (也就是使用 depth copy 去代替 depth prepass )
+                        -- scene camera, preview camera 总是需要 depth texture;
+                            此时不如直接实现一道 depth prepass 一劳永逸;
+                        -- 如果 Render passes 明确需要 Depth prepass 时;
+            */
+                
+            // ----------------------:
+            // 满足以下条件时, requiresDepthPrepass 为 true:
+            // -- 需要 depth texture, 但环境(平台+camera) 又不支持 depth copy;
+            // +  若 camera 被用于  editor: scene 窗口, 预览窗口
+            // +  存在某个 render pass, 它在 "渲染不透明物" 之前执行, 同时它需要 depth 或 normal texture 作为 input;
+            // +  存在某个 render pass, 需要提前计算好 normal texture 当作 input;
+
+            // ( 相比 11.0, 多了一个 cameraHasPostProcessingWithDepth 的判断; )
+
+            bool requiresDepthPrepass = (requiresDepthTexture || cameraHasPostProcessingWithDepth) && 
+                                        !CanCopyDepth(ref renderingData.cameraData);
             requiresDepthPrepass |= isSceneViewCamera;
             requiresDepthPrepass |= isGizmosEnabled;
             requiresDepthPrepass |= isPreviewCamera;
             requiresDepthPrepass |= renderPassInputs.requiresDepthPrepass;
             requiresDepthPrepass |= renderPassInputs.requiresNormalsTexture;
 
+            /*
             // Current aim of depth prepass is to generate a copy of depth buffer, it is NOT to prime depth buffer and reduce overdraw on non-mobile platforms.
             // When deferred renderer is enabled, depth buffer is already accessible so depth prepass is not needed.
             // The only exception is for generating depth-normal textures: SSAO pass needs it and it must run before forward-only geometry.
             // DepthNormal prepass will render:
             // - forward-only geometry when deferred renderer is enabled
             // - all geometry when forward renderer is enabled
+
+                "depth prepass" 的当前目标是 生成深度缓冲区的副本，而不是为了在 "非移动平台" 上初始化深度缓冲区和减少透支。
+                延迟渲染中 不需要 depth prepass; 唯一的例外是 ssao, 它需要生成 depth-normal textures, 
+            */
             if (requiresDepthPrepass && this.actualRenderingMode == RenderingMode.Deferred && !renderPassInputs.requiresNormalsTexture)
                 requiresDepthPrepass = false;
 
@@ -493,18 +557,45 @@ namespace UnityEngine.Rendering.Universal
             createColorTexture |= renderPassInputs.requiresColorTexture;
             createColorTexture &= !isPreviewCamera;
 
-            // If camera requires depth and there's no depth pre-pass we create a depth texture that can be read later by effect requiring it.
-            // When deferred renderer is enabled, we must always create a depth texture and CANNOT use BuiltinRenderTextureType.CameraTarget. This is to get
-            // around a bug where during gbuffer pass (MRT pass), the camera depth attachment is correctly bound, but during
-            // deferred pass ("camera color" + "camera depth"), the implicit depth surface of "camera color" is used instead of "camera depth",
-            // because BuiltinRenderTextureType.CameraTarget for depth means there is no explicit depth attachment...
-            bool createDepthTexture = (requiresDepthTexture || cameraHasPostProcessingWithDepth) && !requiresDepthPrepass;
+
+
+            /*
+                If camera requires depth and there's no depth pre-pass we create a depth texture 
+                "that can be read later by effect requiring it".
+
+                ---
+                When deferred renderer is enabled, we must always create a depth texture 
+                and CANNOT use "BuiltinRenderTextureType.CameraTarget". 
+                This is to get around a bug where during gbuffer pass (MRT pass), 
+                the camera depth attachment is correctly bound, but during deferred pass ("camera color" + "camera depth"), 
+                the implicit depth surface of "camera color" is used instead of "camera depth",
+                because "BuiltinRenderTextureType.CameraTarget" for depth means there is no explicit depth attachment...
+                ---
+                如果 depth 绑定了 "BuiltinRenderTextureType.CameraTarget", 就意味着它其实没有绑定 depth attachment,
+                它使用的是 color rt 的 "depth surface";
+            */
+            
+            // 如果 需要在渲染完 skybox 之后, 将 camera 的 depth 写入 "_CameraDepthTexture"; 但又没启用 "depth prepass";
+                // 那么我们就需要创建一个 depth texture;
+
+            // 和 11.0 的区别: 
+            //(11.0) bool createDepthTexture = cameraData.requiresDepthTexture && !requiresDepthPrepass;
+            bool createDepthTexture = (requiresDepthTexture || cameraHasPostProcessingWithDepth) && 
+                                    !requiresDepthPrepass; // 没有启用 "depth prepass";
+
+            // 添加: 当前 camera 是 base, 且不属于 stack 中最后一个;
             createDepthTexture |= (cameraData.renderType == CameraRenderType.Base && !cameraData.resolveFinalTarget);
+
+            // 比 11.0 多出了 "useRenderPassEnabled";
             // Deferred renderer always need to access depth buffer.
             createDepthTexture |= (this.actualRenderingMode == RenderingMode.Deferred && !useRenderPassEnabled);
+
+            // 比 11.0 凭空多的一行
             // Some render cases (e.g. Material previews) have shown we need to create a depth texture when we're forcing a prepass.
             createDepthTexture |= m_DepthPrimingMode == DepthPrimingMode.Forced;
 
+
+/*
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.enabled)
             {
@@ -513,15 +604,18 @@ namespace UnityEngine.Rendering.Universal
                 createColorTexture = createDepthTexture;
             }
 #endif
+*/
 
 #if UNITY_ANDROID || UNITY_WEBGL
             if (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Vulkan)
             {
+                // gles 模式; 
                 // GLES can not use render texture's depth buffer with the color buffer of the backbuffer
                 // in such case we create a color texture for it too.
                 createColorTexture |= createDepthTexture;
             }
 #endif
+
             bool useDepthPriming = (m_DepthPrimingRecommended && m_DepthPrimingMode == DepthPrimingMode.Auto) || (m_DepthPrimingMode == DepthPrimingMode.Forced);
             useDepthPriming &= requiresDepthPrepass && (createDepthTexture || createColorTexture) && m_RenderingMode == RenderingMode.Forward && (cameraData.renderType == CameraRenderType.Base || cameraData.clearDepth);
 
@@ -558,6 +652,7 @@ namespace UnityEngine.Rendering.Universal
 
             cameraData.renderer.useDepthPriming = useDepthPriming;
 
+                    
             bool requiresDepthCopyPass = !requiresDepthPrepass
                 && (requiresDepthTexture || cameraHasPostProcessingWithDepth)
                 && createDepthTexture;
@@ -594,6 +689,7 @@ namespace UnityEngine.Rendering.Universal
                 var activeColorRenderTargetId = m_ActiveCameraColorAttachment.Identifier();
                 var activeDepthRenderTargetId = m_ActiveCameraDepthAttachment.Identifier();
 
+/*
 #if ENABLE_VR && ENABLE_XR_MODULE
                 if (cameraData.xr.enabled)
                 {
@@ -601,6 +697,7 @@ namespace UnityEngine.Rendering.Universal
                     activeDepthRenderTargetId = new RenderTargetIdentifier(activeDepthRenderTargetId, 0, CubemapFace.Unknown, -1);
                 }
 #endif
+*/
 
                 ConfigureCameraTarget(activeColorRenderTargetId, activeDepthRenderTargetId);
             }
@@ -670,10 +767,12 @@ namespace UnityEngine.Rendering.Universal
                 EnqueuePass(colorGradingLutPass);
             }
 
+/*
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.hasValidOcclusionMesh)
                 EnqueuePass(m_XROcclusionMeshPass);
 #endif
+*/
 
             if (this.actualRenderingMode == RenderingMode.Deferred)
             {
@@ -693,12 +792,14 @@ namespace UnityEngine.Rendering.Universal
 
                 // make sure we store the depth only if following passes need it.
                 RenderBufferStoreAction opaquePassDepthStoreAction = (copyColorPass || requiresDepthCopyPass) ? RenderBufferStoreAction.Store : RenderBufferStoreAction.DontCare;
+/*
 #if ENABLE_VR && ENABLE_XR_MODULE
                 if (cameraData.xr.enabled && cameraData.xr.copyDepth)
                 {
                     opaquePassDepthStoreAction = RenderBufferStoreAction.Store;
                 }
 #endif
+*/
 
                 m_RenderOpaqueForwardPass.ConfigureColorStoreAction(opaquePassColorStoreAction);
                 m_RenderOpaqueForwardPass.ConfigureDepthStoreAction(opaquePassDepthStoreAction);
@@ -749,9 +850,12 @@ namespace UnityEngine.Rendering.Universal
 
             bool lastCameraInTheStack = cameraData.resolveFinalTarget;
 
+/*
+// 如果 package: "com.unity.adaptiveperformance" 版本大于等于 2.1.0
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
             if (needTransparencyPass)
 #endif
+*/
             {
                 if (transparentsNeedSettingsPass)
                 {
@@ -826,6 +930,7 @@ namespace UnityEngine.Rendering.Universal
                     EnqueuePass(m_FinalBlitPass);
                 }
 
+/*
 #if ENABLE_VR && ENABLE_XR_MODULE
                 if (cameraData.xr.enabled)
                 {
@@ -840,6 +945,8 @@ namespace UnityEngine.Rendering.Universal
                     }
                 }
 #endif
+*/
+
             }
             // stay in RT so we resume rendering on stack after post-processing
             else if (applyPostProcessing)
@@ -1061,6 +1168,8 @@ namespace UnityEngine.Rendering.Universal
             CommandBufferPool.Release(cmd);
         }
 
+
+        // 如果目标平台需要 用户手动实现 msaa 的解析工作, 本函数就返回 true;
         bool PlatformRequiresExplicitMsaaResolve()
         {
 #if UNITY_EDITOR
@@ -1068,9 +1177,26 @@ namespace UnityEngine.Rendering.Universal
             // samples count forced to 1 so we always need to do an explicit MSAA resolve.
             return true;
 #else
-            // On Metal/iOS the MSAA resolve is done implicitly as part of the renderpass, so we do not need an extra intermediate pass for the explicit autoresolve.
-            // Note: On Vulkan Standalone, despite SystemInfo.supportsMultisampleAutoResolve being true, the backbuffer has only 1 sample, so we still require
-            // the explicit resolve on non-mobile platforms with supportsMultisampleAutoResolve.
+                /*
+                    On Metal/iOS the MSAA resolve is done implicitly as part of the renderpass, 
+                    so we do not need an extra intermediate pass for the explicit autoresolve.
+                    ---
+                    在 Metal/iOS 上，MSAA 解析是作为 render pass 的一部分隐式完成的，
+                    因此我们不需要额外的 intermediate pass 来进行显式自动解析。
+                    ---
+                    代码解读: 如果目标平台不支持 "msaa 自动解析", 同时驱动也不属于 Metal;
+                    就意味着这个平台 需要手动实现 msaa 解析, 所以要返回 true;
+                */
+                return !SystemInfo.supportsMultisampleAutoResolve && 
+                    SystemInfo.graphicsDeviceType != GraphicsDeviceType.Metal;
+
+            /*
+                On Metal/iOS the MSAA resolve is done implicitly as part of the renderpass, so we do not need an extra intermediate pass for the explicit autoresolve.
+                在 Metal/iOS 上，MSAA 解析是作为 render pass 的一部分隐式完成的，
+                因此我们不需要额外的 intermediate pass 来进行显式自动解析。
+                Note: On Vulkan Standalone, despite SystemInfo.supportsMultisampleAutoResolve being true, the backbuffer has only 1 sample, so we still require
+                the explicit resolve on non-mobile platforms with supportsMultisampleAutoResolve.
+            */
             return !(SystemInfo.supportsMultisampleAutoResolve && Application.isMobilePlatform)
                 && SystemInfo.graphicsDeviceType != GraphicsDeviceType.Metal;
 #endif
@@ -1107,6 +1233,7 @@ namespace UnityEngine.Rendering.Universal
             bool isOffscreenRender = cameraData.targetTexture != null && !isSceneViewCamera;
             bool isCapturing = cameraData.captureActions != null;
 
+/*
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.enabled)
             {
@@ -1114,6 +1241,7 @@ namespace UnityEngine.Rendering.Universal
                 isCompatibleBackbufferTextureDimension = cameraData.xr.renderTargetDesc.dimension == cameraTargetDescriptor.dimension;
             }
 #endif
+*/
 
             bool requiresBlitForOffscreenCamera = cameraData.postProcessEnabled || cameraData.requiresOpaqueTexture || requiresExplicitMsaaResolve || !cameraData.isDefaultViewport;
             if (isOffscreenRender)
@@ -1125,6 +1253,30 @@ namespace UnityEngine.Rendering.Universal
 
         bool CanCopyDepth(ref CameraData cameraData)
         {
+
+                /*
+                bool msaaEnabledForCamera = cameraData.cameraTargetDescriptor.msaaSamples > 1;
+                // 支持在 texture 之间进行 copy 工作
+                // 其实很复杂, 比如 texture->rt. rt->texture 等, 可细查;
+                bool supportsTextureCopy = SystemInfo.copyTextureSupport != CopyTextureSupport.None;
+                // 本平台是否支持 depth render texture;
+                bool supportsDepthTarget = RenderingUtils.SupportsRenderTextureFormat(RenderTextureFormat.Depth);
+
+                // 支持对 depth render texture 之间的 copy 工作;
+                bool supportsDepthCopy = !msaaEnabledForCamera && // 此 camera 未启用 msaa
+                                        (supportsDepthTarget || supportsTextureCopy);
+                
+                //    TODO:  We don't have support to highp Texture2DMS currently and this breaks depth precision.
+                //    currently disabling it until shader changes kick in.
+                //    bool msaaDepthResolve = msaaEnabledForCamera && SystemInfo.supportsMultisampledTextures != 0;
+                //    ---
+                //    暂时还不支持 multi-sample texture2d 来存储 depth, 这会导致 depth 精度丢失;
+                //    未来版本再补上;
+                bool msaaDepthResolve = false;
+                return supportsDepthCopy || msaaDepthResolve;
+                */
+
+
             bool msaaEnabledForCamera = cameraData.cameraTargetDescriptor.msaaSamples > 1;
             bool supportsTextureCopy = SystemInfo.copyTextureSupport != CopyTextureSupport.None;
             bool supportsDepthTarget = RenderingUtils.SupportsRenderTextureFormat(RenderTextureFormat.Depth);

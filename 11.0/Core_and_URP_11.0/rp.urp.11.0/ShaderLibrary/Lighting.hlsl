@@ -843,10 +843,11 @@ half3 LightingSpecular(half3 lightColor, half3 lightDir, half3 normal, half3 vie
 
 
 
-half3 LightingPhysicallyBased(BRDFData brdfData, BRDFData brdfDataClearCoat,
-    half3 lightColor, half3 lightDirectionWS, half lightAttenuation,
-    half3 normalWS, half3 viewDirectionWS,
-    half clearCoatMask, bool specularHighlightsOff)
+half3 LightingPhysicallyBased(
+                        BRDFData brdfData, BRDFData brdfDataClearCoat,
+                        half3 lightColor, half3 lightDirectionWS, half lightAttenuation,
+                        half3 normalWS, half3 viewDirectionWS,
+                        half clearCoatMask, bool specularHighlightsOff)
 {
     half NdotL = saturate(dot(normalWS, lightDirectionWS));
     half3 radiance = lightColor * (lightAttenuation * NdotL);
@@ -885,6 +886,7 @@ half3 LightingPhysicallyBased(BRDFData brdfData, BRDFData brdfDataClearCoat, Lig
 {
     return LightingPhysicallyBased(brdfData, brdfDataClearCoat, light.color, light.direction, light.distanceAttenuation * light.shadowAttenuation, normalWS, viewDirectionWS, clearCoatMask, specularHighlightsOff);
 }
+
 
 // Backwards compatibility
 half3 LightingPhysicallyBased(BRDFData brdfData, Light light, half3 normalWS, half3 viewDirectionWS)

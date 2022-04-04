@@ -95,7 +95,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         }
 
 
-        /// <inheritdoc/>
+        /// <inheritdoc/> 
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)//  读完__
         {
             // NOTE: Do NOT mix ProfilingScope with named CommandBuffers i.e. CommandBufferPool.Get("name").
@@ -112,7 +112,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 var drawSettings = CreateDrawingSettings(
                     m_ShaderTagId,       // "DepthNormals"
                     ref renderingData, 
-                    sortFlags
+                    sortFlags 
                 );
 
                 // 渲染时要 setup 哪些 "逐物体" 数据;

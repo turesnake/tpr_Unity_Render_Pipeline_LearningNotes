@@ -4,7 +4,10 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
-// Shadow Casting Light geometric parameters. These variables are used when applying the shadow Normal Bias and are set by UnityEngine.Rendering.Universal.ShadowUtils.SetupShadowCasterConstantBuffer in com.unity.render-pipelines.universal/Runtime/ShadowUtils.cs
+// Shadow Casting Light geometric parameters. 
+// These variables are used when applying the shadow Normal Bias and are set by UnityEngine.Rendering.Universal.ShadowUtils.SetupShadowCasterConstantBuffer 
+// in com.unity.render-pipelines.universal/Runtime/ShadowUtils.cs
+// 
 // For Directional lights, _LightDirection is used when applying shadow Normal Bias.
 // For Spot lights and Point lights, _LightPosition is used to compute the actual light direction because it is different at each shadow caster geometry vertex.
 float3 _LightDirection;
@@ -24,19 +27,22 @@ struct Varyings
     float4 positionCS   : SV_POSITION;
 };
 
+
+
 float4 GetShadowPositionHClip(Attributes input)
 {
     float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
     float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
 
 #if _CASTING_PUNCTUAL_LIGHT_SHADOW
-    float3 lightDirectionWS = normalize(_LightPosition - positionWS);
+    float3 lightDirectionWS = normalize(_LightPosition - positionWS); // 手动计算
 #else
     float3 lightDirectionWS = _LightDirection;
 #endif
 
     float4 positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, lightDirectionWS));
 
+// 猜测是 shadow Pancaking 技术, 就是把 shader caster 超出近平面的部分压扁, 贴在 近平面上;
 #if UNITY_REVERSED_Z
     positionCS.z = min(positionCS.z, UNITY_NEAR_CLIP_VALUE);
 #else
@@ -45,6 +51,7 @@ float4 GetShadowPositionHClip(Attributes input)
 
     return positionCS;
 }
+
 
 Varyings ShadowPassVertex(Attributes input)
 {
@@ -56,10 +63,18 @@ Varyings ShadowPassVertex(Attributes input)
     return output;
 }
 
+
+
 half4 ShadowPassFragment(Varyings input) : SV_TARGET
 {
-    Alpha(SampleAlbedoAlpha(input.uv, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap)).a, _BaseColor, _Cutoff);
+    Alpha( 
+        SampleAlbedoAlpha(input.uv, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap)).a, 
+        _BaseColor, 
+        _Cutoff 
+    );
     return 0;
 }
+
+
 
 #endif

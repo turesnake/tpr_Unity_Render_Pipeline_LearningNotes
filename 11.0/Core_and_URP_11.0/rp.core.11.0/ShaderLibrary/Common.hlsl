@@ -172,13 +172,13 @@
 
 
 // Target in compute shader are supported in 2018.2, for now define ours
-// (Note only 45 and above support compute shader)
+// (Note: only 45 and above support compute shader)
 #ifdef  SHADER_STAGE_COMPUTE
 #   ifndef SHADER_TARGET
 #       if defined(SHADER_API_METAL)
-#       define SHADER_TARGET 45
+#           define SHADER_TARGET 45
 #       else
-#       define SHADER_TARGET 50
+#           define SHADER_TARGET 50
 #       endif
 #   endif
 #endif

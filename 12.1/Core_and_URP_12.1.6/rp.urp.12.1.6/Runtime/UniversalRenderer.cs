@@ -257,7 +257,15 @@ namespace UnityEngine.Rendering.Universal
             }
 
             // Always create this pass even in deferred because we use it for wireframe rendering in the Editor or offscreen depth texture rendering.
-            m_RenderOpaqueForwardPass = new DrawObjectsPass(URPProfileId.DrawOpaqueObjects, true, RenderPassEvent.BeforeRenderingOpaques, RenderQueueRange.opaque, data.opaqueLayerMask, m_DefaultStencilState, stencilData.stencilReference);
+            m_RenderOpaqueForwardPass = new DrawObjectsPass(
+                URPProfileId.DrawOpaqueObjects, 
+                true, 
+                RenderPassEvent.BeforeRenderingOpaques, 
+                RenderQueueRange.opaque, 
+                data.opaqueLayerMask, 
+                m_DefaultStencilState, 
+                stencilData.stencilReference
+            );
 
             m_CopyDepthPass = new CopyDepthPass(RenderPassEvent.AfterRenderingSkybox, m_CopyDepthMaterial);
             m_DrawSkyboxPass = new DrawSkyboxPass(RenderPassEvent.BeforeRenderingSkybox);
@@ -267,7 +275,15 @@ namespace UnityEngine.Rendering.Universal
 #endif
             {
                 m_TransparentSettingsPass = new TransparentSettingsPass(RenderPassEvent.BeforeRenderingTransparents, data.shadowTransparentReceive);
-                m_RenderTransparentForwardPass = new DrawObjectsPass(URPProfileId.DrawTransparentObjects, false, RenderPassEvent.BeforeRenderingTransparents, RenderQueueRange.transparent, data.transparentLayerMask, m_DefaultStencilState, stencilData.stencilReference);
+                m_RenderTransparentForwardPass = new DrawObjectsPass(
+                    URPProfileId.DrawTransparentObjects, 
+                    false, 
+                    RenderPassEvent.BeforeRenderingTransparents, 
+                    RenderQueueRange.transparent, 
+                    data.transparentLayerMask, 
+                    m_DefaultStencilState, 
+                    stencilData.stencilReference
+                );
             }
             m_OnRenderObjectCallbackPass = new InvokeOnRenderObjectCallbackPass(RenderPassEvent.BeforeRenderingPostProcessing);
 

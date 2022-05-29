@@ -46,8 +46,21 @@ namespace UnityEngine.Rendering.Universal.Internal
 
         public DrawObjectsPass(string profilerTag, bool opaque, RenderPassEvent evt, RenderQueueRange renderQueueRange, LayerMask layerMask, StencilState stencilState, int stencilReference)
             : this(profilerTag,
-            new ShaderTagId[] { new ShaderTagId("SRPDefaultUnlit"), new ShaderTagId("UniversalForward"), new ShaderTagId("UniversalForwardOnly") },
-            opaque, evt, renderQueueRange, layerMask, stencilState, stencilReference)
+                // materials 的 pass, 如果它的 "LightMode" 值为如下之一, 这个 pass 就会被执行;
+                // 而且执行顺序也是按照这个 顺序来的
+                new ShaderTagId[] 
+                {
+                    new ShaderTagId("SRPDefaultUnlit"), 
+                    new ShaderTagId("UniversalForward"), 
+                    new ShaderTagId("UniversalForwardOnly") 
+                },
+                opaque, 
+                evt, 
+                renderQueueRange, 
+                layerMask, 
+                stencilState, 
+                stencilReference
+            )
         { }
 
         internal DrawObjectsPass(URPProfileId profileId, bool opaque, RenderPassEvent evt, RenderQueueRange renderQueueRange, LayerMask layerMask, StencilState stencilState, int stencilReference)

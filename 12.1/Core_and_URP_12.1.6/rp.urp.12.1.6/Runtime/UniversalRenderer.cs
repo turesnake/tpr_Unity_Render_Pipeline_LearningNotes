@@ -32,7 +32,7 @@ namespace UnityEngine.Rendering.Universal
     /// This renderer is supported on all Universal RP supported platforms.
     /// It uses a classic forward rendering strategy with per-object light culling.
     /// </summary>
-    public sealed class UniversalRenderer : ScriptableRenderer // 说白了就是 Forward Renderer
+    public sealed class UniversalRenderer : ScriptableRenderer // 说白了就是 Forward Renderer ...............................................
     {
         const int k_DepthStencilBufferBits = 32;
         static readonly List<ShaderTagId> k_DepthNormalsOnly = new List<ShaderTagId> { new ShaderTagId("DepthNormalsOnly") };

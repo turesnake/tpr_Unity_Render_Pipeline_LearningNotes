@@ -52,6 +52,9 @@ namespace UnityEditor.Rendering.Universal
         SerializedProperty m_ShadowTransparentReceiveProp;
         SerializedProperty m_IntermediateTextureMode;
 
+// https://www.bilibili.com/video/BV1Tr4y1x7To?spm_id_from=333.999.0.0
+// 视频 5分 40秒 后 提到了这个 宏, 似乎要用户在 unity 中手动定义(开启) 才行
+// 是一种叫做 forward+ 的技术
 #if URP_ENABLE_CLUSTERED_UI
         static bool s_EnableClusteredUI => true;
 #else

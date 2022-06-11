@@ -21,8 +21,10 @@ namespace UnityEngine.Rendering.Universal
         [Tooltip("The distance at which the blurring will reach its maximum radius.")]
         public MinFloatParameter gaussianEnd = new MinFloatParameter(30f, 0f);
 
+        // 高斯模糊的最大半径。大于1的值可能会显示采样瑕疵。
         [Tooltip("The maximum radius of the gaussian blur. Values above 1 may show under-sampling artifacts.")]
-        public ClampedFloatParameter gaussianMaxRadius = new ClampedFloatParameter(1f, 0.5f, 1.5f);
+        public ClampedFloatParameter gaussianMaxRadius = new ClampedFloatParameter(1f, 0.5f, 1.5f); // [0.5, 1.5]
+
 
         [Tooltip("Use higher quality sampling to reduce flickering and improve the overall blur smoothness.")]
         public BoolParameter highQualitySampling = new BoolParameter(false);

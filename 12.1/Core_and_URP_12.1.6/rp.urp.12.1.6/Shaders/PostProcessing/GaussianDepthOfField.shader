@@ -4,6 +4,8 @@ Shader "Hidden/Universal Render Pipeline/GaussianDepthOfField"
 
         #pragma target 3.5
         #pragma exclude_renderers gles
+
+        // XR;  目前看来确实只有 加载了 xr/vr package 的程序, 才能启用此 keyword
         #pragma multi_compile _ _USE_DRAW_PROCEDURAL
 
         #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
@@ -31,50 +33,58 @@ Shader "Hidden/Universal Render Pipeline/GaussianDepthOfField"
 
         #if BLUR_KERNEL == 0
 
-        // Offsets & coeffs for optimized separable bilinear 3-tap gaussian (5-tap equivalent)
-        const static int kTapCount = 3;
-        const static float kOffsets[] = {
-            -1.33333333,
-             0.00000000,
-             1.33333333
-        };
-        const static half kCoeffs[] = {
-             0.35294118,
-             0.29411765,
-             0.35294118
-        };
+            // Offsets & coeffs for optimized separable bilinear 3-tap gaussian (5-tap equivalent)
+            const static int kTapCount = 3;
+            const static float kOffsets[] = {
+                -1.33333333,
+                0.00000000,
+                1.33333333
+            };
+            const static half kCoeffs[] = {
+                0.35294118,
+                0.29411765,
+                0.35294118
+            };
 
         #elif BLUR_KERNEL == 1
 
-        // Offsets & coeffs for optimized separable bilinear 5-tap gaussian (9-tap equivalent)
-        const static int kTapCount = 5;
-        const static float kOffsets[] = {
-            -3.23076923,
-            -1.38461538,
-             0.00000000,
-             1.38461538,
-             3.23076923
-        };
-        const static half kCoeffs[] = {
-             0.07027027,
-             0.31621622,
-             0.22702703,
-             0.31621622,
-             0.07027027
-        };
+            // Offsets & coeffs for optimized separable bilinear 5-tap gaussian (9-tap equivalent)
+            const static int kTapCount = 5;
+            const static float kOffsets[] = {
+                -3.23076923,
+                -1.38461538,
+                0.00000000,
+                1.38461538,
+                3.23076923
+            };
+            const static half kCoeffs[] = {
+                0.07027027,
+                0.31621622,
+                0.22702703,
+                0.31621622,
+                0.07027027
+            };
 
         #endif
 
+
+        // ----------------------------------------------------------------------------------------------------- // 
+        // "Gaussian Depth Of Field CoC"
+
         half FragCoC(Varyings input) : SV_Target
         {
-            UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-            float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);
+            //UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+            float2 uv = UnityStereoTransformScreenSpaceTex(input.uv); // 直接等于 input.uv
 
             float depth = LOAD_TEXTURE2D_X(_CameraDepthTexture, _SourceSize.xy * uv).x;
             depth = LinearEyeDepth(depth, _ZBufferParams);
             half coc = (depth - FarStart) / (FarEnd - FarStart);
             return saturate(coc);
         }
+
+        
+        // ----------------------------------------------------------------------------------------------------- //
+        // "Gaussian Depth Of Field Prefilter"
 
         struct PrefilterOutput
         {
@@ -84,8 +94,8 @@ Shader "Hidden/Universal Render Pipeline/GaussianDepthOfField"
 
         PrefilterOutput FragPrefilter(Varyings input)
         {
-            UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-            float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);
+            //UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+            float2 uv = UnityStereoTransformScreenSpaceTex(input.uv); // 直接等于 input.uv
 
         #if _HIGH_QUALITY_SAMPLING
 
@@ -136,10 +146,13 @@ Shader "Hidden/Universal Render Pipeline/GaussianDepthOfField"
             return o;
         }
 
+        // ----------------------------------------------------------------------------------------------------- // 
+        // "Gaussian Depth Of Field Blur Horizontal"
+
         half4 Blur(Varyings input, float2 dir, float premultiply)
         {
-            UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-            float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);
+            //UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+            float2 uv = UnityStereoTransformScreenSpaceTex(input.uv); // 直接等于 input.uv
 
             // Use the center CoC as radius
             int2 positionSS = int2(_SourceSize.xy * _DownSampleScaleFactor.xy * uv);
@@ -148,8 +161,9 @@ Shader "Hidden/Universal Render Pipeline/GaussianDepthOfField"
             float2 offset = _SourceSize.zw * _DownSampleScaleFactor.zw * dir * samp0CoC * MaxRadius;
             half4 acc = 0.0;
 
+
             UNITY_UNROLL
-            for (int i = 0; i < kTapCount; i++)
+            for (int i = 0; i < kTapCount; i++) // 3次 或 5次
             {
                 float2 sampCoord = uv + kOffsets[i] * offset;
                 half sampCoC = SAMPLE_TEXTURE2D_X(_HalfCoCTexture, sampler_LinearClamp, sampCoord).x;
@@ -169,15 +183,23 @@ Shader "Hidden/Universal Render Pipeline/GaussianDepthOfField"
             return Blur(input, float2(1.0, 0.0), 1.0);
         }
 
+
+        // ----------------------------------------------------------------------------------------------------- // 
+        // "Gaussian Depth Of Field Blur Vertical"
+
         half4 FragBlurV(Varyings input) : SV_Target
         {
             return Blur(input, float2(0.0, 1.0), 0.0);
         }
 
+
+        // ----------------------------------------------------------------------------------------------------- // 
+        // "Gaussian Depth Of Field Composite"
+
         half4 FragComposite(Varyings input) : SV_Target
         {
-            UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-            float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);
+            //UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+            float2 uv = UnityStereoTransformScreenSpaceTex(input.uv); // 直接等于 input.uv
 
             half3 baseColor = LOAD_TEXTURE2D_X(_SourceTex, _SourceSize.xy * uv).xyz;
             half coc = LOAD_TEXTURE2D_X(_FullCoCTexture, _SourceSize.xy * uv).x;
@@ -204,7 +226,11 @@ Shader "Hidden/Universal Render Pipeline/GaussianDepthOfField"
             return half4(baseColor * dstAlpha + dstColor, 1.0);
         }
 
+
+
     ENDHLSL
+
+
 
     SubShader
     {
@@ -212,23 +238,26 @@ Shader "Hidden/Universal Render Pipeline/GaussianDepthOfField"
         LOD 100
         ZTest Always ZWrite Off Cull Off
 
+        // 按顺序执行如下每个 pass
+
         Pass
         {
             Name "Gaussian Depth Of Field CoC"
 
             HLSLPROGRAM
-                #pragma vertex FullscreenVert
-                #pragma fragment FragCoC
+                #pragma vertex      FullscreenVert
+                #pragma fragment    FragCoC
             ENDHLSL
         }
+
 
         Pass
         {
             Name "Gaussian Depth Of Field Prefilter"
 
             HLSLPROGRAM
-                #pragma vertex VertFullscreenMesh
-                #pragma fragment FragPrefilter
+                #pragma vertex      VertFullscreenMesh
+                #pragma fragment    FragPrefilter
                 #pragma multi_compile_local _ _HIGH_QUALITY_SAMPLING
             ENDHLSL
         }
@@ -238,8 +267,8 @@ Shader "Hidden/Universal Render Pipeline/GaussianDepthOfField"
             Name "Gaussian Depth Of Field Blur Horizontal"
 
             HLSLPROGRAM
-                #pragma vertex FullscreenVert
-                #pragma fragment FragBlurH
+                #pragma vertex      FullscreenVert
+                #pragma fragment    FragBlurH
             ENDHLSL
         }
 
@@ -248,8 +277,8 @@ Shader "Hidden/Universal Render Pipeline/GaussianDepthOfField"
             Name "Gaussian Depth Of Field Blur Vertical"
 
             HLSLPROGRAM
-                #pragma vertex FullscreenVert
-                #pragma fragment FragBlurV
+                #pragma vertex      FullscreenVert
+                #pragma fragment    FragBlurV
             ENDHLSL
         }
 
@@ -258,8 +287,8 @@ Shader "Hidden/Universal Render Pipeline/GaussianDepthOfField"
             Name "Gaussian Depth Of Field Composite"
 
             HLSLPROGRAM
-                #pragma vertex FullscreenVert
-                #pragma fragment FragComposite
+                #pragma vertex      FullscreenVert
+                #pragma fragment    FragComposite
                 #pragma multi_compile_local _ _HIGH_QUALITY_SAMPLING
             ENDHLSL
         }

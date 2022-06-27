@@ -1266,10 +1266,13 @@ namespace UnityEngine.Rendering.Universal
             return System.Math.Max(0, System.Math.Min(value, UniversalRenderPipeline.maxPerObjectLights));
         }
 
+
         float ValidateRenderScale(float value)
         {
+            // [0.1, 2.0]
             return Mathf.Max(UniversalRenderPipeline.minRenderScale, Mathf.Min(value, UniversalRenderPipeline.maxRenderScale));
         }
+
 
         /// <summary>
         /// Check to see if the RendererData list contains valid RendererData references.

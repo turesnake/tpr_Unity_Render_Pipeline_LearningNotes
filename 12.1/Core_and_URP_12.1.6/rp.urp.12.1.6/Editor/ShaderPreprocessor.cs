@@ -208,6 +208,8 @@ namespace UnityEditor.Rendering.Universal
             return (featureMask & feature) != 0;
         }
 
+
+
         bool IsFeatureEnabled(VolumeFeatures featureMask, VolumeFeatures feature)
         {
             return (featureMask & feature) != 0;
@@ -618,6 +620,8 @@ namespace UnityEditor.Rendering.Universal
             return false;
         }
 
+
+
         bool StripUnused(ShaderFeatures features, Shader shader, ShaderSnippetData snippetData, ShaderCompilerData compilerData)
         {
             if (StripUnusedFeatures(features, shader, snippetData, compilerData))
@@ -649,6 +653,8 @@ namespace UnityEditor.Rendering.Universal
             return false;
         }
 
+
+
         void LogShaderVariants(Shader shader, ShaderSnippetData snippetData, ShaderVariantLogLevel logLevel, int prevVariantsCount, int currVariantsCount, double stripTimeMs)
         {
             if (logLevel == ShaderVariantLogLevel.AllShaders || shader.name.Contains("Universal Render Pipeline"))
@@ -664,6 +670,8 @@ namespace UnityEditor.Rendering.Universal
                 Debug.Log(result);
             }
         }
+
+
 
         public void OnProcessShader(Shader shader, ShaderSnippetData snippetData, IList<ShaderCompilerData> compilerDataList)
         {
@@ -687,7 +695,7 @@ namespace UnityEditor.Rendering.Universal
 
                 foreach (var supportedFeatures in ShaderBuildPreprocessor.supportedFeaturesList)
                 {
-                    if (!StripUnused(supportedFeatures, shader, snippetData, compilerDataList[i]))
+                    if ( StripUnused(supportedFeatures, shader, snippetData, compilerDataList[i]) == false )
                     {
                         removeInput = false;
                         break;
@@ -708,6 +716,8 @@ namespace UnityEditor.Rendering.Universal
                 else
                     ++i;
             }
+
+
 
             if (compilerDataList is List<ShaderCompilerData> inputDataList)
                 inputDataList.RemoveRange(inputShaderVariantCount, inputDataList.Count - inputShaderVariantCount);
@@ -732,8 +742,12 @@ namespace UnityEditor.Rendering.Universal
             Profiler.EndSample();
 #endif
             shaderPreprocessed?.Invoke(shader, snippetData, prevVariantCount, stripTimeMs);
-        }
-    }
+        }// OnProcessShader() 完
+
+
+    }// class ShaderPreprocessor 完
+
+
     class ShaderBuildPreprocessor : IPreprocessBuildWithReport
 #if PROFILE_BUILD
         , IPostprocessBuildWithReport
@@ -1044,7 +1058,7 @@ namespace UnityEditor.Rendering.Universal
 
             if (pipelineAsset.additionalLightsRenderingMode == LightRenderingMode.PerPixel || clusteredRendering)
             {
-                if (pipelineAsset.supportsAdditionalLightShadows)
+                if (pipelineAsset.supportsAdditionalLightShadows) // 就是 universapRP_High... 系列配置表 里的开关
                 {
                     shaderFeatures |= ShaderFeatures.AdditionalLightShadows;
                 }

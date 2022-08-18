@@ -32,7 +32,7 @@ namespace UnityEngine.Rendering.Universal
     /// This renderer is supported on all Universal RP supported platforms.
     /// It uses a classic forward rendering strategy with per-object light culling.
     /// </summary>
-    public sealed class UniversalRenderer : ScriptableRenderer // 说白了就是 Forward Renderer ...............................................
+    public sealed class UniversalRenderer : ScriptableRenderer // 说白了就是 Forward Renderer  ( ForwardRenderer )...............................................
     {
         const int k_DepthStencilBufferBits = 32;
         static readonly List<ShaderTagId> k_DepthNormalsOnly = new List<ShaderTagId> { new ShaderTagId("DepthNormalsOnly") };
@@ -515,7 +515,8 @@ namespace UnityEngine.Rendering.Universal
             }
             else if (cameraHasPostProcessingWithDepth || isSceneViewCamera || isGizmosEnabled)
             {
-                // If only post process requires depth texture, we can re-use depth buffer from main geometry pass instead of enqueuing a depth copy pass, but no proper API to do that for now, so resort to depth copy pass for now
+                // If only post process requires depth texture, we can re-use depth buffer from main geometry pass instead of enqueuing a depth copy pass, 
+                // but no proper API to do that for now, so resort to depth copy pass for now
                 m_CopyDepthPass.renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
             }
 

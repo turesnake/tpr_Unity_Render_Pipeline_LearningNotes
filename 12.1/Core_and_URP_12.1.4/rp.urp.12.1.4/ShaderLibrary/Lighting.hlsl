@@ -287,32 +287,32 @@ half4 UniversalFragmentPBR(InputData inputData, SurfaceData surfaceData)
     }
 
     #if defined(_ADDITIONAL_LIGHTS)
-    uint pixelLightCount = GetAdditionalLightsCount();
+        uint pixelLightCount = GetAdditionalLightsCount();
 
-    #if USE_CLUSTERED_LIGHTING
-    for (uint lightIndex = 0; lightIndex < min(_AdditionalLightsDirectionalCount, MAX_VISIBLE_LIGHTS); lightIndex++)
-    {
-        Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+        #if USE_CLUSTERED_LIGHTING
+            for (uint lightIndex = 0; lightIndex < min(_AdditionalLightsDirectionalCount, MAX_VISIBLE_LIGHTS); lightIndex++)
+            {
+                Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
 
-        if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
-        {
-            lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
-                                                                          inputData.normalWS, inputData.viewDirectionWS,
-                                                                          surfaceData.clearCoatMask, specularHighlightsOff);
-        }
-    }
-    #endif
+                if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+                {
+                    lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                                inputData.normalWS, inputData.viewDirectionWS,
+                                                                                surfaceData.clearCoatMask, specularHighlightsOff);
+                }
+            }
+        #endif
 
-    LIGHT_LOOP_BEGIN(pixelLightCount)
-        Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+        LIGHT_LOOP_BEGIN(pixelLightCount)
+            Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
 
-        if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
-        {
-            lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
-                                                                          inputData.normalWS, inputData.viewDirectionWS,
-                                                                          surfaceData.clearCoatMask, specularHighlightsOff);
-        }
-    LIGHT_LOOP_END
+            if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            {
+                lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
+                                                                            inputData.normalWS, inputData.viewDirectionWS,
+                                                                            surfaceData.clearCoatMask, specularHighlightsOff);
+            }
+        LIGHT_LOOP_END
     #endif
 
     #if defined(_ADDITIONAL_LIGHTS_VERTEX)

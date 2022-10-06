@@ -82,19 +82,19 @@ inline void InitializeBRDFDataDirect(half3 diffuse, half3 specular, half reflect
 inline void InitializeBRDFData(half3 albedo, half metallic, half3 specular, half smoothness, inout half alpha, out BRDFData outBRDFData)
 {
 
-#ifdef _SPECULAR_SETUP
-    // 使用 specular 模式;
-    half reflectivity = ReflectivitySpecular(specular);
-    half oneMinusReflectivity = half(1.0) - reflectivity;
-    half3 brdfDiffuse = albedo * (half3(1.0, 1.0, 1.0) - specular);
-    half3 brdfSpecular = specular;
-#else
-    // 使用 metallic 模式;
-    half oneMinusReflectivity = OneMinusReflectivityMetallic(metallic);
-    half reflectivity = half(1.0) - oneMinusReflectivity;
-    half3 brdfDiffuse = albedo * oneMinusReflectivity;
-    half3 brdfSpecular = lerp(kDieletricSpec.rgb, albedo, metallic);
-#endif
+    #ifdef _SPECULAR_SETUP
+        // 使用 specular 模式;
+        half reflectivity = ReflectivitySpecular(specular);
+        half oneMinusReflectivity = half(1.0) - reflectivity;
+        half3 brdfDiffuse = albedo * (half3(1.0, 1.0, 1.0) - specular);
+        half3 brdfSpecular = specular;
+    #else
+        // 使用 metallic 模式;
+        half oneMinusReflectivity = OneMinusReflectivityMetallic(metallic);
+        half reflectivity = half(1.0) - oneMinusReflectivity;
+        half3 brdfDiffuse = albedo * oneMinusReflectivity;
+        half3 brdfSpecular = lerp(kDieletricSpec.rgb, albedo, metallic);
+    #endif
 
     InitializeBRDFDataDirect(albedo, brdfDiffuse, brdfSpecular, reflectivity, oneMinusReflectivity, smoothness, alpha, outBRDFData);
 }

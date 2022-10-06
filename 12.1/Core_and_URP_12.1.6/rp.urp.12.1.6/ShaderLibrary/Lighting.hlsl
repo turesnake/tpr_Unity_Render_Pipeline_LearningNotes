@@ -57,28 +57,31 @@ half3 LightingPhysicallyBased(  BRDFData brdfData,
     half3 radiance = lightColor * (lightAttenuation * NdotL);
 
     half3 brdf = brdfData.diffuse;
-#ifndef _SPECULARHIGHLIGHTS_OFF
-    [branch] if (!specularHighlightsOff)
-    {
-        brdf += brdfData.specular * DirectBRDFSpecular(brdfData, normalWS, lightDirectionWS, viewDirectionWS);
 
-#if defined(_CLEARCOAT) || defined(_CLEARCOATMAP)
-        // Clear coat evaluates the specular a second timw and has some common terms with the base specular.
-        // We rely on the compiler to merge these and compute them only once.
-        half brdfCoat = kDielectricSpec.r * DirectBRDFSpecular(brdfDataClearCoat, normalWS, lightDirectionWS, viewDirectionWS);
+    #ifndef _SPECULARHIGHLIGHTS_OFF
 
-            // Mix clear coat and base layer using khronos glTF recommended formula
-            // https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_materials_clearcoat/README.md
-            // Use NoV for direct too instead of LoH as an optimization (NoV is light invariant).
-            half NoV = saturate(dot(normalWS, viewDirectionWS));
-            // Use slightly simpler fresnelTerm (Pow4 vs Pow5) as a small optimization.
-            // It is matching fresnel used in the GI/Env, so should produce a consistent clear coat blend (env vs. direct)
-            half coatFresnel = kDielectricSpec.x + kDielectricSpec.a * Pow4(1.0 - NoV);
+        [branch] if (!specularHighlightsOff)
+        {
+            brdf += brdfData.specular * DirectBRDFSpecular(brdfData, normalWS, lightDirectionWS, viewDirectionWS);
 
-        brdf = brdf * (1.0 - clearCoatMask * coatFresnel) + brdfCoat * clearCoatMask;
-#endif // _CLEARCOAT
-    }
-#endif // _SPECULARHIGHLIGHTS_OFF
+        #if defined(_CLEARCOAT) || defined(_CLEARCOATMAP)
+                // Clear coat evaluates the specular a second timw and has some common terms with the base specular.
+                // We rely on the compiler to merge these and compute them only once.
+                half brdfCoat = kDielectricSpec.r * DirectBRDFSpecular(brdfDataClearCoat, normalWS, lightDirectionWS, viewDirectionWS);
+
+                    // Mix clear coat and base layer using khronos glTF recommended formula
+                    // https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_materials_clearcoat/README.md
+                    // Use NoV for direct too instead of LoH as an optimization (NoV is light invariant).
+                    half NoV = saturate(dot(normalWS, viewDirectionWS));
+                    // Use slightly simpler fresnelTerm (Pow4 vs Pow5) as a small optimization.
+                    // It is matching fresnel used in the GI/Env, so should produce a consistent clear coat blend (env vs. direct)
+                    half coatFresnel = kDielectricSpec.x + kDielectricSpec.a * Pow4(1.0 - NoV);
+
+                brdf = brdf * (1.0 - clearCoatMask * coatFresnel) + brdfCoat * clearCoatMask;
+        #endif // _CLEARCOAT
+        }
+
+    #endif // _SPECULARHIGHLIGHTS_OFF
 
     return brdf * radiance;
 }
@@ -88,7 +91,17 @@ half3 LightingPhysicallyBased(  BRDFData brdfData,
 
 half3 LightingPhysicallyBased(BRDFData brdfData, BRDFData brdfDataClearCoat, Light light, half3 normalWS, half3 viewDirectionWS, half clearCoatMask, bool specularHighlightsOff)
 {
-    return LightingPhysicallyBased(brdfData, brdfDataClearCoat, light.color, light.direction, light.distanceAttenuation * light.shadowAttenuation, normalWS, viewDirectionWS, clearCoatMask, specularHighlightsOff);
+    return LightingPhysicallyBased(
+        brdfData, 
+        brdfDataClearCoat, 
+        light.color, 
+        light.direction, 
+        light.distanceAttenuation * light.shadowAttenuation, 
+        normalWS, 
+        viewDirectionWS, 
+        clearCoatMask, 
+        specularHighlightsOff
+    );
 }
 
 
@@ -282,9 +295,9 @@ half3 CalculateBlinnPhong(Light light, InputData inputData, SurfaceData surfaceD
 half4 UniversalFragmentPBR(InputData inputData, SurfaceData surfaceData)
 {
     #if defined(_SPECULARHIGHLIGHTS_OFF)
-    bool specularHighlightsOff = true;
+        bool specularHighlightsOff = true;
     #else
-    bool specularHighlightsOff = false;
+        bool specularHighlightsOff = false;
     #endif
     BRDFData brdfData;
 
@@ -320,41 +333,56 @@ half4 UniversalFragmentPBR(InputData inputData, SurfaceData surfaceData)
 
     if (IsMatchingLightLayer(mainLight.layerMask, meshRenderingLayers))
     {
-        lightingData.mainLightColor = LightingPhysicallyBased(brdfData, brdfDataClearCoat,
-                                                              mainLight,
-                                                              inputData.normalWS, inputData.viewDirectionWS,
-                                                              surfaceData.clearCoatMask, specularHighlightsOff);
+        lightingData.mainLightColor = LightingPhysicallyBased(  brdfData, 
+                                                                brdfDataClearCoat,
+                                                                mainLight,
+                                                                inputData.normalWS, 
+                                                                inputData.viewDirectionWS,
+                                                                surfaceData.clearCoatMask, 
+                                                                specularHighlightsOff
+                                                            );
     }
 
     #if defined(_ADDITIONAL_LIGHTS)
-    uint pixelLightCount = GetAdditionalLightsCount();
+    
+        uint pixelLightCount = GetAdditionalLightsCount();
 
-    // CLUSTERED: 聚集的
-    #if USE_CLUSTERED_LIGHTING
-    for (uint lightIndex = 0; lightIndex < min(_AdditionalLightsDirectionalCount, MAX_VISIBLE_LIGHTS); lightIndex++)
-    {
-        Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+        // CLUSTERED: 聚集的
+        #if USE_CLUSTERED_LIGHTING
+            for (uint lightIndex = 0; lightIndex < min(_AdditionalLightsDirectionalCount, MAX_VISIBLE_LIGHTS); lightIndex++)
+            {
+                Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
 
-        if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
-        {
-            lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
-                                                                          inputData.normalWS, inputData.viewDirectionWS,
-                                                                          surfaceData.clearCoatMask, specularHighlightsOff);
-        }
-    }
-    #endif
+                if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+                {
+                    lightingData.additionalLightsColor += LightingPhysicallyBased(  brdfData, 
+                                                                                    brdfDataClearCoat, 
+                                                                                    light,
+                                                                                    inputData.normalWS, 
+                                                                                    inputData.viewDirectionWS,
+                                                                                    surfaceData.clearCoatMask, 
+                                                                                    specularHighlightsOff
+                                                                                );
+                }
+            }
+        #endif
 
-    // 等于: for (uint lightIndex = 0u; lightIndex < pixelLightCount; ++lightIndex) {
-    LIGHT_LOOP_BEGIN(pixelLightCount)
-        Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
-        // 光源 和 物体的 layer 相交
-        if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
-        {
-            lightingData.additionalLightsColor += LightingPhysicallyBased(brdfData, brdfDataClearCoat, light,
-                                                                          inputData.normalWS, inputData.viewDirectionWS,
-                                                                          surfaceData.clearCoatMask, specularHighlightsOff);
-        }
-    LIGHT_LOOP_END
+        // 等于: for (uint lightIndex = 0u; lightIndex < pixelLightCount; ++lightIndex) {
+        LIGHT_LOOP_BEGIN(pixelLightCount)
+            Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            // 光源 和 物体的 layer 相交
+            if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            {
+                lightingData.additionalLightsColor += LightingPhysicallyBased(  brdfData, 
+                                                                                brdfDataClearCoat, 
+                                                                                light,
+                                                                                inputData.normalWS, 
+                                                                                inputData.viewDirectionWS,
+                                                                                surfaceData.clearCoatMask, 
+                                                                                specularHighlightsOff
+                                                                            );
+            }
+        LIGHT_LOOP_END
 
     #endif
 
@@ -423,29 +451,29 @@ half4 UniversalFragmentBlinnPhong(InputData inputData, SurfaceData surfaceData)
     }
 
     #if defined(_ADDITIONAL_LIGHTS)
-    uint pixelLightCount = GetAdditionalLightsCount();
+        uint pixelLightCount = GetAdditionalLightsCount();
 
-    // 集群渲染
-    #if USE_CLUSTERED_LIGHTING
-    for (uint lightIndex = 0; lightIndex < min(_AdditionalLightsDirectionalCount, MAX_VISIBLE_LIGHTS); lightIndex++)
-    {
-        Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
-        if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
-        {
-            lightingData.additionalLightsColor += CalculateBlinnPhong(light, inputData, surfaceData);
-        }
-    }
-    #endif
+        // 集群渲染
+        #if USE_CLUSTERED_LIGHTING
+            for (uint lightIndex = 0; lightIndex < min(_AdditionalLightsDirectionalCount, MAX_VISIBLE_LIGHTS); lightIndex++)
+            {
+                Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+                if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+                {
+                    lightingData.additionalLightsColor += CalculateBlinnPhong(light, inputData, surfaceData);
+                }
+            }
+        #endif
 
 
-    // 等于: for (uint lightIndex = 0u; lightIndex < pixelLightCount; ++lightIndex) {
-    LIGHT_LOOP_BEGIN(pixelLightCount)
-        Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
-        // 光源 和 物体的 layer 相交
-        if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
-        {
-            lightingData.additionalLightsColor += CalculateBlinnPhong(light, inputData, surfaceData);
-        }
+        // 等于: for (uint lightIndex = 0u; lightIndex < pixelLightCount; ++lightIndex) {
+        LIGHT_LOOP_BEGIN(pixelLightCount)
+            Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
+            // 光源 和 物体的 layer 相交
+            if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
+            {
+                lightingData.additionalLightsColor += CalculateBlinnPhong(light, inputData, surfaceData);
+            }
     LIGHT_LOOP_END
     #endif
 

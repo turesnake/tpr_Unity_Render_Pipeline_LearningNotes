@@ -1177,6 +1177,11 @@ namespace UnityEngine.Rendering.Universal
                 !isCompatibleBackbufferTextureDimension || isCapturing || cameraData.requireSrgbConversion;
         }
 
+        // !!!!!!
+        // tpr: 开启 msaa 后再在 android 平台会丢失 rt 的 depth buffer 信息; 导致类似 cmd.SetRenderTarget() 之类的函数出问题;
+        // 但是即便在此时, CanCopyDepth() 依然返回 true;
+        // 此时要去检查变量 requiresDepthCopyPass 的信息;
+
         bool CanCopyDepth(ref CameraData cameraData)
         {
             bool msaaEnabledForCamera = cameraData.cameraTargetDescriptor.msaaSamples > 1;
@@ -1187,8 +1192,8 @@ namespace UnityEngine.Rendering.Universal
             bool msaaDepthResolve = msaaEnabledForCamera && SystemInfo.supportsMultisampledTextures != 0;
 
             // copying depth on GLES3 is giving invalid results. Needs investigation (Fogbugz issue 1339401)
-            if (IsGLESDevice())
-                return false;
+            //if (IsGLESDevice())
+                //return false;
 
             return supportsDepthCopy || msaaDepthResolve;
         }
